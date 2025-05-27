@@ -1,0 +1,133 @@
+{
+  "meta": {
+    "generatedAt": "2025-05-27T18:45:42.933Z",
+    "tasksAnalyzed": 15,
+    "totalTasks": 15,
+    "analysisCount": 15,
+    "thresholdScore": 5,
+    "projectName": "Taskmaster",
+    "usedResearch": true
+  },
+  "complexityAnalysis": [
+    {
+      "taskId": 1,
+      "taskTitle": "Setup PWA Project Foundation",
+      "complexityScore": 7,
+      "recommendedSubtasks": 8,
+      "expansionPrompt": "Break down the PWA setup into initialization, service worker configuration, manifest setup, TypeScript configuration, storage setup, and testing phases",
+      "reasoning": "Complex initial setup requiring careful configuration of multiple systems and testing of core PWA functionality"
+    },
+    {
+      "taskId": 2,
+      "taskTitle": "Implement Core UI Framework",
+      "complexityScore": 8,
+      "recommendedSubtasks": 10,
+      "expansionPrompt": "Divide the UI framework implementation into theme setup, component creation, layout system, and accessibility integration phases",
+      "reasoning": "Foundational UI work requiring extensive component architecture and theme system design"
+    },
+    {
+      "taskId": 3,
+      "taskTitle": "Develop Focus Timer Core",
+      "complexityScore": 6,
+      "recommendedSubtasks": 7,
+      "expansionPrompt": "Break down timer implementation into core logic, state management, UI components, and session handling modules",
+      "reasoning": "Moderate complexity with precise timing requirements and state management needs"
+    },
+    {
+      "taskId": 4,
+      "taskTitle": "Create Animated Starfield Background",
+      "complexityScore": 7,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Separate the starfield implementation into rendering setup, animation system, performance optimization, and effect integration",
+      "reasoning": "Requires 3D graphics expertise and performance optimization considerations"
+    },
+    {
+      "taskId": 5,
+      "taskTitle": "Implement Goal Tracking System",
+      "complexityScore": 7,
+      "recommendedSubtasks": 8,
+      "expansionPrompt": "Break down goal tracking into data structure design, UI implementation, progress logic, and storage integration phases",
+      "reasoning": "Complex data modeling and offline storage requirements with multiple interconnected features"
+    },
+    {
+      "taskId": 6,
+      "taskTitle": "Develop Music Player Component",
+      "complexityScore": 5,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Divide music player development into audio handling, playlist management, controls implementation, and session integration",
+      "reasoning": "Moderate complexity with established audio libraries handling most complexity"
+    },
+    {
+      "taskId": 7,
+      "taskTitle": "Implement Posture Tracking",
+      "complexityScore": 9,
+      "recommendedSubtasks": 9,
+      "expansionPrompt": "Break down posture tracking into ML setup, camera handling, analysis system, and feedback mechanism components",
+      "reasoning": "High complexity due to ML integration and real-time processing requirements"
+    },
+    {
+      "taskId": 8,
+      "taskTitle": "Create Note Taking System",
+      "complexityScore": 6,
+      "recommendedSubtasks": 7,
+      "expansionPrompt": "Separate note system into editor setup, storage implementation, action list features, and markdown handling",
+      "reasoning": "Moderate complexity with established editor components handling core functionality"
+    },
+    {
+      "taskId": 9,
+      "taskTitle": "Implement Local LLM Integration",
+      "complexityScore": 8,
+      "recommendedSubtasks": 8,
+      "expansionPrompt": "Break down LLM integration into model setup, inference system, chat interface, and context management",
+      "reasoning": "High complexity due to local ML model integration and performance considerations"
+    },
+    {
+      "taskId": 10,
+      "taskTitle": "Develop Focus Booster Feature",
+      "complexityScore": 5,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Divide focus booster into animation system, audio guidance, exercise flow, and full-screen handling",
+      "reasoning": "Straightforward implementation with clear component boundaries"
+    },
+    {
+      "taskId": 11,
+      "taskTitle": "Implement Sound Effects System",
+      "complexityScore": 4,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Break down SFX system into sound management, preloading, controls, and spatial audio features",
+      "reasoning": "Lower complexity with well-defined audio handling requirements"
+    },
+    {
+      "taskId": 12,
+      "taskTitle": "Create Session Summary System",
+      "complexityScore": 6,
+      "recommendedSubtasks": 7,
+      "expansionPrompt": "Separate summary system into data collection, analysis, visualization, and export functionality",
+      "reasoning": "Moderate complexity with focus on data processing and visualization"
+    },
+    {
+      "taskId": 13,
+      "taskTitle": "Implement Settings & Preferences",
+      "complexityScore": 5,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Break down settings implementation into data structure, UI, persistence, and import/export features",
+      "reasoning": "Standard complexity with clear requirements and established patterns"
+    },
+    {
+      "taskId": 14,
+      "taskTitle": "Create Accessibility Layer",
+      "complexityScore": 7,
+      "recommendedSubtasks": 8,
+      "expansionPrompt": "Divide accessibility implementation into ARIA integration, keyboard navigation, screen reader support, and theme adaptations",
+      "reasoning": "High importance with comprehensive accessibility requirements across all features"
+    },
+    {
+      "taskId": 15,
+      "taskTitle": "Implement Analytics & Telemetry",
+      "complexityScore": 5,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Break down analytics into event tracking, metrics collection, privacy controls, and export functionality",
+      "reasoning": "Standard complexity with clear metrics and privacy requirements"
+    }
+  ]
+}

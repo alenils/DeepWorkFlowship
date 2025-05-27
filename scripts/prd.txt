@@ -1,0 +1,100 @@
+DeepWork Spacestation (v1.0 MVP)
+
+Product Overview:
+DeepWork Spacestation is an immersive, offline-first, browser-based productivity dashboard designed to transform deep work sessions into an engaging and focused experience. Themed as a spaceship cockpit, it integrates a gamified focus timer, goal tracking, webcam-based posture monitoring, an in-app instrumental music player, a notepad, an action list, and an "AI Buddy" for motivation and task contextualization.
+
+Core Features:
+
+1. Focus Timer & Session Control
+- One-click Start/Pause/Give Up controls
+- Visual timer display (countdown/count-up)
+- Session summary on completion
+- Distraction logging
+- Persistence across page refreshes
+
+2. Goal/Reward & XP Progress
+- Set total focus time goal & optional text reward
+- Visual XP bar with ship icon progress
+- "Destination Reached" celebration modal
+- Progress persistence
+- Streak tracking
+
+3. Music Player
+- Local albums/tracks from assets
+- Shuffle functionality
+- Cross-fade capability (0-8s)
+- Volume control
+- "Play-only-in-session" toggle
+- Collapsed/expanded UI
+
+4. Starfield / Warp Background
+- Animated space background
+- Reacts to timer state
+- Quality modes (Off/Eco/Standard/Ultra)
+- Optional full-screen "Warp-full" focus mode
+- Subtle "thrust shake" on session start
+
+5. Posture Tracker
+- Webcam-based posture detection using MediaPipe
+- User calibration process
+- Live feedback bar
+- Sensitivity/nudge delay settings
+- Visual/text nudges for poor posture
+
+6. Session Summary
+- Post-session modal with duration, distraction count, posture quality
+- Streak status display
+- Notes area for reflection
+- Integration with goal tracking
+
+7. Notepad & Action List
+- Side-panel with tabs
+- Markdown notepad for free-form notes
+- Checklist for tasks (add, edit, complete, delete, reorder)
+- Persistence across sessions
+
+8. SFX Feedback
+- Crisp sound effects for key actions
+- Timer start/stop
+- Task completion
+- Distraction logging
+- Global SFX volume/mute control
+
+9. PWA Offline Shell
+- Installable app functionality
+- Core features work without network
+- Asset caching for performance
+- Persistence using IndexedDB
+
+10. AI Buddy Chat
+- Side-docked chat interface
+- Local LLM for quick responses
+- Task contextualization
+- Motivational prompts
+
+11. Focus Booster
+- Full-screen 30s gaze-lock exercise
+- Star-warp visual scene
+- Growing central dot
+- Guiding text prompts
+- Calming audio
+
+Technical Requirements:
+- React + Vite frontend
+- Tailwind CSS for styling
+- React hooks for state management
+- MediaPipe Pose for posture detection
+- Web Audio API for music/sound
+- LocalStorage/IndexedDB for persistence
+- Offline-first PWA architecture
+- Web Workers for intensive processing
+- Responsive and performant UI
+- WCAG 2.1 Level AA accessibility
+
+Success Metrics:
+- User activation rate (first 3 days)
+- Week 1 cohort retention
+- Average focus sessions per user
+- Feature adoption rates
+- Goal completion rates
+- PWA installation rate 

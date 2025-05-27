@@ -1,0 +1,73 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Testing
+coverage
+/test-results/
+/playwright-report/
+/playwright/.cache/
+
+# Production
+/dist
+/build
+
+# Misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# TypeScript
+*.tsbuildinfo
+
+# Added by Claude Task Master
+# Logs
+logs
+*.log
+dev-debug.log
+# Dependency directories
+node_modules/
+# Environment variables
+.env
+.vscode
+# OS specific
+# Task files
+tasks.json
+tasks/ 
+.cursor/mcp.json
+
+
+# Ignore large media and model files
+*.mp3
+*.wav
+*.ogg
+*.flac
+
+src/assets/music/
+public/music/
+public/models/
+models/
+*.wasm
+*.task
+
+# Ignore reference repos or submodules
+reference-repo/
