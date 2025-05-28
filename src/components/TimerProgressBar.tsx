@@ -1,24 +1,21 @@
 import React, { useEffect, useRef } from 'react';
+import { useTimerStore } from '../store/timerSlice';
 
-interface TimerProgressBarProps {
-  currentTimeMs: number;
-  totalDurationMs: number;
-}
+// Keeping an empty interface in case we need to add props in the future
+interface TimerProgressBarProps {}
 
-export const TimerProgressBar: React.FC<TimerProgressBarProps> = ({ 
-  currentTimeMs, 
-  totalDurationMs 
-}) => {
+export const TimerProgressBar: React.FC<TimerProgressBarProps> = () => {
+  const { remainingTime, sessionDurationMs } = useTimerStore();
   const progressRef = useRef<HTMLDivElement>(null);
   const prevProgressRef = useRef<number>(0);
   
   // Prevent division by zero and handle infinite timer
-  if (totalDurationMs <= 0 || totalDurationMs === Number.MAX_SAFE_INTEGER) {
+  if (sessionDurationMs <= 0 || sessionDurationMs === Number.MAX_SAFE_INTEGER) {
     return null; // Don't show bar for invalid or infinite duration
   }
 
-  const elapsedMs = totalDurationMs - currentTimeMs;
-  const progress = Math.max(0, Math.min(1, elapsedMs / totalDurationMs)); // Clamp between 0 and 1
+  const elapsedMs = sessionDurationMs - remainingTime;
+  const progress = Math.max(0, Math.min(1, elapsedMs / sessionDurationMs)); // Clamp between 0 and 1
   
   // Update the progress bar with smooth animation when needed
   useEffect(() => {

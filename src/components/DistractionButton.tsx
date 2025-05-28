@@ -1,9 +1,8 @@
 import { useSound } from '../features/audio/useSound';
+import { useTimerStore } from '../store/timerSlice';
 
 interface DistractionButtonProps {
-  isVisible: boolean;
-  onDistraction: () => void;
-  distractionCount: number; // Receive count from App
+  isVisible?: boolean; // Optional override
   className?: string; // Optional className prop
 }
 
@@ -25,20 +24,26 @@ const TallyMarks = ({ count }: { count: number }) => {
 };
 
 export const DistractionButton = ({ 
-  isVisible, 
-  onDistraction, 
-  distractionCount,
+  isVisible,
   className = '' // Default to empty string
 }: DistractionButtonProps) => {
+  // Get state and actions from store
+  const { isSessionActive, isPaused, distractionCount, addDistraction } = useTimerStore();
+  
   // Load and play distraction sound
   const playDistractionSound = useSound('distraction.mp3');
 
   const handleButtonClick = () => {
     playDistractionSound();
-    onDistraction(); // Call directly
+    addDistraction();
   };
 
-  if (!isVisible) return null;
+  // If isVisible is explicitly passed, use that value, otherwise calculate from store
+  const shouldBeVisible = isVisible !== undefined 
+    ? isVisible 
+    : isSessionActive && !isPaused;
+
+  if (!shouldBeVisible) return null;
 
   return (
     <button

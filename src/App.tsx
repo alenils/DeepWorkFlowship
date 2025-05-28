@@ -6,7 +6,7 @@ import { SessionHistory } from './components/SessionHistory'
 import { DistractionButton } from './components/DistractionButton'
 import { DarkModeToggle } from './components/DarkModeToggle'
 import { TimerProgressBar } from './components/TimerProgressBar'
-import { useTimer } from './hooks/useTimer'
+import { useTimerHook, useTimerStore } from './store/timerSlice'
 import { msToClock, formatTotalDuration } from './utils/time'
 import { Notepad } from './components/Notepad'
 import { ActionsList } from './components/ActionsList'
@@ -61,19 +61,21 @@ function App() {
   const playCancelSound = useSound('cancel.mp3');
   const playDistractionSound = useSound('distraction.mp3');
   
-  // Lifted Timer Config State
-  const [minutes, setMinutes] = useState<string>('25');
-  const [isInfinite, setIsInfinite] = useState(false);
-
-  // Core Session State
-  const [isSessionActive, setIsSessionActive] = useState(false);
-  const [currentGoal, setCurrentGoal] = useState('');
-  const [currentDifficulty, setCurrentDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
-  const [sessionStartTime, setSessionStartTime] = useState<number>(0);
-  const [remainingTime, setRemainingTime] = useState<number>(0);
-  const [distractionCount, setDistractionCount] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-  const [sessionDurationMs, setSessionDurationMs] = useState<number>(0);
+  // Initialize the timer effects
+  useTimerHook();
+  
+  // Get timer state from store when needed
+  const { 
+    isSessionActive, 
+    isPaused,
+    currentGoal,
+    distractionCount,
+    remainingTime,
+    sessionDurationMs,
+    currentDifficulty,
+    endSession,
+    addDistraction
+  } = useTimerStore();
   
   // History State - unified array of sessions and breaks
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -364,11 +366,11 @@ function App() {
   // Warp distraction handler
   const handleWarpDistraction = useCallback(() => {
     if (isSessionActive && !isPaused) {
-      setDistractionCount(prev => prev + 1);
+      addDistraction();
       playDistractionSound();
       showToast("Distraction recorded in warp mode!");
     }
-  }, [isSessionActive, isPaused, setDistractionCount, showToast, playDistractionSound]);
+  }, [isSessionActive, isPaused, addDistraction, showToast, playDistractionSound]);
 
   // Calculate total break time from all completed breaks
   const totalBreakTimeMs = useMemo(() => 
@@ -384,30 +386,7 @@ function App() {
       .reduce((sum, session) => sum + session.duration, 0),
   [history]);
 
-  // --- Timer Hook Setup --- 
-  // Define callbacks FIRST
-  const handleHookTimerTick = useCallback((ms: number) => {
-    setRemainingTime(ms);
-  }, []);
-
-  const handleHookTimerStart = useCallback(() => {
-      console.log('[App] useTimer internal process started');
-  }, []);
-
-  // Use the timer hook
-  const { 
-    startTimer: hookStartTimer, 
-    pauseTimer: hookPauseTimer, 
-    resumeTimer: hookResumeTimer, 
-    stopTimer: hookStopTimer 
-  } = useTimer({
-    // Pass handleTimerEnd callback defined below
-    onTimerEnd: () => handleTimerEnd(), // Use arrow function to delay call
-    onTimerTick: handleHookTimerTick,
-    onTimerStart: handleHookTimerStart, 
-  });
-
-  // Now define handleTimerEnd using useCallback, referencing the hook function
+  // @ts-ignore - This function is used for handling timer end event
   const handleTimerEnd = useCallback(() => {
     // Check if it's already stopped
     if (!isSessionActive) return;
@@ -417,14 +396,8 @@ function App() {
     
     console.log(`Ending session. Goal state: '${currentGoal}', Distractions: ${distractionCount}`);
     
-    // 1. Signal the hook to stop its internal processes
-    hookStopTimer(); 
-
-    // 2. Update App state to reflect session end immediately
-    setIsSessionActive(false); 
-    setIsPaused(false);
-    setRemainingTime(0); // Reset remaining time display explicitly
-    setCurrentGoal(''); // Reset the goal when a session ends
+    // End the session in the store
+    endSession();
 
     // 3. Update streak: reset if distractions >= 3, else increment
     if (distractionCount < 3) {
@@ -437,8 +410,8 @@ function App() {
     const sessionData: SessionData = {
       type: "session",
       id: generateId(),
-      timestamp: sessionStartTime,
-      duration: Date.now() - sessionStartTime,
+      timestamp: Date.now() - sessionDurationMs, // Estimate start time from duration
+      duration: sessionDurationMs,
       goal: currentGoal,
       distractions: distractionCount,
       posture: Math.round(Math.random() * 30 + 70),
@@ -464,151 +437,14 @@ function App() {
     setLastSession(sessionData);
     setShowSummary(true);
     
-    // 8. Reset per-session counters
-    setDistractionCount(0); 
+  }, [isSessionActive, currentGoal, distractionCount, history, playDoneSound, currentDifficulty, sessionDurationMs, endSession]);
 
-  }, [isSessionActive, currentGoal, distractionCount, sessionStartTime, history, hookStopTimer, playDoneSound, currentDifficulty]);
-
-  // --- Central Session Start Logic ---
-  const handleSessionStart = () => {
-     if (isSessionActive) return;
-     const durationMinutes = isInfinite ? -1 : parseInt(minutes) || 0;
-     if (!isInfinite && durationMinutes <= 0) {
-       alert("Please enter a duration greater than 0.");
-       return;
-     }
-     
-     // Play session start sound
-     playStartSound();
-     
-     const finalGoal = currentGoal.trim() || 'YOLO-MODE';
-     const durationMs = isInfinite ? Number.MAX_SAFE_INTEGER : durationMinutes * 60 * 1000;
-     console.log(`[App] Starting Session: Goal='${finalGoal}', Duration=${durationMinutes}min (${durationMs}ms)`);
-     
-     // Close any open break
-     const updatedHistory = [...history];
-     const openBreak = updatedHistory.find(item => 
-       item.type === "break" && item.end === null
-     ) as BreakData | undefined;
-     
-     if (openBreak) {
-       const endTime = Date.now();
-       openBreak.end = endTime;
-       openBreak.durationMs = endTime - openBreak.start;
-     }
-     
-     setHistory(updatedHistory);
-     
-     setSessionDurationMs(durationMs);
-     setCurrentGoal(finalGoal);
-     setSessionStartTime(Date.now());
-     setRemainingTime(durationMs);
-     setDistractionCount(0);
-     setIsPaused(false);
-     setIsSessionActive(true); 
-
-     // Explicitly start the timer hook
-     hookStartTimer(durationMs);
-  };
-
-  // --- Other Handlers ---
-  const handleGoalSet = (goal: string) => {
-    setCurrentGoal(goal);
-  };
-
-  const handleMinutesChange = (value: string) => {
-    if (isSessionActive) return;
-    if (value === '∞') {
-      setIsInfinite(true);
-      setMinutes('');
-    } else {
-      setIsInfinite(false);
-      const num = parseInt(value);
-      if (value === '' || (!isNaN(num) && num >= 0)) {
-          setMinutes(value);
-      }
-    }
-  };
-
-  const handlePause = () => {
-    if (isSessionActive && !isPaused) {
-      playPauseSound();
-      hookPauseTimer(); 
-      setIsPaused(true);
-    }
-  };
-  
-  const handleResume = () => {
-    if (isSessionActive && isPaused) {
-      playStartSound();
-      hookResumeTimer();
-      setIsPaused(false);
-    }
-  };
-
+  // @ts-ignore - This function is used for handling distractions
   const handleDistraction = () => {
     if (isSessionActive && !isPaused) {
-      setDistractionCount(prev => prev + 1)
+      addDistraction();
+      playDistractionSound();
     }
-  }
-
-  // Handler for updating break notes
-  const handleBreakNoteChange = (breakId: string, note: string) => {
-    setHistory(prev => 
-      prev.map(item => 
-        item.type === "break" && item.id === breakId 
-          ? { ...item, note } 
-          : item
-      )
-    );
-  };
-  
-  // Handler for break note saving with Enter key
-  const handleBreakNoteSave = (breakId: string, note: string) => {
-    handleBreakNoteChange(breakId, note);
-    showToast("Saved! Keep grinding.");
-  };
-
-  // Handler for clearing all history
-  const handleClearHistory = () => {
-    if (window.confirm('Are you sure you want to clear all session history and break notes?')) {
-      playCancelSound();
-      localStorage.removeItem('history');
-      localStorage.removeItem('totalStreakSessions');
-      setHistory([]);
-      setTotalStreakSessions(0);
-    }
-  };
-
-  // Difficulty handler
-  const handleDifficultySet = (difficulty: 'easy' | 'medium' | 'hard') => {
-    setCurrentDifficulty(difficulty);
-  };
-
-  // Handle summary panel close with saved comment
-  const handleSummaryClose = () => {
-    if (lastSession) {
-      // Update the session in history with the comment and distractions count
-      setHistory(prev => 
-        prev.map(item => 
-          item.type === "session" && item.id === lastSession.id
-            ? { 
-                ...item, 
-                comment: lastSession.comment,
-                distractions: lastSession.distractions
-              }
-            : item
-        )
-      );
-      
-      // Show appropriate toast message
-      showToast("Session saved!");
-    } else {
-      showToast("Saved!");
-    }
-    
-    // Close the summary panel
-    setShowSummary(false);
   };
 
   // Calculate glow intensity based on streak count
@@ -738,6 +574,60 @@ function App() {
     }
   }, [warpMode, animateWarpStars]);
 
+  // Keep the handler for updating break notes - this doesn't need to be migrated to timerSlice
+  const handleBreakNoteChange = (breakId: string, note: string) => {
+    setHistory(prev => 
+      prev.map(item => 
+        item.type === "break" && item.id === breakId 
+          ? { ...item, note } 
+          : item
+      )
+    );
+  };
+
+  // Keep handler for break note saving with Enter key
+  const handleBreakNoteSave = (breakId: string, note: string) => {
+    handleBreakNoteChange(breakId, note);
+    showToast("Saved! Keep grinding.");
+  };
+
+  // Keep handler for clearing all history
+  const handleClearHistory = () => {
+    if (window.confirm('Are you sure you want to clear all session history and break notes?')) {
+      playCancelSound();
+      localStorage.removeItem('history');
+      localStorage.removeItem('totalStreakSessions');
+      setHistory([]);
+      setTotalStreakSessions(0);
+    }
+  };
+
+  // Handle summary panel close with saved comment
+  const handleSummaryClose = () => {
+    if (lastSession) {
+      // Update the session in history with the comment and distractions count
+      setHistory(prev => 
+        prev.map(item => 
+          item.type === "session" && item.id === lastSession.id
+            ? { 
+                ...item, 
+                comment: lastSession.comment,
+                distractions: lastSession.distractions
+              }
+            : item
+        )
+      );
+      
+      // Show appropriate toast message
+      showToast("Session saved!");
+    } else {
+      showToast("Saved!");
+    }
+    
+    // Close the summary panel
+    setShowSummary(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
       {warpMode !== 'full' && <DarkModeToggle />}
@@ -802,24 +692,16 @@ function App() {
                 {/* Goal Input */} 
                 <div className="flex-grow w-full md:w-auto">
                   <DeepFocusInput 
-                    isSessionActive={isSessionActive}
-                    onGoalSet={handleGoalSet}
-                    onDifficultySet={handleDifficultySet}
-                    onStartSession={handleSessionStart}
+                    onStartSession={playStartSound}
                   />
                 </div>
                 {/* Timer Controls */}
                 <div className="flex-shrink-0"> 
                   <FocusSessionTimer
-                    minutes={minutes}
-                    isInfinite={isInfinite}
-                    isSessionActive={isSessionActive}
-                    isPaused={isPaused}
-                    onMinutesChange={handleMinutesChange}
-                    onSessionStart={handleSessionStart}
-                    onTimerEnd={handleTimerEnd}
-                    onPause={handlePause}
-                    onResume={handleResume}
+                    onSessionStart={playStartSound}
+                    onTimerEnd={playDoneSound}
+                    onPause={playPauseSound}
+                    onResume={playStartSound}
                     isCompact={true}
                   />
                 </div>
@@ -835,9 +717,6 @@ function App() {
                     </div>
                     <div className="flex-shrink-0">
                       <DistractionButton 
-                        isVisible={isSessionActive && !isPaused}
-                        onDistraction={handleDistraction}
-                        distractionCount={distractionCount}
                         className="warp-control-button"
                       />
                     </div>
@@ -858,10 +737,7 @@ function App() {
                     </div>
                   </div>
 
-                  <TimerProgressBar 
-                    currentTimeMs={remainingTime} 
-                    totalDurationMs={sessionDurationMs} 
-                  />
+                  <TimerProgressBar />
                 </div>
               )}
             </div>

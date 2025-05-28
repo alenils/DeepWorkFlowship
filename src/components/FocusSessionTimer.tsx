@@ -1,16 +1,13 @@
 import { useState, useCallback, useEffect } from 'react';
+import { useTimerStore } from '../store/timerSlice';
 
 interface FocusSessionTimerProps {
-  minutes: string;
-  isInfinite: boolean;
-  onMinutesChange: (value: string) => void;
-  isSessionActive: boolean;
-  isPaused: boolean;
-  onSessionStart: () => void;
-  onTimerEnd: () => void;
-  onPause: () => void;
-  onResume: () => void;
   isCompact?: boolean;
+  // Sound handlers will be passed from parent until we move sound logic to store
+  onSessionStart?: () => void; // For playing sounds
+  onPause?: () => void; // For playing sounds
+  onResume?: () => void; // For playing sounds
+  onTimerEnd?: () => void; // For playing sounds
 }
 
 const MOTIVATIONAL_STARTS = [
@@ -63,17 +60,25 @@ const STOP_MESSAGES = [
 ];
 
 export const FocusSessionTimer = ({ 
-  minutes,
-  isInfinite,
-  onMinutesChange,
-  isSessionActive, 
-  isPaused,
+  isCompact = false,
   onSessionStart,
-  onTimerEnd, 
   onPause,
   onResume,
-  isCompact = false,
+  onTimerEnd
 }: FocusSessionTimerProps) => {
+  // Get timer state and actions from the store
+  const { 
+    minutes, 
+    isInfinite, 
+    isSessionActive, 
+    isPaused,
+    handleMinutesChange,
+    startSession,
+    pauseTimer,
+    resumeTimer,
+    stopTimer
+  } = useTimerStore();
+  
   const [startClickCount, setStartClickCount] = useState(0);
   const [pauseMessage, setPauseMessage] = useState(PAUSE_MESSAGES[0]);
   const [stopMessage, setStopMessage] = useState(STOP_MESSAGES[0]);
@@ -116,7 +121,8 @@ export const FocusSessionTimer = ({
   const handleStart = () => {
     if (isSessionActive) return;
 
-    onSessionStart();
+    startSession();
+    if (onSessionStart) onSessionStart(); // Play sound
     
     const nextIndex = (startClickCount + 1) % MOTIVATIONAL_STARTS.length;
     setStartClickCount(nextIndex);
@@ -124,20 +130,26 @@ export const FocusSessionTimer = ({
 
   const handlePauseClick = useCallback(() => {
     if (!isSessionActive) return;
+    
     if (isPaused) {
-      onResume();
+      resumeTimer();
+      if (onResume) onResume(); // Play sound
     } else {
-      onPause();
+      pauseTimer();
+      if (onPause) onPause(); // Play sound
       const nextMessage = PAUSE_MESSAGES[Math.floor(Math.random() * PAUSE_MESSAGES.length)];
       setPauseMessage(nextMessage);
     }
-  }, [isSessionActive, isPaused, onPause, onResume]);
+  }, [isSessionActive, isPaused, pauseTimer, resumeTimer, onPause, onResume]);
 
   const handleStop = () => {
     if (!isSessionActive) return;
+    
     const nextMessage = STOP_MESSAGES[Math.floor(Math.random() * STOP_MESSAGES.length)];
     setStopMessage(nextMessage);
-    onTimerEnd();
+    
+    stopTimer();
+    if (onTimerEnd) onTimerEnd(); // Play sound
   };
 
   return (
@@ -148,7 +160,7 @@ export const FocusSessionTimer = ({
           id="minutesInput"
           type="text"
           value={isInfinite ? '∞' : minutes}
-          onChange={(e) => onMinutesChange(e.target.value)}
+          onChange={(e) => handleMinutesChange(e.target.value)}
           onKeyPress={(e) => {
             if (e.key === 'Enter' && !isSessionActive && (isInfinite || minutes)) {
               handleStart();

@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useTimerStore } from '../store/timerSlice';
 
 interface DeepFocusInputProps {
-  isSessionActive: boolean;
-  onGoalSet: (goal: string) => void;
-  onDifficultySet?: (difficulty: 'easy' | 'medium' | 'hard') => void;
-  onStartSession: (goal: string) => void;
   className?: string;
+  // Sound handlers will be passed from parent until we move sound logic to store
+  onStartSession?: () => void; // For playing sounds
 }
 
 const PLACEHOLDER_TEXTS = [
@@ -31,12 +30,21 @@ const PLACEHOLDER_TEXTS = [
   "The task that survived 100 todo lists"
 ];
 
-export const DeepFocusInput = ({ isSessionActive, onGoalSet, onStartSession, className = '', onDifficultySet }: DeepFocusInputProps) => {
+export const DeepFocusInput = ({ className = '', onStartSession }: DeepFocusInputProps) => {
+  const { 
+    isSessionActive, 
+    currentGoal,
+    currentDifficulty,
+    handleGoalSet,
+    handleDifficultySet,
+    startSession
+  } = useTimerStore();
+  
   const [goal, setGoal] = useState('');
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [isFocused, setIsFocused] = useState(false);
   const [previousActiveState, setPreviousActiveState] = useState(isSessionActive);
-  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
+  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>(currentDifficulty);
 
   // Store difficulty in localStorage
   useEffect(() => {
@@ -48,8 +56,9 @@ export const DeepFocusInput = ({ isSessionActive, onGoalSet, onStartSession, cla
     const savedDifficulty = localStorage.getItem('lastDifficulty') as 'easy' | 'medium' | 'hard' | null;
     if (savedDifficulty) {
       setDifficulty(savedDifficulty);
+      handleDifficultySet(savedDifficulty);
     }
-  }, []);
+  }, [handleDifficultySet]);
 
   // Rotate placeholder text every 5 seconds
   useEffect(() => {
@@ -78,29 +87,36 @@ export const DeepFocusInput = ({ isSessionActive, onGoalSet, onStartSession, cla
     setPreviousActiveState(isSessionActive);
   }, [isSessionActive, previousActiveState]);
 
+  // Sync local goal state with store
+  useEffect(() => {
+    if (currentGoal && !goal) {
+      setGoal(currentGoal);
+    }
+  }, [currentGoal, goal]);
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !isSessionActive) {
       e.preventDefault();
       const finalGoal = goal.trim();
       if (finalGoal !== '' && difficulty) {
-        onStartSession(finalGoal || 'YOLO-MODE');
-        onGoalSet(finalGoal || 'YOLO-MODE');
+        handleGoalSet(finalGoal || 'YOLO-MODE');
+        startSession();
+        if (onStartSession) onStartSession(); // Play sound
       }
     }
   };
 
   const handleGoalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setGoal(e.target.value);
+    const newGoal = e.target.value;
+    setGoal(newGoal);
     if (!isSessionActive) {
-      onGoalSet(e.target.value);
+      handleGoalSet(newGoal);
     }
   };
 
   const handleDifficultyChange = (newDifficulty: 'easy' | 'medium' | 'hard') => {
     setDifficulty(newDifficulty);
-    if (onDifficultySet) {
-      onDifficultySet(newDifficulty);
-    }
+    handleDifficultySet(newDifficulty);
   };
 
   const currentPlaceholder = isFocused && !goal 
