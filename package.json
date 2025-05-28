@@ -9,7 +9,8 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "test": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "generate-icons": "node scripts/generate-pwa-icons.js"
   },
   "dependencies": {
     "@mediapipe/camera_utils": "^0.3.1675466862",
@@ -26,12 +27,14 @@
   "devDependencies": {
     "@playwright/test": "^1.42.1",
     "@testing-library/react": "^16.3.0",
+    "@types/node": "^22.15.24",
     "@types/react": "^18.2.64",
     "@types/react-dom": "^18.2.21",
     "@typescript-eslint/eslint-plugin": "^7.1.1",
     "@typescript-eslint/parser": "^7.1.1",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.18",
+    "canvas": "^3.1.0",
     "eslint": "^8.57.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
@@ -39,6 +42,7 @@
     "tailwindcss": "^3.4.1",
     "typescript": "^5.2.2",
     "vite": "^6.3.4",
+    "vite-plugin-pwa": "^1.0.0",
     "vitest": "^3.1.2"
   }
 }

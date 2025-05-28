@@ -15,6 +15,7 @@ import { Toast } from './components/Toast'
 import { useSound } from './features/audio/useSound'
 import { MusicPlayer } from './features/audio/MusicPlayer'
 import { useHistoryStore, SessionData, BreakData } from './store/historySlice'
+import InstallPrompt from './components/InstallPrompt'
 
 // Used TypeScript interfaces are imported from historySlice.ts now
 // No need to redefine them here
@@ -769,6 +770,8 @@ function App() {
         {/* Toast Notifications */}
         {toast.show && <Toast message={toast.message} />}
       </div>
+
+      <InstallPrompt />
     </div>
   )
 }
