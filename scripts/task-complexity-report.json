@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generatedAt": "2025-05-27T18:45:42.933Z",
+    "generatedAt": "2025-05-28T02:23:47.026Z",
     "tasksAnalyzed": 15,
     "totalTasks": 15,
     "analysisCount": 15,
@@ -11,123 +11,123 @@
   "complexityAnalysis": [
     {
       "taskId": 1,
-      "taskTitle": "Setup PWA Project Foundation",
-      "complexityScore": 7,
-      "recommendedSubtasks": 8,
-      "expansionPrompt": "Break down the PWA setup into initialization, service worker configuration, manifest setup, TypeScript configuration, storage setup, and testing phases",
-      "reasoning": "Complex initial setup requiring careful configuration of multiple systems and testing of core PWA functionality"
+      "taskTitle": "Repository Cleanup and Structure",
+      "complexityScore": 5,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Break down the repository cleanup into: (1) Identifying duplicate/nested folders, (2) Deleting unnecessary folders, (3) Updating imports and references, (4) Cleaning git history, (5) Verifying in a fresh environment.",
+      "reasoning": "This task involves both file system operations and codebase-wide reference updates, which can introduce subtle issues if not handled carefully. It is moderately complex due to the need for thorough verification and potential git history rewriting."
     },
     {
       "taskId": 2,
-      "taskTitle": "Implement Core UI Framework",
-      "complexityScore": 8,
-      "recommendedSubtasks": 10,
-      "expansionPrompt": "Divide the UI framework implementation into theme setup, component creation, layout system, and accessibility integration phases",
-      "reasoning": "Foundational UI work requiring extensive component architecture and theme system design"
+      "taskTitle": "Global State Management Setup",
+      "complexityScore": 7,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Expand into: (1) Zustand setup in /src/store, (2) Creating appSlice.ts, (3) Migrating each shared state property, (4) Refactoring App.tsx, (5) Updating dependent components, (6) Testing state access and updates.",
+      "reasoning": "Establishing a global state system and migrating existing state is a multi-step process that affects many parts of the app, requiring careful planning and incremental migration to avoid regressions."
     },
     {
       "taskId": 3,
-      "taskTitle": "Develop Focus Timer Core",
+      "taskTitle": "PWA Initial Configuration",
       "complexityScore": 6,
-      "recommendedSubtasks": 7,
-      "expansionPrompt": "Break down timer implementation into core logic, state management, UI components, and session handling modules",
-      "reasoning": "Moderate complexity with precise timing requirements and state management needs"
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Divide into: (1) Installing and configuring vite-plugin-pwa, (2) Creating and updating manifest.json, (3) Implementing service worker caching, (4) Excluding large assets from precache, (5) Testing offline and install prompt.",
+      "reasoning": "PWA setup involves configuration, asset management, and testing across environments. Each step is distinct and can introduce issues if not validated."
     },
     {
       "taskId": 4,
-      "taskTitle": "Create Animated Starfield Background",
-      "complexityScore": 7,
-      "recommendedSubtasks": 6,
-      "expansionPrompt": "Separate the starfield implementation into rendering setup, animation system, performance optimization, and effect integration",
-      "reasoning": "Requires 3D graphics expertise and performance optimization considerations"
+      "taskTitle": "E2E Test Baseline",
+      "complexityScore": 4,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Expand into: (1) Setting up Playwright, (2) Writing the baseline test, (3) Integrating with CI, (4) Verifying test reliability after refactors.",
+      "reasoning": "While E2E tests are critical, a baseline test for a simple flow is straightforward but must be robust and integrated into the workflow."
     },
     {
       "taskId": 5,
-      "taskTitle": "Implement Goal Tracking System",
+      "taskTitle": "Posture Detection Logic Consolidation",
       "complexityScore": 7,
-      "recommendedSubtasks": 8,
-      "expansionPrompt": "Break down goal tracking into data structure design, UI implementation, progress logic, and storage integration phases",
-      "reasoning": "Complex data modeling and offline storage requirements with multiple interconnected features"
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Break down into: (1) Reviewing current hooks and logic, (2) Designing PostureContext, (3) Moving camera and MediaPipe logic, (4) Refactoring hooks to use context, (5) Merging/clarifying hook roles, (6) Testing data flow.",
+      "reasoning": "Centralizing posture logic requires deep understanding of existing code, careful refactoring, and thorough testing to avoid breaking dependent features."
     },
     {
       "taskId": 6,
-      "taskTitle": "Develop Music Player Component",
-      "complexityScore": 5,
-      "recommendedSubtasks": 6,
-      "expansionPrompt": "Divide music player development into audio handling, playlist management, controls implementation, and session integration",
-      "reasoning": "Moderate complexity with established audio libraries handling most complexity"
+      "taskTitle": "App.tsx Refactoring",
+      "complexityScore": 6,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Expand into: (1) Extracting MainLayout.tsx, (2) Extracting SidePanels.tsx, (3) Moving Warp Mode logic, (4) Integrating Zustand state, (5) Regression testing UI and logic.",
+      "reasoning": "Breaking down a central component impacts many areas. Each extraction and integration step must be validated to maintain functionality."
     },
     {
       "taskId": 7,
-      "taskTitle": "Implement Posture Tracking",
-      "complexityScore": 9,
-      "recommendedSubtasks": 9,
-      "expansionPrompt": "Break down posture tracking into ML setup, camera handling, analysis system, and feedback mechanism components",
-      "reasoning": "High complexity due to ML integration and real-time processing requirements"
+      "taskTitle": "Constants Definition",
+      "complexityScore": 4,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Divide into: (1) Creating constants.ts, (2) Identifying magic strings/numbers, (3) Refactoring components to use constants, (4) Verifying no magic values remain.",
+      "reasoning": "Centralizing constants is straightforward but requires careful search and replace to avoid missing or breaking references."
     },
     {
       "taskId": 8,
-      "taskTitle": "Create Note Taking System",
-      "complexityScore": 6,
-      "recommendedSubtasks": 7,
-      "expansionPrompt": "Separate note system into editor setup, storage implementation, action list features, and markdown handling",
-      "reasoning": "Moderate complexity with established editor components handling core functionality"
+      "taskTitle": "Type Safety for Helpers/Utils",
+      "complexityScore": 5,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Expand into: (1) Reviewing each utility file, (2) Adding explicit types, (3) Refactoring for type safety, (4) Running and fixing TypeScript errors.",
+      "reasoning": "Adding types improves maintainability but can reveal hidden issues, requiring careful review and incremental fixes."
     },
     {
       "taskId": 9,
-      "taskTitle": "Implement Local LLM Integration",
-      "complexityScore": 8,
-      "recommendedSubtasks": 8,
-      "expansionPrompt": "Break down LLM integration into model setup, inference system, chat interface, and context management",
-      "reasoning": "High complexity due to local ML model integration and performance considerations"
+      "taskTitle": "Audio Management Refactor",
+      "complexityScore": 6,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Break down into: (1) Reviewing current audio state logic, (2) Designing Zustand slices, (3) Migrating state, (4) Refactoring components, (5) Testing playback and controls.",
+      "reasoning": "Audio state is often complex due to asynchronous and UI interactions; migrating to global state requires careful coordination and testing."
     },
     {
       "taskId": 10,
-      "taskTitle": "Develop Focus Booster Feature",
+      "taskTitle": "Enhanced Error Handling",
       "complexityScore": 5,
-      "recommendedSubtasks": 5,
-      "expansionPrompt": "Divide focus booster into animation system, audio guidance, exercise flow, and full-screen handling",
-      "reasoning": "Straightforward implementation with clear component boundaries"
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Divide into: (1) Auditing error handling in Providers/Contexts, (2) Implementing user feedback (toasts/UI), (3) Adding robust fallbacks, (4) Simulating and testing errors.",
+      "reasoning": "Improving error handling is essential for UX but typically involves systematic review and targeted enhancements."
     },
     {
       "taskId": 11,
-      "taskTitle": "Implement Sound Effects System",
-      "complexityScore": 4,
-      "recommendedSubtasks": 5,
-      "expansionPrompt": "Break down SFX system into sound management, preloading, controls, and spatial audio features",
-      "reasoning": "Lower complexity with well-defined audio handling requirements"
+      "taskTitle": "Linting and Formatting Setup",
+      "complexityScore": 3,
+      "recommendedSubtasks": 3,
+      "expansionPrompt": "Expand into: (1) Installing/configuring Prettier and ESLint, (2) Adding npm scripts, (3) Setting up optional pre-commit hooks.",
+      "reasoning": "Tooling setup is low complexity but important for code quality; steps are well-defined and mostly configuration."
     },
     {
       "taskId": 12,
-      "taskTitle": "Create Session Summary System",
-      "complexityScore": 6,
-      "recommendedSubtasks": 7,
-      "expansionPrompt": "Separate summary system into data collection, analysis, visualization, and export functionality",
-      "reasoning": "Moderate complexity with focus on data processing and visualization"
+      "taskTitle": "Security Linting",
+      "complexityScore": 4,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Break down into: (1) Adding npm audit to CI, (2) Integrating eslint-plugin-security, (3) Addressing warnings, (4) Verifying CI checks.",
+      "reasoning": "Security linting is straightforward but requires attention to detail and follow-up on reported issues."
     },
     {
       "taskId": 13,
-      "taskTitle": "Implement Settings & Preferences",
-      "complexityScore": 5,
-      "recommendedSubtasks": 6,
-      "expansionPrompt": "Break down settings implementation into data structure, UI, persistence, and import/export features",
-      "reasoning": "Standard complexity with clear requirements and established patterns"
+      "taskTitle": "Unit/Integration Test Expansion",
+      "complexityScore": 6,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Expand into: (1) Identifying critical components/utils, (2) Writing unit tests, (3) Writing integration tests, (4) Mocking dependencies, (5) Verifying coverage and reliability.",
+      "reasoning": "Expanding tests is moderately complex, especially when mocking and covering edge cases for reliability."
     },
     {
       "taskId": 14,
-      "taskTitle": "Create Accessibility Layer",
-      "complexityScore": 7,
-      "recommendedSubtasks": 8,
-      "expansionPrompt": "Divide accessibility implementation into ARIA integration, keyboard navigation, screen reader support, and theme adaptations",
-      "reasoning": "High importance with comprehensive accessibility requirements across all features"
+      "taskTitle": "CI Pipeline Setup",
+      "complexityScore": 5,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Divide into: (1) Creating GitHub Actions workflow, (2) Integrating linters and tests, (3) Adding production build step, (4) Testing workflow on PRs.",
+      "reasoning": "CI setup is well-documented but requires integration of multiple checks and validation across environments."
     },
     {
       "taskId": 15,
-      "taskTitle": "Implement Analytics & Telemetry",
-      "complexityScore": 5,
-      "recommendedSubtasks": 6,
-      "expansionPrompt": "Break down analytics into event tracking, metrics collection, privacy controls, and export functionality",
-      "reasoning": "Standard complexity with clear metrics and privacy requirements"
+      "taskTitle": "README and Documentation Enhancement",
+      "complexityScore": 3,
+      "recommendedSubtasks": 3,
+      "expansionPrompt": "Expand into: (1) Updating setup instructions, (2) Adding architecture and workflow guides, (3) Reviewing for completeness and clarity.",
+      "reasoning": "Documentation updates are low complexity but require thoroughness to ensure clarity and usefulness for new contributors."
     }
   ]
 }
