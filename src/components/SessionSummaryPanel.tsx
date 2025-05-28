@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { formatDistanceToNow } from 'date-fns';
 import { getRandomQuote } from '../utils/quoteUtils';
 
 interface SessionSummaryProps {

@@ -1,14 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pose, Results, POSE_LANDMARKS } from '@mediapipe/pose';
+import { Pose, Results } from '@mediapipe/pose';
 import { Camera } from '@mediapipe/camera_utils';
 import { Landmarks } from '../utils/poseMath';
-import { PostureAngles, detectPostureWithBaseline } from '../utils/postureDetect';
+import { detectPostureWithBaseline } from '../utils/postureDetect';
+import { NormalizedLandmark } from '@mediapipe/tasks-vision';
 
 export interface PoseData {
   good: boolean;
-  neck: number;
-  torso: number;
-  landmarks?: any;
+  landmarks?: Landmarks;
+  eyeY: number | null;
+  message: string;
+  angles: {
+    neckPitch: number;
+    torsoAngle: number;
+  };
 }
 
 export interface PostureHook extends PoseData {
@@ -18,11 +23,16 @@ export interface PostureHook extends PoseData {
   toggleActive: () => void;
 }
 
-export function usePosture(enabled = true, sensitivityThreshold = 1.0): PostureHook {
+export function usePosture(_enabled = true, sensitivityThreshold = 1.0): PostureHook {
   const [poseData, setPoseData] = useState<PoseData>({
     good: true,
-    neck: 0,
-    torso: 0
+    landmarks: undefined,
+    eyeY: null,
+    message: "No baseline set",
+    angles: {
+      neckPitch: 0,
+      torsoAngle: 0
+    }
   });
   const [poseInstance, setPoseInstance] = useState<Pose | null>(null);
   const [cameraInstance, setCameraInstance] = useState<Camera | null>(null);
@@ -52,7 +62,52 @@ export function usePosture(enabled = true, sensitivityThreshold = 1.0): PostureH
       minTrackingConfidence: 0.5
     });
 
-    pose.onResults(handlePoseResults);
+    pose.onResults((results: Results) => {
+      if (!results.poseLandmarks) {
+        setPoseData(prev => ({
+          ...prev,
+          good: true, // Assume good when no detection
+          landmarks: undefined,
+          message: "No pose detected"
+        }));
+        return;
+      }
+
+      // Get the landmarks
+      const landmarks = results.poseLandmarks as unknown as Landmarks;
+      
+      // Check if we have baseline landmarks
+      if (baselineRef.current) {
+        // Use the detector
+        const postureResult = detectPostureWithBaseline(
+          landmarks as unknown as NormalizedLandmark[], // Type cast to resolve the issue
+          baselineRef.current as unknown as NormalizedLandmark[],
+          sensitivityThreshold * 100 // Convert to percentage
+        );
+
+        // Update the pose data with the detection result
+        setPoseData({
+          good: postureResult.good,
+          landmarks,
+          eyeY: landmarks[10]?.y || null, // Use eye landmark
+          message: postureResult.message,
+          angles: postureResult.angles
+        });
+      } else {
+        // No baseline yet
+        setPoseData({
+          good: true, // Assume good when no baseline
+          landmarks,
+          eyeY: landmarks[10]?.y || null, // Use eye landmark
+          message: "No baseline set",
+          angles: {
+            neckPitch: 0,
+            torsoAngle: 0
+          }
+        });
+      }
+    });
+
     setPoseInstance(pose);
 
     return () => {
@@ -62,57 +117,6 @@ export function usePosture(enabled = true, sensitivityThreshold = 1.0): PostureH
       }
     };
   }, []);
-
-  // Process pose detection results
-  const handlePoseResults = (results: Results) => {
-    if (results.poseLandmarks) {
-      console.log("pose result frame");
-    }
-    
-    // Convert MediaPipe landmarks to our format
-    if (results.poseLandmarks) {
-      const landmarks = results.poseLandmarks.map(point => ({
-        x: point.x,
-        y: point.y,
-        z: point.z,
-        visibility: point.visibility
-      }));
-      
-      // Store the latest landmarks for calibration
-      latestLandmarksRef.current = landmarks;
-
-      // If posture tracking is not active, show landmarks but don't analyze posture
-      if (!isActive) {
-        setPoseData({ good: true, neck: 0, torso: 0, landmarks: results.poseLandmarks });
-        return;
-      }
-      
-      // If no calibration has been done, use the first frame as baseline
-      if (!baselineRef.current) {
-        baselineRef.current = landmarks;
-        console.log("Baseline calibrated automatically, length:", landmarks.length);
-        setPoseData({ good: true, neck: 0, torso: 0, landmarks: results.poseLandmarks });
-        return;
-      }
-  
-      // Detect posture using the full algorithm
-      const postureStatus = detectPostureWithBaseline(
-        landmarks,
-        baselineRef.current,
-        sensitivityThreshold
-      );
-      
-      setPoseData({
-        good: postureStatus.good,
-        neck: postureStatus.angles.neckPitch,
-        torso: postureStatus.angles.torsoAngle,
-        landmarks: results.poseLandmarks
-      });
-    } else {
-      // No landmarks detected, maintain existing state
-      setPoseData(prev => ({...prev, landmarks: null}));
-    }
-  };
 
   // Function to calibrate posture - now uses latestLandmarks
   const calibratePosture = () => {

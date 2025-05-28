@@ -9,7 +9,6 @@ const PostureControls: React.FC = () => {
     stopPostureDetection,
     isCalibrating, 
     isLoadingDetector, 
-    cameraError,
     sensitivityPercentage,
     setSensitivityPercentage
   } = usePosture();

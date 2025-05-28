@@ -22,7 +22,7 @@ const FOCUS_STATEMENTS = [
   "BUILDING NEURAL PATHWAYS"
 ];
 
-export const CameraPlaceholder = ({ isSessionActive = false, onPostureChange = (isGood: boolean) => {} }) => {
+export const CameraPlaceholder = ({ isSessionActive = false, onPostureChange = (_: boolean) => {} }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [error, setError] = useState('');

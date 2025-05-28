@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useStablePosture } from '../hooks/useStablePosture';
 import { PoseLandmarksRenderer } from './PoseLandmarksRenderer';
 import { PoseOverlay } from './PoseOverlay';
-import { usePosture } from "@/context/PostureContext";
 import PostureView from "./PostureView";
 import PostureControls from "./PostureControls";
 import PostureStatusDisplay from "./PostureStatusDisplay";
@@ -15,13 +14,11 @@ interface PostureTrackerProps {
 
 const PostureTrackerComponent = ({ 
   isSessionActive = false, 
-  onPostureChange = (isGood: boolean) => {},
+  onPostureChange = (_: boolean) => {},
   sensitivity = 1.0
 }: PostureTrackerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [cameraActive, setCameraActive] = useState(false);
-  const [error, setError] = useState('');
-  const [cameraEnabled, setCameraEnabled] = useState(true);
+  const [cameraEnabled] = useState(true);
   const streamRef = useRef<MediaStream | null>(null);
   const [videoSize, setVideoSize] = useState({ width: 0, height: 0 });
   
@@ -43,7 +40,6 @@ const PostureTrackerComponent = ({
         streamRef.current.getTracks().forEach(track => track.stop());
         streamRef.current = null;
       }
-      setCameraActive(false);
       return;
     }
 
@@ -58,8 +54,6 @@ const PostureTrackerComponent = ({
 
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          setCameraActive(true);
-          setError('');
           
           // Initialize video dimensions
           videoRef.current.addEventListener('loadedmetadata', () => {
@@ -77,11 +71,10 @@ const PostureTrackerComponent = ({
       } catch (err) {
         console.error('Failed to access webcam:', err);
         if (err instanceof Error) {
-          setError(err.message);
+          // setError(err.message);
         } else {
-          setError('Failed to access webcam');
+          // setError('Failed to access webcam');
         }
-        setCameraActive(false);
       }
     };
     
@@ -105,11 +98,6 @@ const PostureTrackerComponent = ({
     }
   }, [posture.good, isSessionActive, onPostureChange]);
 
-  // Toggle camera
-  const toggleCamera = () => {
-    setCameraEnabled(prev => !prev);
-  };
-  
   return (
     <div className="bg-gray-800 text-white p-4 rounded-lg shadow-lg max-w-md mx-auto">
       <h2 className="text-xl font-semibold mb-3 flex items-center">

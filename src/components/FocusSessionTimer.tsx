@@ -74,20 +74,16 @@ export const FocusSessionTimer = ({
   onResume,
   isCompact = false,
 }: FocusSessionTimerProps) => {
-  const [startButtonText, setStartButtonText] = useState(MOTIVATIONAL_STARTS[0]);
   const [startClickCount, setStartClickCount] = useState(0);
-  const [isButtonAnimating, setIsButtonAnimating] = useState(false);
   const [pauseMessage, setPauseMessage] = useState(PAUSE_MESSAGES[0]);
   const [stopMessage, setStopMessage] = useState(STOP_MESSAGES[0]);
   const [streakCount, setStreakCount] = useState(0);
-  const [streakRingProgress, setStreakRingProgress] = useState(0);
 
   useEffect(() => {
     const storedStreakCount = localStorage.getItem('totalStreakSessions');
     if (storedStreakCount) {
       const count = parseInt(storedStreakCount, 10);
       setStreakCount(count);
-      setStreakRingProgress(Math.min(count * 10, 360));
     }
   }, []);
 
@@ -96,22 +92,6 @@ export const FocusSessionTimer = ({
       if (e.key === 'totalStreakSessions' && e.newValue) {
         const count = parseInt(e.newValue, 10);
         setStreakCount(count);
-        const newProgress = Math.min(count * 10, 360);
-        setStreakRingProgress(prevProgress => {
-          const step = (newProgress - prevProgress) / 30;
-          let current = prevProgress;
-          const animate = () => {
-            if (Math.abs(newProgress - current) < Math.abs(step)) {
-              setStreakRingProgress(newProgress);
-              return;
-            }
-            current += step;
-            setStreakRingProgress(current);
-            requestAnimationFrame(animate);
-          };
-          requestAnimationFrame(animate);
-          return prevProgress;
-        });
       }
     };
 
@@ -123,7 +103,6 @@ export const FocusSessionTimer = ({
         const count = parseInt(storedCount, 10);
         if (count !== streakCount) {
           setStreakCount(count);
-          setStreakRingProgress(Math.min(count * 10, 360));
         }
       }
     }, 5000);
@@ -139,11 +118,8 @@ export const FocusSessionTimer = ({
 
     onSessionStart();
     
-    setIsButtonAnimating(true);
     const nextIndex = (startClickCount + 1) % MOTIVATIONAL_STARTS.length;
     setStartClickCount(nextIndex);
-    setStartButtonText(MOTIVATIONAL_STARTS[nextIndex]);
-    setTimeout(() => setIsButtonAnimating(false), 1000);
   };
 
   const handlePauseClick = useCallback(() => {
@@ -162,20 +138,6 @@ export const FocusSessionTimer = ({
     const nextMessage = STOP_MESSAGES[Math.floor(Math.random() * STOP_MESSAGES.length)];
     setStopMessage(nextMessage);
     onTimerEnd();
-  };
-
-  const calculateArcPath = (progress: number, radius: number = 40) => {
-    const angle = (progress * Math.PI) / 180;
-    
-    const startX = 50;
-    const startY = 50 - radius;
-    
-    const endX = 50 + radius * Math.sin(angle);
-    const endY = 50 - radius * Math.cos(angle);
-    
-    const largeArcFlag = progress > 180 ? 1 : 0;
-    
-    return `M ${startX} ${startY} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY}`;
   };
 
   return (

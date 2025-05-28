@@ -14,7 +14,6 @@ import { PostureView } from './components/PostureView'
 import { Toast } from './components/Toast'
 import { useSound } from './features/audio/useSound'
 import { MusicPlayer } from './features/audio/MusicPlayer'
-import { usePosture } from './context/PostureContext'
 
 // Unified history item types
 interface SessionData {
@@ -95,8 +94,6 @@ function App() {
   const warpCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const warpAnimationFrameIdRef = useRef<number | null>(null);
   const warpStarsRef = useRef<Array<{x: number, y: number, z: number}>>([]);
-  const [showExitButton, setShowExitButton] = useState(false);
-  const [showDistractionInWarp, setShowDistractionInWarp] = useState(false);
   
   // Posture tracking state
   const [postureStatus, setPostureStatus] = useState<boolean>(true);
@@ -135,8 +132,6 @@ function App() {
       
       document.body.classList.remove('bg-black');
       document.body.style.overflow = '';
-      setShowExitButton(false);
-      setShowDistractionInWarp(false);
       
       // Remove any UI fading classes
       document.querySelectorAll('.warp-dimmed-text').forEach(el => {
@@ -171,8 +166,6 @@ function App() {
         canvas.style.zIndex = '9999';
         canvas.style.opacity = '1';
         document.body.style.overflow = 'hidden';
-        setShowExitButton(true);
-        setShowDistractionInWarp(true);
       } else {
         // Background warp
         canvas.style.position = 'fixed';
@@ -720,6 +713,30 @@ function App() {
       }
     };
   }, [postureStatus, badPostureStartTime, isSessionActive, isPaused, lastSession, playDistractionSound]);
+
+  // Add this named handleKeyDown function inside the component
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape' && warpMode !== 'none') {
+      setWarpMode('none');
+    }
+  };
+
+  // Then in the useEffect:
+  useEffect(() => {
+    if (warpMode !== 'none') {
+      // Start warp mode animation
+      animateWarpStars();
+      
+      // Add escape key handler
+      window.addEventListener('keydown', handleKeyDown);
+      
+      // Cleanup
+      return () => {
+        animateWarpStars();
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [warpMode, animateWarpStars]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">

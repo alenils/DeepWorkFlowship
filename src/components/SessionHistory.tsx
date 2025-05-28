@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { BreakEntry } from './BreakEntry';
-import { msToClock, formatTotalDuration } from '../utils/time';
+import { msToClock } from '../utils/time';
 
 // Unified history item types
 interface SessionData {
@@ -41,13 +41,6 @@ export const SessionHistory = ({
   onBreakNoteSave
 }: SessionHistoryProps) => { 
   
-  // Calculate total focus time from all sessions in history
-  const totalFocusTimeMs = useMemo(() => 
-    history
-      .filter((item): item is SessionData => item.type === "session")
-      .reduce((sum, session) => sum + session.duration, 0),
-  [history]);
-
   // Filter just session items to check if we have any
   const sessionItems = useMemo(() => 
     history.filter((item): item is SessionData => item.type === "session"), 

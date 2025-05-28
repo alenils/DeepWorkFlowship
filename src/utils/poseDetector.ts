@@ -1,4 +1,4 @@
-import { FilesetResolver, PoseLandmarker, PoseLandmarkerResult } from '@mediapipe/tasks-vision';
+import { FilesetResolver, PoseLandmarker } from '@mediapipe/tasks-vision';
 
 let detector: PoseLandmarker;
 

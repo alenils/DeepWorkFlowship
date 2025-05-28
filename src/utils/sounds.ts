@@ -7,7 +7,7 @@ const sfxFiles = import.meta.glob(
 ) as Record<string, string>; // Cast to Record<string, string> as glob with these options returns URLs
 
 // Helper to get the base filename from the glob path
-const getBaseName = (path: string) => path.split('/').pop()!;
+// const getBaseName = (path: string) => path.split('/').pop()!;
 
 export const SFX = {
   start: sfxFiles['/sounds/sfx/start.mp3'],

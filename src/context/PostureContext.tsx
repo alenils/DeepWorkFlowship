@@ -166,11 +166,10 @@ export const PostureProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const handlePoseResults = useCallback(
-    (result: PoseLandmarkerResult, timestampMs: number) => {
+    (result: PoseLandmarkerResult, _: number) => {
       const currentIsCalibrated = isCalibratedRef.current;
       const currentBaselineMetrics = baselineMetricsRef.current;
       const currentSensitivityPercentage = sensitivityPercentageRef.current; // Get current sensitivity
-      const currentPostureStatusMessage = postureStatusRef.current.message;
 
       if (result.landmarks && result.landmarks.length > 0) {
         const newLandmarksFromDetector = result.landmarks[0];

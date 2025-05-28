@@ -169,4 +169,69 @@ export function getEyeLine(landmarks: NormalizedLandmark[]): number {
     return 0; 
   }
   return (leftEye.y + rightEye.y) / 2;
+}
+
+// Add PostureAngles interface for use in hooks
+export interface PostureAngles {
+  neckPitch: number;
+  torsoAngle: number;
+}
+
+// Add the detectPostureWithBaseline function that's imported by the hooks
+export function detectPostureWithBaseline(
+  landmarks: NormalizedLandmark[],
+  baselineLandmarks: NormalizedLandmark[],
+  sensitivityPercentage: number = 10
+): { good: boolean; angles: PostureAngles; message: string } {
+  // Create baseline metrics from baselineLandmarks
+  const baselineMetrics: BaselineMetrics = {
+    noseY: baselineLandmarks[POSE_LANDMARKS.NOSE]?.y || 0,
+    noseX: baselineLandmarks[POSE_LANDMARKS.NOSE]?.x || 0,
+    earShoulderDistX: Math.abs(
+      (baselineLandmarks[POSE_LANDMARKS.LEFT_EAR]?.x || 0) - 
+      (baselineLandmarks[POSE_LANDMARKS.LEFT_SHOULDER]?.x || 0)
+    )
+  };
+
+  // Calculate angles (simple placeholder implementation)
+  const neckPitch = calculateNeckAngle(landmarks);
+  const torsoAngle = calculateTorsoAngle(landmarks);
+  
+  // Use existing isGoodPosture function
+  const { isGood, message } = isGoodPosture(landmarks, baselineMetrics, sensitivityPercentage);
+  
+  return {
+    good: isGood,
+    angles: {
+      neckPitch,
+      torsoAngle
+    },
+    message
+  };
+}
+
+// Helper function to calculate neck angle
+function calculateNeckAngle(landmarks: NormalizedLandmark[]): number {
+  const nose = landmarks[POSE_LANDMARKS.NOSE];
+  const leftEar = landmarks[POSE_LANDMARKS.LEFT_EAR];
+  const leftShoulder = landmarks[POSE_LANDMARKS.LEFT_SHOULDER];
+  
+  if (!nose || !leftEar || !leftShoulder) {
+    return 0;
+  }
+  
+  return calculateAngle(nose, leftEar, leftShoulder);
+}
+
+// Helper function to calculate torso angle
+function calculateTorsoAngle(landmarks: NormalizedLandmark[]): number {
+  const leftShoulder = landmarks[POSE_LANDMARKS.LEFT_SHOULDER];
+  const rightShoulder = landmarks[POSE_LANDMARKS.RIGHT_SHOULDER];
+  const leftHip = landmarks[POSE_LANDMARKS.LEFT_HIP];
+  
+  if (!leftShoulder || !rightShoulder || !leftHip) {
+    return 0;
+  }
+  
+  return calculateAngle(rightShoulder, leftShoulder, leftHip);
 } 

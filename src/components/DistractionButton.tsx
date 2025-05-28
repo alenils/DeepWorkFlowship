@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useSound } from '../features/audio/useSound';
 
 interface DistractionButtonProps {

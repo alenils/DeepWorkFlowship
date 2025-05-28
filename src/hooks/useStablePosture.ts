@@ -1,8 +1,19 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Pose, Results, POSE_LANDMARKS } from '@mediapipe/pose';
+import { Pose, Results } from '@mediapipe/pose';
 import { Camera } from '@mediapipe/camera_utils';
 import { Landmarks } from '../utils/poseMath';
 import { getEyeLine, detectPostureWithBaseline } from '../utils/postureDetect';
+import { NormalizedLandmark } from '@mediapipe/tasks-vision';
+
+// Type conversion helper for landmark types
+function convertLandmarks(landmarks: Landmarks): NormalizedLandmark[] {
+  return landmarks.map(landmark => ({
+    x: landmark.x,
+    y: landmark.y,
+    z: landmark.z,
+    visibility: landmark.visibility || 0 // Provide default 0 for visibility
+  }));
+}
 
 export interface StablePoseData {
   good: boolean;
@@ -18,7 +29,7 @@ export interface StablePostureHook extends StablePoseData {
   baselineEye: number | null;
 }
 
-export function useStablePosture(enabled = true, sensitivity = 1.0): StablePostureHook {
+export function useStablePosture(_: boolean = true, sensitivity = 1.0): StablePostureHook {
   const [poseData, setPoseData] = useState<StablePoseData>({
     good: true,
     eyeY: null
@@ -71,8 +82,11 @@ export function useStablePosture(enabled = true, sensitivity = 1.0): StablePostu
       // Store the latest landmarks for calibration
       latestRef.current = landmarks;
 
+      // Convert to NormalizedLandmark[] for getEyeLine
+      const normalizedLandmarks = convertLandmarks(landmarks);
+      
       // Get eye line Y position
-      const eyeY = getEyeLine(landmarks);
+      const eyeY = getEyeLine(normalizedLandmarks);
       latestEye.current = eyeY;
 
       // If posture tracking is not active, show landmarks but don't analyze posture
@@ -87,10 +101,10 @@ export function useStablePosture(enabled = true, sensitivity = 1.0): StablePostu
         return;
       }
   
-      // Detect posture using the full algorithm
+      // Detect posture using the full algorithm - convert landmarks
       const { good } = detectPostureWithBaseline(
-        landmarks,
-        baselineRef.current,
+        normalizedLandmarks,
+        convertLandmarks(baselineRef.current),
         sensitivityRef.current
       );
       
@@ -146,7 +160,9 @@ export function useStablePosture(enabled = true, sensitivity = 1.0): StablePostu
   const calibrate = useCallback(() => {
     if (latestRef.current) {
       baselineRef.current = latestRef.current;
-      const eyeLine = getEyeLine(latestRef.current);
+      // Convert to NormalizedLandmark[] for getEyeLine
+      const normalizedLandmarks = convertLandmarks(latestRef.current);
+      const eyeLine = getEyeLine(normalizedLandmarks);
       setBaselineEye(eyeLine);
       console.log("Baseline eye set:", eyeLine);
     } else {

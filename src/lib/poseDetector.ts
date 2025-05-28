@@ -3,7 +3,6 @@ import {
   PoseLandmarker,
   PoseLandmarkerOptions,
   PoseLandmarkerResult,
-  NormalizedLandmark,
 } from "@mediapipe/tasks-vision";
 
 class PoseDetector {
