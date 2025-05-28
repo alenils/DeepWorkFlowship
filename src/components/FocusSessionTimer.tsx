@@ -76,7 +76,7 @@ export const FocusSessionTimer = ({
     startSession,
     pauseTimer,
     resumeTimer,
-    stopTimer
+    endSession
   } = useTimerStore();
   
   const [startClickCount, setStartClickCount] = useState(0);
@@ -148,7 +148,7 @@ export const FocusSessionTimer = ({
     const nextMessage = STOP_MESSAGES[Math.floor(Math.random() * STOP_MESSAGES.length)];
     setStopMessage(nextMessage);
     
-    stopTimer();
+    endSession();
     if (onTimerEnd) onTimerEnd(); // Play sound
   };
 

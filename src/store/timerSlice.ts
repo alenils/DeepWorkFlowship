@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useEffect, useRef } from 'react';
+import { useHistoryStore, generateId, SessionData, BreakData } from './historySlice';
 
 // TypeScript type for the timer ID
 type TimerId = ReturnType<typeof setInterval> | null;
@@ -246,12 +247,12 @@ export const useTimerStore = create<TimerState>()(
         const state = get();
         if (!state.isSessionActive) return;
         
-        // Play sound - moved to component for now
-        // if (SFX && SFX.done) playSfx(SFX.done);
+        // Get historyStore access
+        const historyStore = useHistoryStore.getState();
         
         console.log(`[TimerStore] Ending session. Goal: '${state.currentGoal}', Distractions: ${state.distractionCount}`);
         
-        // Update state to reflect session end
+        // Update timer state to reflect session end
         set({
           isSessionActive: false,
           isPaused: false,
@@ -259,11 +260,43 @@ export const useTimerStore = create<TimerState>()(
           remainingTime: 0,
         });
         
-        // Reset goal - commenting this out since we want to keep it for history
-        // set({ currentGoal: '' });
+        // Create session data for history
+        const sessionData: SessionData = {
+          type: "session",
+          id: generateId(),
+          timestamp: Date.now() - state.sessionDurationMs, // Estimate start time from duration
+          duration: state.sessionDurationMs,
+          goal: state.currentGoal,
+          distractions: state.distractionCount,
+          posture: Math.round(Math.random() * 30 + 70), // Mock posture data for now
+          difficulty: state.currentDifficulty,
+          distractionLog: ''
+        };
         
-        // Streak management needs to be done at the App level
-        // History management needs to be done at the App level
+        // Create break data that starts now
+        const breakData: BreakData = {
+          type: "break",
+          id: generateId(),
+          start: Date.now(),
+          end: null,
+          durationMs: 0,
+          note: ""
+        };
+        
+        // Update streak - reset if distractions >= 3, else increment
+        if (state.distractionCount < 3) {
+          historyStore.incrementStreakSessions();
+        } else {
+          historyStore.resetStreakSessions();
+        }
+        
+        // Add to history
+        historyStore.addHistoryItem(breakData);
+        historyStore.addHistoryItem(sessionData);
+        
+        // Set last session and show summary
+        historyStore.setLastSession(sessionData);
+        historyStore.setShowSummary(true);
       }
     }),
     {

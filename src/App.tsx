@@ -14,36 +14,10 @@ import { PostureView } from './components/PostureView'
 import { Toast } from './components/Toast'
 import { useSound } from './features/audio/useSound'
 import { MusicPlayer } from './features/audio/MusicPlayer'
+import { useHistoryStore, SessionData, BreakData } from './store/historySlice'
 
-// Unified history item types
-interface SessionData {
-  type: "session";
-  id: string;
-  timestamp: number;
-  duration: number;
-  goal: string;
-  posture?: number;
-  distractions: number;
-  comment?: string;
-  difficulty?: 'easy' | 'medium' | 'hard';
-  distractionLog?: string;
-}
-
-interface BreakData {
-  type: "break";
-  id: string;
-  start: number;
-  end: number | null;
-  durationMs: number;
-  note: string;
-}
-
-type HistoryItem = SessionData | BreakData;
-
-// Generate a simple UUID for item IDs
-const generateId = () => {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2);
-};
+// Used TypeScript interfaces are imported from historySlice.ts now
+// No need to redefine them here
 
 // Star field animation constants (increased by ~30% for immediate fullness)
 const STAR_COUNT = 520; // ~30% more stars for full warp
@@ -57,6 +31,7 @@ function App() {
   // Sound effects
   const playStartSound = useSound('start.mp3');
   const playPauseSound = useSound('pause.mp3');
+  // We still need playDoneSound for sound effects in FocusSessionTimer
   const playDoneSound = useSound('done.mp3');
   const playCancelSound = useSound('cancel.mp3');
   const playDistractionSound = useSound('distraction.mp3');
@@ -71,25 +46,27 @@ function App() {
     currentGoal,
     distractionCount,
     remainingTime,
-    sessionDurationMs,
-    currentDifficulty,
-    endSession,
     addDistraction
   } = useTimerStore();
   
-  // History State - unified array of sessions and breaks
-  const [history, setHistory] = useState<HistoryItem[]>([]);
+  // Get history state from store
+  const {
+    history,
+    totalStreakSessions,
+    lastSession, 
+    showSummary,
+    setHistory,
+    setTotalStreakSessions,
+    setLastSession,
+    setShowSummary,
+    updateSessionItem,
+    updateBreakNote,
+    clearHistory
+  } = useHistoryStore();
   
   // Toast state
   const [toast, setToast] = useState({ show: false, message: '' });
-
-  // Summary State
-  const [showSummary, setShowSummary] = useState(false);
-  const [lastSession, setLastSession] = useState<SessionData | null>(null);
-
-  // Streak state
-  const [totalStreakSessions, setTotalStreakSessions] = useState(0);
-
+  
   // Warp state
   const [warpMode, setWarpMode] = useState<WarpMode>('none');
   const [warpSpeed, setWarpSpeed] = useState(1.1);
@@ -386,59 +363,6 @@ function App() {
       .reduce((sum, session) => sum + session.duration, 0),
   [history]);
 
-  // @ts-ignore - This function is used for handling timer end event
-  const handleTimerEnd = useCallback(() => {
-    // Check if it's already stopped
-    if (!isSessionActive) return;
-    
-    // Play session done sound
-    playDoneSound();
-    
-    console.log(`Ending session. Goal state: '${currentGoal}', Distractions: ${distractionCount}`);
-    
-    // End the session in the store
-    endSession();
-
-    // 3. Update streak: reset if distractions >= 3, else increment
-    if (distractionCount < 3) {
-      setTotalStreakSessions(prev => prev + 1);
-    } else {
-      setTotalStreakSessions(0);
-    }
-
-    // 4. Prepare finished session data
-    const sessionData: SessionData = {
-      type: "session",
-      id: generateId(),
-      timestamp: Date.now() - sessionDurationMs, // Estimate start time from duration
-      duration: sessionDurationMs,
-      goal: currentGoal,
-      distractions: distractionCount,
-      posture: Math.round(Math.random() * 30 + 70),
-      difficulty: currentDifficulty,
-      distractionLog: ''
-    };
-    
-    // 5. Create new break data that starts now
-    const breakData: BreakData = {
-      type: "break",
-      id: generateId(),
-      start: Date.now(),
-      end: null,
-      durationMs: 0,
-      note: ""
-    };
-    
-    // 6. Update history with both the session and the break
-    const updatedHistory = [breakData, sessionData, ...history];
-    setHistory(updatedHistory);
-    
-    // 7. Show summary
-    setLastSession(sessionData);
-    setShowSummary(true);
-    
-  }, [isSessionActive, currentGoal, distractionCount, history, playDoneSound, currentDifficulty, sessionDurationMs, endSession]);
-
   // @ts-ignore - This function is used for handling distractions
   const handleDistraction = () => {
     if (isSessionActive && !isPaused) {
@@ -574,15 +498,9 @@ function App() {
     }
   }, [warpMode, animateWarpStars]);
 
-  // Keep the handler for updating break notes - this doesn't need to be migrated to timerSlice
+  // Keep the handler for updating break notes - use historySlice
   const handleBreakNoteChange = (breakId: string, note: string) => {
-    setHistory(prev => 
-      prev.map(item => 
-        item.type === "break" && item.id === breakId 
-          ? { ...item, note } 
-          : item
-      )
-    );
+    updateBreakNote(breakId, note);
   };
 
   // Keep handler for break note saving with Enter key
@@ -595,10 +513,7 @@ function App() {
   const handleClearHistory = () => {
     if (window.confirm('Are you sure you want to clear all session history and break notes?')) {
       playCancelSound();
-      localStorage.removeItem('history');
-      localStorage.removeItem('totalStreakSessions');
-      setHistory([]);
-      setTotalStreakSessions(0);
+      clearHistory();
     }
   };
 
@@ -606,17 +521,10 @@ function App() {
   const handleSummaryClose = () => {
     if (lastSession) {
       // Update the session in history with the comment and distractions count
-      setHistory(prev => 
-        prev.map(item => 
-          item.type === "session" && item.id === lastSession.id
-            ? { 
-                ...item, 
-                comment: lastSession.comment,
-                distractions: lastSession.distractions
-              }
-            : item
-        )
-      );
+      updateSessionItem(lastSession.id, {
+        comment: lastSession.comment,
+        distractions: lastSession.distractions
+      });
       
       // Show appropriate toast message
       showToast("Session saved!");
@@ -699,9 +607,9 @@ function App() {
                 <div className="flex-shrink-0"> 
                   <FocusSessionTimer
                     onSessionStart={playStartSound}
-                    onTimerEnd={playDoneSound}
                     onPause={playPauseSound}
                     onResume={playStartSound}
+                    onTimerEnd={playDoneSound}
                     isCompact={true}
                   />
                 </div>
