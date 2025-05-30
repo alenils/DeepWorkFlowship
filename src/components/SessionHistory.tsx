@@ -2,31 +2,18 @@ import { useMemo } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { BreakEntry } from './BreakEntry';
 import { msToClock } from '../utils/time';
+import { 
+  SESSION_TYPE, 
+  DIFFICULTY, 
+  DIFFICULTY_LABELS, 
+  GOOD_POSTURE_THRESHOLD_PERCENT,
+  MAX_DISTRACTIONS_FOR_STREAK
+} from '../constants';
+import { SessionData, BreakData, HistoryItem } from '../store/historySlice';
 
-// Unified history item types
-interface SessionData {
-  type: "session";
-  id: string;
-  timestamp: number;
-  duration: number;
-  goal: string;
-  posture?: number;
-  distractions: number;
-  comment?: string;
-  difficulty?: 'easy' | 'medium' | 'hard';
-  distractionLog?: string;
-}
-
-interface BreakData {
-  type: "break";
-  id: string;
-  start: number;
-  end: number | null;
-  durationMs: number;
-  note: string;
-}
-
-type HistoryItem = SessionData | BreakData;
+// History item type guard functions
+const isSessionData = (item: HistoryItem): item is SessionData => item.type === SESSION_TYPE.FOCUS;
+const isBreakData = (item: HistoryItem): item is BreakData => item.type === SESSION_TYPE.BREAK;
 
 // Update props to use unified history
 interface SessionHistoryProps {
@@ -43,7 +30,7 @@ export const SessionHistory = ({
   
   // Filter just session items to check if we have any
   const sessionItems = useMemo(() => 
-    history.filter((item): item is SessionData => item.type === "session"), 
+    history.filter(isSessionData), 
   [history]);
 
   // Find the oldest session for the "first session" indicator
@@ -70,7 +57,7 @@ export const SessionHistory = ({
       {/* Render all history items in order - newest first */}
       <div className="space-y-1">
         {history.map((item) => {
-          if (item.type === "break") {
+          if (isBreakData(item)) {
             // Render break item
             return (
               <BreakEntry
@@ -86,15 +73,15 @@ export const SessionHistory = ({
           } else {
             // Render session item
             const session = item;
-            // Update streak logic to only check for distractions <= 2
-            const isStreak = session.distractions <= 2;
+            // Update streak logic to match constants
+            const isStreak = session.distractions < MAX_DISTRACTIONS_FOR_STREAK;
             
             // Difficulty badge (🟢/🟡/🔴)
             const difficultyBadge = {
-              easy: '🟢',
-              medium: '🟡',
-              hard: '🔴'
-            }[session.difficulty || 'medium'];
+              [DIFFICULTY.EASY]: '🟢',
+              [DIFFICULTY.MEDIUM]: '🟡',
+              [DIFFICULTY.HARD]: '🔴'
+            }[session.difficulty || DIFFICULTY.MEDIUM];
             
             return (
               <div 
@@ -108,9 +95,9 @@ export const SessionHistory = ({
                 <div className="flex items-center space-x-2 flex-1 overflow-hidden">
                   {/* Goal and difficulty badge */}
                   <span title={
-                    session.difficulty === 'easy' ? 'Brain-Dead Task' :
-                    session.difficulty === 'medium' ? 'High School Math' :
-                    'Deep Thinking'
+                    session.difficulty === DIFFICULTY.EASY ? DIFFICULTY_LABELS[DIFFICULTY.EASY] :
+                    session.difficulty === DIFFICULTY.MEDIUM ? DIFFICULTY_LABELS[DIFFICULTY.MEDIUM] :
+                    DIFFICULTY_LABELS[DIFFICULTY.HARD]
                   } className="flex-shrink-0">
                     {difficultyBadge}
                   </span>
@@ -128,12 +115,12 @@ export const SessionHistory = ({
                   <span title="Duration" className="text-gray-600 dark:text-gray-400">
                     ⏱️ {msToClock(session.duration)}
                   </span>
-                  <span title="Posture" className={`${session.posture !== undefined && session.posture >= 80 ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                  <span title="Posture" className={`${session.posture !== undefined && session.posture >= GOOD_POSTURE_THRESHOLD_PERCENT ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}`}>
                     👤 {session.posture !== undefined ? `${session.posture}%` : 'N/A'}
                   </span>
                   <span 
                     title={session.distractionLog ? `Distractions: ${session.distractionLog}` : "Distractions"} 
-                    className={`${session.distractions > 2 ? 'text-red-600 dark:text-red-400 font-bold' : 'text-green-600 dark:text-green-400'} flex items-center`}
+                    className={`${session.distractions >= MAX_DISTRACTIONS_FOR_STREAK ? 'text-red-600 dark:text-red-400 font-bold' : 'text-green-600 dark:text-green-400'} flex items-center`}
                   >
                     ❌ {session.distractions}
                     {session.distractionLog && (

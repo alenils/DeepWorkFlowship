@@ -2,12 +2,22 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useEffect, useRef } from 'react';
 import { useHistoryStore, generateId, SessionData, BreakData } from './historySlice';
+import { 
+  DEFAULT_TIMER_MINUTES, 
+  TIMER_UPDATE_INTERVAL_MS, 
+  DEFAULT_GOAL, 
+  INFINITY_SYMBOL, 
+  SESSION_TYPE, 
+  DIFFICULTY,
+  STORAGE_KEYS,
+  MAX_DISTRACTIONS_FOR_STREAK
+} from '../constants';
 
 // TypeScript type for the timer ID
 type TimerId = ReturnType<typeof setInterval> | null;
 
 // Define our session difficulty types
-type Difficulty = 'easy' | 'medium' | 'hard';
+type Difficulty = typeof DIFFICULTY[keyof typeof DIFFICULTY];
 
 // Import SFX functions if available (commented for now, would need to be imported)
 // import { playSfx, SFX } from '../utils/sounds';
@@ -78,7 +88,7 @@ export const useTimerHook = () => {
         // Update remainingTime and check for timer end
         timerStore.setRemainingTime((prevTime: number) => {
           const isInfinite = timerStore.sessionDurationMs === Number.MAX_SAFE_INTEGER;
-          if (!isInfinite && prevTime <= 1000) {
+          if (!isInfinite && prevTime <= TIMER_UPDATE_INTERVAL_MS) {
             if (!timerEndedRef.current) {
               timerEndedRef.current = true;
               if (intervalRef.current) {
@@ -92,9 +102,9 @@ export const useTimerHook = () => {
             }
             return 0;
           }
-          return prevTime - 1000;
+          return prevTime - TIMER_UPDATE_INTERVAL_MS;
         });
-      }, 1000);
+      }, TIMER_UPDATE_INTERVAL_MS);
     }
     
     // Cleanup on unmount or state change
@@ -113,12 +123,12 @@ export const useTimerStore = create<TimerState>()(
   persist(
     (set, get) => ({
       // Default state values
-      minutes: '25',
+      minutes: DEFAULT_TIMER_MINUTES,
       isInfinite: false,
       isSessionActive: false,
       isPaused: false,
       currentGoal: '',
-      currentDifficulty: 'medium',
+      currentDifficulty: DIFFICULTY.MEDIUM,
       sessionStartTime: 0,
       remainingTime: 0,
       distractionCount: 0,
@@ -159,7 +169,7 @@ export const useTimerStore = create<TimerState>()(
         const state = get();
         if (state.isSessionActive) return;
         
-        if (value === '∞') {
+        if (value === INFINITY_SYMBOL) {
           set({ isInfinite: true, minutes: '' });
         } else {
           const num = parseInt(value);
@@ -189,7 +199,7 @@ export const useTimerStore = create<TimerState>()(
         
         // Calculate duration in milliseconds
         const durationMs = state.isInfinite ? Number.MAX_SAFE_INTEGER : durationMinutes * 60 * 1000;
-        const finalGoal = state.currentGoal.trim() || 'YOLO-MODE';
+        const finalGoal = state.currentGoal.trim() || DEFAULT_GOAL;
         
         // Play sound - moved to component for now
         // if (SFX && SFX.start) playSfx(SFX.start);
@@ -262,7 +272,7 @@ export const useTimerStore = create<TimerState>()(
         
         // Create session data for history
         const sessionData: SessionData = {
-          type: "session",
+          type: SESSION_TYPE.FOCUS,
           id: generateId(),
           timestamp: Date.now() - state.sessionDurationMs, // Estimate start time from duration
           duration: state.sessionDurationMs,
@@ -275,7 +285,7 @@ export const useTimerStore = create<TimerState>()(
         
         // Create break data that starts now
         const breakData: BreakData = {
-          type: "break",
+          type: SESSION_TYPE.BREAK,
           id: generateId(),
           start: Date.now(),
           end: null,
@@ -283,8 +293,8 @@ export const useTimerStore = create<TimerState>()(
           note: ""
         };
         
-        // Update streak - reset if distractions >= 3, else increment
-        if (state.distractionCount < 3) {
+        // Update streak - reset if distractions >= MAX_DISTRACTIONS_FOR_STREAK, else increment
+        if (state.distractionCount < MAX_DISTRACTIONS_FOR_STREAK) {
           historyStore.incrementStreakSessions();
         } else {
           historyStore.resetStreakSessions();
@@ -304,7 +314,7 @@ export const useTimerStore = create<TimerState>()(
       }
     }),
     {
-      name: 'deepwork-timer-storage', // localStorage key
+      name: STORAGE_KEYS.TIMER, // localStorage key
       partialize: (state) => ({
         // Only persist these values in localStorage
         minutes: state.minutes,

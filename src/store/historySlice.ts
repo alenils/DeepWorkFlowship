@@ -1,9 +1,14 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { 
+  SESSION_TYPE, 
+  DIFFICULTY, 
+  STORAGE_KEYS 
+} from '../constants';
 
 // Session data interface with literal type
 export interface SessionData {
-  type: "session";
+  type: typeof SESSION_TYPE.FOCUS;
   id: string;
   timestamp: number;
   duration: number;
@@ -11,13 +16,13 @@ export interface SessionData {
   posture?: number;
   distractions: number;
   comment?: string;
-  difficulty?: 'easy' | 'medium' | 'hard';
+  difficulty?: typeof DIFFICULTY[keyof typeof DIFFICULTY];
   distractionLog?: string;
 }
 
 // Break data interface with literal type
 export interface BreakData {
-  type: "break";
+  type: typeof SESSION_TYPE.BREAK;
   id: string;
   start: number;
   end: number | null;
@@ -34,13 +39,13 @@ export const generateId = () => {
 };
 
 // Type guard to check if an item is a session
-function isSessionData(item: HistoryItem): item is SessionData {
-  return item.type === 'session';
+export function isSessionData(item: HistoryItem): item is SessionData {
+  return item.type === SESSION_TYPE.FOCUS;
 }
 
 // Type guard to check if an item is a break
-function isBreakData(item: HistoryItem): item is BreakData {
-  return item.type === 'break';
+export function isBreakData(item: HistoryItem): item is BreakData {
+  return item.type === SESSION_TYPE.BREAK;
 }
 
 // Define our history store
@@ -149,7 +154,7 @@ export const useHistoryStore = create<{
       })),
     }),
     {
-      name: 'deepwork-history-storage',
+      name: STORAGE_KEYS.HISTORY,
       partialize: (state) => ({
         history: state.history,
         totalStreakSessions: state.totalStreakSessions,

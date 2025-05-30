@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
+import { TOAST_DURATION_MS } from '../constants';
 
 interface ToastProps {
   message: string;
   duration?: number;
 }
 
-export const Toast = ({ message, duration = 3000 }: ToastProps) => {
+export const Toast = ({ message, duration = TOAST_DURATION_MS }: ToastProps) => {
   const [visible, setVisible] = useState(true);
   
   useEffect(() => {

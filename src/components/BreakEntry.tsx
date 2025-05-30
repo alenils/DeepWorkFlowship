@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { msToClock } from '../utils/time';
+import { TIMER_UPDATE_INTERVAL_MS } from '../constants';
 
 interface BreakEntryProps {
   breakStartTime: number; // When the previous session ended
@@ -38,7 +39,7 @@ export const BreakEntry = ({
       // Start interval for active break
       const intervalId = setInterval(() => {
         setElapsedTime(Date.now() - breakStartTime);
-      }, 1000);
+      }, TIMER_UPDATE_INTERVAL_MS);
       
       return () => clearInterval(intervalId);
     }

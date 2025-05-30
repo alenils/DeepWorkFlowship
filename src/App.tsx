@@ -14,28 +14,35 @@ import { PostureView } from './components/PostureView'
 import { Toast } from './components/Toast'
 import { useSound } from './features/audio/useSound'
 import { MusicPlayer } from './features/audio/MusicPlayer'
-import { useHistoryStore, SessionData, BreakData } from './store/historySlice'
-import InstallPrompt from './components/InstallPrompt'
+import { useHistoryStore, SessionData, BreakData, HistoryItem } from './store/historySlice'
+import { 
+  SOUND_FILES, 
+  WARP_ANIMATION, 
+  WARP_MODE, 
+  BAD_POSTURE_TIME_THRESHOLD_MS,
+  STORAGE_KEYS,
+  ELEMENT_IDS,
+  CSS_CLASSES,
+  SESSION_TYPE
+} from './constants'
 
 // Used TypeScript interfaces are imported from historySlice.ts now
 // No need to redefine them here
 
-// Star field animation constants (increased by ~30% for immediate fullness)
-const STAR_COUNT = 520; // ~30% more stars for full warp
-const STAR_COUNT_BG = 455; // ~30% more stars for background warp
-const MAX_DEPTH = 300;
+// Type guards for history items
+const isSessionData = (item: HistoryItem): item is SessionData => item.type === SESSION_TYPE.FOCUS;
+const isBreakData = (item: HistoryItem): item is BreakData => item.type === SESSION_TYPE.BREAK;
 
-// Warp mode types
-type WarpMode = 'none' | 'background' | 'full';
+// Warp mode types - Using the type from constants.ts values
+type WarpMode = typeof WARP_MODE[keyof typeof WARP_MODE];
 
 function App() {
   // Sound effects
-  const playStartSound = useSound('start.mp3');
-  const playPauseSound = useSound('pause.mp3');
-  // We still need playDoneSound for sound effects in FocusSessionTimer
-  const playDoneSound = useSound('done.mp3');
-  const playCancelSound = useSound('cancel.mp3');
-  const playDistractionSound = useSound('distraction.mp3');
+  const playStartSound = useSound(SOUND_FILES.START);
+  const playPauseSound = useSound(SOUND_FILES.PAUSE);
+  const playDoneSound = useSound(SOUND_FILES.DONE);
+  const playCancelSound = useSound(SOUND_FILES.CANCEL);
+  const playDistractionSound = useSound(SOUND_FILES.DISTRACTION);
   
   // Initialize the timer effects
   useTimerHook();
@@ -56,9 +63,7 @@ function App() {
     totalStreakSessions,
     lastSession, 
     showSummary,
-    setHistory,
     setTotalStreakSessions,
-    setLastSession,
     setShowSummary,
     updateSessionItem,
     updateBreakNote,
@@ -69,8 +74,8 @@ function App() {
   const [toast, setToast] = useState({ show: false, message: '' });
   
   // Warp state
-  const [warpMode, setWarpMode] = useState<WarpMode>('none');
-  const [warpSpeed, setWarpSpeed] = useState(1.1);
+  const [warpMode, setWarpMode] = useState<WarpMode>(WARP_MODE.NONE);
+  const [warpSpeed] = useState(WARP_ANIMATION.DEFAULT_SPEED);
   const warpCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const warpAnimationFrameIdRef = useRef<number | null>(null);
   const warpStarsRef = useRef<Array<{x: number, y: number, z: number}>>([]);
@@ -79,7 +84,6 @@ function App() {
   const [postureStatus, setPostureStatus] = useState<boolean>(true);
   const [badPostureStartTime, setBadPostureStartTime] = useState<number | null>(null);
   const badPostureTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const badPostureTimeThreshold = 10000; // 10 seconds before triggering nudge
   
   // Initialize warp stars
   const initWarpStars = useCallback((count: number) => {
@@ -88,7 +92,7 @@ function App() {
       stars.push({
         x: Math.random() * window.innerWidth * 2 - window.innerWidth,
         y: Math.random() * window.innerHeight * 2 - window.innerHeight,
-        z: Math.random() * MAX_DEPTH
+        z: Math.random() * WARP_ANIMATION.MAX_DEPTH
       });
     }
     warpStarsRef.current = stars;
@@ -97,7 +101,7 @@ function App() {
   // Set warp mode
   const setWarpModeWithEffects = useCallback((mode: WarpMode) => {
     // Clean up existing warp if active
-    if (warpMode !== 'none') {
+    if (warpMode !== WARP_MODE.NONE) {
       // Cancel animation
       if (warpAnimationFrameIdRef.current) {
         cancelAnimationFrame(warpAnimationFrameIdRef.current);
@@ -110,36 +114,36 @@ function App() {
         warpCanvasRef.current = null;
       }
       
-      document.body.classList.remove('bg-black');
+      document.body.classList.remove(CSS_CLASSES.BG_BLACK);
       document.body.style.overflow = '';
       
       // Remove any UI fading classes
-      document.querySelectorAll('.warp-dimmed-text').forEach(el => {
-        el.classList.remove('opacity-70', 'warp-dimmed-text');
+      document.querySelectorAll(`.${CSS_CLASSES.WARP_DIMMED_TEXT}`).forEach(el => {
+        el.classList.remove(CSS_CLASSES.OPACITY_70, CSS_CLASSES.WARP_DIMMED_TEXT);
       });
-      document.querySelectorAll('.warp-control-button').forEach(el => {
-        el.classList.remove('opacity-50', 'warp-faded-button');
+      document.querySelectorAll(`.${CSS_CLASSES.WARP_CONTROL_BUTTON}`).forEach(el => {
+        el.classList.remove(CSS_CLASSES.OPACITY_50, CSS_CLASSES.WARP_FADED_BUTTON);
       });
       // Remove warp-dim class from minute input
-      const minutesInput = document.getElementById('minutesInput');
+      const minutesInput = document.getElementById(ELEMENT_IDS.MINUTES_INPUT);
       if (minutesInput) {
-        minutesInput.classList.remove('warp-dim');
+        minutesInput.classList.remove(CSS_CLASSES.WARP_DIM);
       }
     }
     
     // Set up new warp mode
-    if (mode !== 'none') {
-      const isFull = mode === 'full';
+    if (mode !== WARP_MODE.NONE) {
+      const isFull = mode === WARP_MODE.FULL;
       
       // Create canvas with appropriate z-index and styling
       const canvas = document.createElement('canvas');
-      canvas.id = isFull ? 'warpfull' : 'warpbg';
+      canvas.id = isFull ? ELEMENT_IDS.WARP_FULL : ELEMENT_IDS.WARP_BG;
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
       
       if (isFull) {
         // Full warp
-        document.body.classList.add('bg-black');
+        document.body.classList.add(CSS_CLASSES.BG_BLACK);
         canvas.style.position = 'fixed';
         canvas.style.top = '0';
         canvas.style.left = '0';
@@ -158,13 +162,13 @@ function App() {
         // Fade numeric text immediately
         document.querySelectorAll('.text-white, .dark\\:text-white, .text-gray-200, .dark\\:text-gray-200').forEach(el => {
           if (el.textContent && /[0-9]/.test(el.textContent)) {
-            el.classList.add('opacity-70', 'warp-dimmed-text');
+            el.classList.add(CSS_CLASSES.OPACITY_70, CSS_CLASSES.WARP_DIMMED_TEXT);
           }
         });
         // Dim the minutes input immediately
-        const minutesInput = document.getElementById('minutesInput');
+        const minutesInput = document.getElementById(ELEMENT_IDS.MINUTES_INPUT);
         if (minutesInput) {
-          minutesInput.classList.add('warp-dim');
+          minutesInput.classList.add(CSS_CLASSES.WARP_DIM);
         }
       }
       
@@ -172,7 +176,7 @@ function App() {
       warpCanvasRef.current = canvas;
       
       // Initialize stars (more stars for full warp)
-      initWarpStars(isFull ? STAR_COUNT : STAR_COUNT_BG);
+      initWarpStars(isFull ? WARP_ANIMATION.STAR_COUNT : WARP_ANIMATION.STAR_COUNT_BG);
       
       // Start animation immediately
       animateWarpStars(warpSpeed);
@@ -180,7 +184,7 @@ function App() {
     
     // Update state and save to localStorage
     setWarpMode(mode);
-    localStorage.setItem('warpMode', mode);
+    localStorage.setItem(STORAGE_KEYS.WARP_MODE, mode);
   }, [warpMode, initWarpStars, warpSpeed]);
 
   // Animate warp stars
@@ -205,81 +209,35 @@ function App() {
       
       // Reset star when it gets too close
       if (star.z <= 0) {
-        star.z = MAX_DEPTH;
+        star.z = WARP_ANIMATION.MAX_DEPTH;
         star.x = Math.random() * canvas.width * 2 - canvas.width;
         star.y = Math.random() * canvas.height * 2 - canvas.height;
       }
       
       // Project star position to 2D
-      const factor = MAX_DEPTH / (star.z || 1);
+      const factor = WARP_ANIMATION.MAX_DEPTH / (star.z || 1);
       const starX = star.x * factor + centerX;
       const starY = star.y * factor + centerY;
       
       // Only draw stars within canvas bounds
       if (starX >= 0 && starX <= canvas.width && starY >= 0 && starY <= canvas.height) {
-        if (speedMultiplier > 100) {
-          const warpFactor = (speedMultiplier - 100) / 900; // Normalize 0-1 for 100-1000x
-          const perspectiveFactor = Math.max(0, (MAX_DEPTH - star.z) / MAX_DEPTH); // Ensure non-negative
-          let lineLength = 5 + 150 * warpFactor * perspectiveFactor; 
-          lineLength = Math.max(1, lineLength); // Ensure minimum length
-
-          const angle = Math.atan2(star.y, star.x); // star.x, star.y are centered around 0
-
-          const endX = starX + Math.cos(angle) * lineLength;
-          const endY = starY + Math.sin(angle) * lineLength;
-          
-          ctx.beginPath();
-          ctx.moveTo(starX, starY);
-          ctx.lineTo(endX, endY);
-          // Brighter/more opaque and thicker lines at higher speeds/warpFactor
-          ctx.strokeStyle = `rgba(255, 255, 255, ${Math.min(1, 0.3 + warpFactor * 0.7 + perspectiveFactor * 0.2)})`;
-          ctx.lineWidth = (1 + warpFactor * 2.5) * (perspectiveFactor * 0.7 + 0.3);
-          ctx.stroke();
-        } else {
-          // Original dot drawing logic for lower speeds
-          const size = Math.max(0.5, (1 - star.z / MAX_DEPTH) * 2);
-          const opacity = Math.min(1, (1 - star.z / MAX_DEPTH) * 1.5);
-          
-          ctx.beginPath();
-          ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-          ctx.arc(starX, starY, size, 0, Math.PI * 2);
-          ctx.fill();
-        }
+        // Calculate size and color based on z-position
+        const size = Math.max(0.5, (1 - star.z / WARP_ANIMATION.MAX_DEPTH) * 5);
+        const alpha = 1 - star.z / WARP_ANIMATION.MAX_DEPTH;
+        
+        // Draw star
+        ctx.beginPath();
+        ctx.arc(starX, starY, size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+        ctx.fill();
       }
     });
     
-    // Continue animation
+    // Request next frame
     warpAnimationFrameIdRef.current = requestAnimationFrame(() => animateWarpStars(speedMultiplier));
   }, []);
-  
-  // Load warp settings from localStorage on init
-  useEffect(() => {
-    const savedMode = localStorage.getItem('warpMode') as WarpMode | null;
-    if (savedMode && savedMode !== 'none') {
-      setWarpMode(savedMode);
-    }
-    
-    const savedSpeed = localStorage.getItem('warpSpeed');
-    if (savedSpeed) {
-      setWarpSpeed(parseFloat(savedSpeed));
-    }
-  }, []);
-  
-  // Handle speed change
-  const handleWarpSpeedChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const sliderPosition = parseFloat(e.target.value); // sliderPosition is 0-100
-    const newActualSpeed = Math.max(1, Math.pow(1000, sliderPosition / 100));
-    
-    setWarpSpeed(newActualSpeed);
-    localStorage.setItem('warpSpeed', newActualSpeed.toString());
-    
-    if (warpMode !== 'none' && warpAnimationFrameIdRef.current) {
-      cancelAnimationFrame(warpAnimationFrameIdRef.current);
-      animateWarpStars(newActualSpeed);
-    }
-  }, [warpMode, animateWarpStars]);
 
-  // Update canvas size when window resizes
+  // Update warp animation when browser window resizes
   useEffect(() => {
     const handleResize = () => {
       if (warpCanvasRef.current) {
@@ -292,213 +250,126 @@ function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
   
-  // Cleanup warp on unmount
+  // Set up dark mode
   useEffect(() => {
-    return () => {
-      if (warpAnimationFrameIdRef.current) {
-        cancelAnimationFrame(warpAnimationFrameIdRef.current);
-      }
-      
-      if (warpCanvasRef.current) {
-        document.body.removeChild(warpCanvasRef.current);
-      }
-      
-      document.body.classList.remove('bg-black');
-      document.body.style.overflow = '';
-    };
-  }, []);
-
-  // Exit full warp mode with meteor
-  const handleExitWarp = useCallback(() => {
-    setWarpModeWithEffects('none');
-  }, [setWarpModeWithEffects]);
-
-  // Load initial data
-  useEffect(() => {
-    const storedHistory = JSON.parse(localStorage.getItem('history') || '[]');
-    setHistory(storedHistory);
-    
-    // Load streak count from localStorage
-    const storedStreakCount = localStorage.getItem('totalStreakSessions');
-    if (storedStreakCount) {
-      setTotalStreakSessions(parseInt(storedStreakCount, 10));
+    const savedDarkMode = localStorage.getItem(STORAGE_KEYS.DARK_MODE);
+    if (savedDarkMode === 'true' || 
+        (!savedDarkMode && 
+         window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
     }
   }, []);
-
-  // Save history data
-  useEffect(() => {
-    localStorage.setItem('history', JSON.stringify(history));
-  }, [history]);
   
-  // Save streak count to localStorage whenever it changes
+  // Set up warp mode
   useEffect(() => {
-    localStorage.setItem('totalStreakSessions', totalStreakSessions.toString());
-  }, [totalStreakSessions]);
+    const savedWarpMode = localStorage.getItem(STORAGE_KEYS.WARP_MODE) as WarpMode | null;
+    if (savedWarpMode && savedWarpMode !== WARP_MODE.NONE) {
+      setWarpModeWithEffects(savedWarpMode);
+    }
+  }, [setWarpModeWithEffects]);
   
-  // Toast display handler
-  const showToast = useCallback((message: string) => {
+  // Handle posture status effect
+  useEffect(() => {
+    // Clear any existing timeout
+    if (badPostureTimeoutRef.current) {
+      clearTimeout(badPostureTimeoutRef.current);
+      badPostureTimeoutRef.current = null;
+    }
+    
+    if (!postureStatus) {
+      // Start bad posture timer
+      if (badPostureStartTime === null) {
+        setBadPostureStartTime(Date.now());
+      }
+      
+      // Set timeout to trigger nudge after threshold
+      badPostureTimeoutRef.current = setTimeout(() => {
+        // TODO: Play posture alert sound
+        // TODO: Implement posture nudge
+        console.log('Bad posture alert!');
+      }, BAD_POSTURE_TIME_THRESHOLD_MS);
+    } else {
+      // Reset bad posture start time
+      setBadPostureStartTime(null);
+    }
+    
+    return () => {
+      if (badPostureTimeoutRef.current) {
+        clearTimeout(badPostureTimeoutRef.current);
+      }
+    };
+  }, [postureStatus, badPostureStartTime]);
+  
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Skip if in an input field
+      if (
+        document.activeElement?.tagName === 'INPUT' ||
+        document.activeElement?.tagName === 'TEXTAREA'
+      ) {
+        return;
+      }
+      
+      // Keyboard shortcuts
+      switch (e.key) {
+        case 'd':
+          if (isSessionActive && !isPaused) {
+            handleDistraction();
+          }
+          break;
+          
+        case 'w':
+          if (e.ctrlKey || e.metaKey) break; // Skip browser shortcuts
+          
+          // Cycle through warp modes
+          if (warpMode === WARP_MODE.NONE) {
+            setWarpModeWithEffects(WARP_MODE.BACKGROUND);
+          } else if (warpMode === WARP_MODE.BACKGROUND) {
+            setWarpModeWithEffects(WARP_MODE.FULL);
+          } else {
+            setWarpModeWithEffects(WARP_MODE.NONE);
+          }
+          break;
+          
+        default:
+          break;
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [warpMode, setWarpModeWithEffects, isSessionActive, isPaused]);
+  
+  // Show toast message
+  const showToast = (message: string) => {
     setToast({ show: true, message });
     setTimeout(() => setToast({ show: false, message: '' }), 3000);
-  }, []);
-
-  // Warp distraction handler
-  const handleWarpDistraction = useCallback(() => {
+  };
+  
+  // Handle warp distraction
+  const handleWarpDistraction = () => {
     if (isSessionActive && !isPaused) {
       addDistraction();
       playDistractionSound();
-      showToast("Distraction recorded in warp mode!");
+      showToast("Distraction logged!");
     }
-  }, [isSessionActive, isPaused, addDistraction, showToast, playDistractionSound]);
-
-  // Calculate total break time from all completed breaks
-  const totalBreakTimeMs = useMemo(() => 
-    history
-      .filter((item): item is BreakData => item.type === "break" && item.end !== null)
-      .reduce((sum, breakItem) => sum + breakItem.durationMs, 0),
-  [history]);
+  };
   
-  // Calculate total focus time from all sessions
-  const totalFocusTimeMs = useMemo(() => 
-    history
-      .filter((item): item is SessionData => item.type === "session")
-      .reduce((sum, session) => sum + session.duration, 0),
-  [history]);
-
-  // @ts-ignore - This function is used for handling distractions
+  // Handle exit warp
+  const handleExitWarp = () => {
+    setWarpModeWithEffects(WARP_MODE.NONE);
+  };
+  
+  // Handle distraction button click
   const handleDistraction = () => {
     if (isSessionActive && !isPaused) {
       addDistraction();
       playDistractionSound();
+      showToast("Distraction logged!");
     }
   };
-
-  // Calculate glow intensity based on streak count
-  const getGlowClass = useCallback(() => {
-    if (totalStreakSessions < 1) return '';
-    return 'shadow-[0_0_0_2px_var(--tw-shadow-color),_0_0_10px_var(--tw-shadow-color)]';
-  }, [totalStreakSessions]);
-
-  // Add CSS for warp-dim class
-  useEffect(() => {
-    // Create a style element
-    const styleEl = document.createElement('style');
-    const cssContent = `
-      #minutesInput.warp-dim {
-        opacity: 0.55 !important;
-      }
-      .dark #minutesInput.warp-dim {
-        opacity: 0.65 !important;
-      }
-    `;
-    styleEl.textContent = cssContent;
-    document.head.appendChild(styleEl);
-    
-    // Clean up on unmount
-    return () => {
-      if (styleEl && document.head.contains(styleEl)) {
-        document.head.removeChild(styleEl);
-      }
-    };
-  }, []);
-
-  // Handle posture change from camera component - only trigger nudges during active sessions
-  const handlePostureChange = useCallback((isGoodPosture: boolean) => {
-    console.log("Posture status:", isGoodPosture ? "GOOD" : "BAD", isSessionActive ? "(in session)" : "(outside session)");
-    
-    setPostureStatus(isGoodPosture);
-    
-    // Only start timers if in an active session
-    if (!isSessionActive) {
-      // Clear any pending timeout if session is not active
-      if (badPostureTimeoutRef.current) {
-        clearTimeout(badPostureTimeoutRef.current);
-        badPostureTimeoutRef.current = null;
-      }
-      return;
-    }
-    
-    // If posture becomes bad, start the timer
-    if (!isGoodPosture && badPostureStartTime === null) {
-      console.log("Starting bad posture timer");
-      setBadPostureStartTime(Date.now());
-    } 
-    // If posture becomes good, clear the timer
-    else if (isGoodPosture && badPostureStartTime !== null) {
-      console.log("Clearing bad posture timer - posture corrected");
-      setBadPostureStartTime(null);
-      
-      // Clear any pending timeout
-      if (badPostureTimeoutRef.current) {
-        clearTimeout(badPostureTimeoutRef.current);
-        badPostureTimeoutRef.current = null;
-      }
-    }
-  }, [isSessionActive, badPostureStartTime]);
   
-  // Monitor bad posture and trigger notification after threshold (only during active sessions)
-  useEffect(() => {
-    if (!isSessionActive || isPaused || badPostureTimeoutRef.current || !badPostureStartTime || postureStatus) {
-      return;
-    }
-    
-    // If posture is bad and we have a start time, set up the timeout
-    badPostureTimeoutRef.current = setTimeout(() => {
-      // Trigger posture nudge
-      if (isSessionActive && !isPaused) {
-        console.log("Posture nudge triggered after 10s of bad posture");
-        // Remove the sound notification for posture issues
-        // playDistractionSound();
-        setToast({
-          show: true,
-          message: "Please correct your posture!"
-        });
-        
-        // Update session data with posture issue
-        if (lastSession && lastSession.type === 'session') {
-          setLastSession({
-            ...lastSession,
-            posture: (lastSession.posture || 0) + 1
-          });
-        }
-      }
-      
-      // Reset timer but keep tracking
-      badPostureTimeoutRef.current = null;
-      setBadPostureStartTime(null);
-    }, badPostureTimeThreshold);
-    
-    return () => {
-      if (badPostureTimeoutRef.current) {
-        clearTimeout(badPostureTimeoutRef.current);
-        badPostureTimeoutRef.current = null;
-      }
-    };
-  }, [postureStatus, badPostureStartTime, isSessionActive, isPaused, lastSession, playDistractionSound]);
-
-  // Add this named handleKeyDown function inside the component
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'Escape' && warpMode !== 'none') {
-      setWarpMode('none');
-    }
-  };
-
-  // Then in the useEffect:
-  useEffect(() => {
-    if (warpMode !== 'none') {
-      // Start warp mode animation
-      animateWarpStars();
-      
-      // Add escape key handler
-      window.addEventListener('keydown', handleKeyDown);
-      
-      // Cleanup
-      return () => {
-        animateWarpStars();
-        window.removeEventListener('keydown', handleKeyDown);
-      };
-    }
-  }, [warpMode, animateWarpStars]);
-
   // Keep the handler for updating break notes - use historySlice
   const handleBreakNoteChange = (breakId: string, note: string) => {
     updateBreakNote(breakId, note);
@@ -536,16 +407,43 @@ function App() {
     // Close the summary panel
     setShowSummary(false);
   };
+  
+  // Calculate total focus time
+  const totalFocusTimeMs = useMemo(() => {
+    return history.reduce((total, item) => {
+      if (isSessionData(item)) {
+        return total + item.duration;
+      }
+      return total;
+    }, 0);
+  }, [history]);
+  
+  // Calculate total break time
+  const totalBreakTimeMs = useMemo(() => {
+    return history.reduce((total, item) => {
+      if (isBreakData(item) && item.end !== null) {
+        return total + item.durationMs;
+      }
+      return total;
+    }, 0);
+  }, [history]);
+  
+  // Get glow class based on total streak sessions
+  const getGlowClass = () => {
+    if (totalStreakSessions >= 5) return 'shadow-lg';
+    if (totalStreakSessions >= 3) return 'shadow-md';
+    return 'shadow-sm';
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-      {warpMode !== 'full' && <DarkModeToggle />}
+      {warpMode !== WARP_MODE.FULL && <DarkModeToggle />}
 
       {/* FULL WARP Controls */}
-      {(warpMode === 'background' || warpMode === 'full') && (
-        <div id="warpControls" className="absolute bottom-4 right-4 z-[10000] flex gap-3 items-center">
+      {(warpMode === WARP_MODE.BACKGROUND || warpMode === WARP_MODE.FULL) && (
+        <div id={ELEMENT_IDS.WARP_CONTROLS} className="absolute bottom-4 right-4 z-[10000] flex gap-3 items-center">
           <button
-            id="warpDistract"
+            id={ELEMENT_IDS.WARP_DISTRACT}
             onClick={handleWarpDistraction}
             className="bg-red-700/80 hover:bg-red-600/100 text-white font-semibold text-xs px-3 py-1.5 rounded-md backdrop-blur-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-900/50 opacity-60 hover:opacity-100"
             title="Log distraction"
@@ -553,7 +451,7 @@ function App() {
             DISTRACTED
           </button>
           <button
-            id="exitWarp"
+            id={ELEMENT_IDS.EXIT_WARP}
             onClick={handleExitWarp}
             className="bg-sky-700/80 hover:bg-sky-600/100 text-white font-semibold text-xs px-3 py-1.5 rounded-md backdrop-blur-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-gray-900/50 opacity-60 hover:opacity-100"
             title="Exit warp"
@@ -626,7 +524,7 @@ function App() {
                     </div>
                     <div className="flex-shrink-0">
                       <DistractionButton 
-                        className="warp-control-button"
+                        className={CSS_CLASSES.WARP_CONTROL_BUTTON}
                       />
                     </div>
                   </div>
@@ -703,77 +601,37 @@ function App() {
             </div>
           </div>
           
-          {/* Right Column: Camera and music player */}
-          <div className="flex flex-col gap-6">
-            {/* Camera placeholder */}
-            <div>
+          {/* Right Column: PostureView */}
+          <aside className="space-y-6">
+            <div className="mb-4">
               <PostureView 
-                isSessionActive={isSessionActive} 
-                onPostureChange={handlePostureChange} 
+                onPostureChange={setPostureStatus}
               />
             </div>
-           
-            {/* Updated MusicPlayer with isSessionActive prop */}
-            <MusicPlayer isSessionActive={isSessionActive} />
-            
-            {/* Immersion Mode Controls */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
-              <h3 className="text-sm font-semibold text-gray-800 dark:text-white mb-3">Immersion Mode</h3>
-              <div className="flex flex-wrap gap-2 mb-3">
-                <button
-                  onClick={() => setWarpModeWithEffects('background')}
-                  className={`rounded bg-zinc-800 text-white hover:bg-blue-600 transition text-sm px-2 py-1 ${warpMode === 'background' ? 'ring-2 ring-blue-500' : ''} warp-control-button`}
-                  title="Stars visible behind dashboard"
-                >
-                  ✨ Warp Background
-                </button>
-                <button
-                  onClick={() => setWarpModeWithEffects('full')}
-                  className={`rounded bg-zinc-800 text-white hover:bg-blue-600 transition text-sm px-2 py-1 ${warpMode === 'full' ? 'ring-2 ring-blue-500' : ''} warp-control-button`}
-                  title="Full immersive starfield"
-                >
-                  🌌 Warp Full
-                </button>
-              </div>
-              
-              {/* Speed throttle slider */}
-              <div className="mt-2">
-                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Star Speed</label>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max="100" 
-                  step="1" 
-                  value={Math.max(0, Math.min(100, 100 * (Math.log(Math.max(1, warpSpeed)) / Math.log(1000))))}
-                  onChange={handleWarpSpeedChange}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
-                />
-                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  <span>1×</span>
-                  <span>{warpSpeed.toFixed(0)}×</span>
-                  <span>1000×</span>
-                </div>
-              </div>
-            </div>
-          </div>
+            <MusicPlayer 
+              isSessionActive={isSessionActive} 
+            />
+          </aside>
         </div>
-
-        {/* Session Summary Panel */}
+      </div>
+      
+      {/* Summary Panel */}
+      {showSummary && lastSession && (
         <SessionSummaryPanel 
           isVisible={showSummary}
-          onClose={handleSummaryClose}
           sessionData={lastSession}
           streakCount={totalStreakSessions}
+          onClose={handleSummaryClose}
           onStreakEnded={() => setTotalStreakSessions(0)}
         />
-        
-        {/* Toast Notifications */}
-        {toast.show && <Toast message={toast.message} />}
-      </div>
-
-      <InstallPrompt />
+      )}
+      
+      {/* Toast */}
+      <Toast 
+        message={toast.message}
+      />
     </div>
-  )
+  );
 }
 
-export default App 
+export default App; 
