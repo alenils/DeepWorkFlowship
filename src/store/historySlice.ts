@@ -105,16 +105,19 @@ export const useHistoryStore = create<{
         if (openBreakIndex !== -1) {
           const openBreak = newHistory[openBreakIndex] as BreakData;
           const endTime = Date.now();
+          const calculatedDurationMs = endTime - openBreak.start;
           
           // Create a new break item with updated properties
           const updatedBreak: BreakData = {
             ...openBreak,
             end: endTime,
-            durationMs: endTime - openBreak.start
+            durationMs: calculatedDurationMs
           };
           
           // Replace the item in the array
           newHistory[openBreakIndex] = updatedBreak;
+          
+          console.log(`[HistoryStore] Closed open break. Duration: ${calculatedDurationMs}ms`);
         }
         
         return { history: newHistory };

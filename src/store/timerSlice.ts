@@ -279,7 +279,7 @@ export const useTimerStore = create<TimerState>()(
           id: generateId(),
           start: Date.now(),
           end: null,
-          durationMs: 0,
+          durationMs: 0, // Will be calculated when break ends
           note: ""
         };
         
@@ -290,9 +290,13 @@ export const useTimerStore = create<TimerState>()(
           historyStore.resetStreakSessions();
         }
         
-        // Add to history
-        historyStore.addHistoryItem(breakData);
+        // First close any previously open break
+        historyStore.closeOpenBreak();
+        
+        // Add session to history first, then the new break
+        // This is crucial for the order in the history list, as items are prepended
         historyStore.addHistoryItem(sessionData);
+        historyStore.addHistoryItem(breakData);
         
         // Set last session and show summary
         historyStore.setLastSession(sessionData);

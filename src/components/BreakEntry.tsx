@@ -23,23 +23,28 @@ export const BreakEntry = ({
   
   // Update the break timer every second if it's active
   useEffect(() => {
-    if (!isActive) {
-      // If break is no longer active and has an end time, calculate final duration
-      if (breakEndTime !== null) {
-        setElapsedTime(breakEndTime - breakStartTime);
-      }
+    // For completed breaks (where breakEndTime is not null), use the final duration
+    if (breakEndTime !== null) {
+      setElapsedTime(breakEndTime - breakStartTime);
+      // No need for interval - this is a completed break
       return;
     }
     
-    // Set initial elapsed time
-    setElapsedTime(Date.now() - breakStartTime);
-    
-    // Start interval for active break
-    const intervalId = setInterval(() => {
+    // For active breaks (isActive && breakEndTime === null), update continuously
+    if (isActive) {
+      // Set initial elapsed time
       setElapsedTime(Date.now() - breakStartTime);
-    }, 1000);
+      
+      // Start interval for active break
+      const intervalId = setInterval(() => {
+        setElapsedTime(Date.now() - breakStartTime);
+      }, 1000);
+      
+      return () => clearInterval(intervalId);
+    }
     
-    return () => clearInterval(intervalId);
+    // Default case: set the initial time but don't start an interval
+    setElapsedTime(Date.now() - breakStartTime);
   }, [isActive, breakStartTime, breakEndTime]);
   
   // Handle key press for saving note on Enter
