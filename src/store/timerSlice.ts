@@ -19,6 +19,21 @@ type TimerId = ReturnType<typeof setInterval> | null;
 // Define our session difficulty types
 type Difficulty = typeof DIFFICULTY[keyof typeof DIFFICULTY];
 
+// Define the initial state for reuse in reset function and tests
+export const initialTimerState = {
+  minutes: DEFAULT_TIMER_MINUTES,
+  isInfinite: false,
+  isSessionActive: false,
+  isPaused: false,
+  currentGoal: '',
+  currentDifficulty: DIFFICULTY.MEDIUM,
+  sessionStartTime: 0,
+  remainingTime: 0,
+  distractionCount: 0,
+  sessionDurationMs: 0,
+  isRunning: false,
+};
+
 // Import SFX functions if available (commented for now, would need to be imported)
 // import { playSfx, SFX } from '../utils/sounds';
 
@@ -64,6 +79,9 @@ export interface TimerState {
   stopTimer: () => void;
   addDistraction: () => void;
   endSession: () => void;
+  
+  // Reset function for testing
+  reset: () => void;
 }
 
 // This function will be exported to allow components to use the timer
@@ -123,17 +141,7 @@ export const useTimerStore = create<TimerState>()(
   persist(
     (set, get) => ({
       // Default state values
-      minutes: DEFAULT_TIMER_MINUTES,
-      isInfinite: false,
-      isSessionActive: false,
-      isPaused: false,
-      currentGoal: '',
-      currentDifficulty: DIFFICULTY.MEDIUM,
-      sessionStartTime: 0,
-      remainingTime: 0,
-      distractionCount: 0,
-      sessionDurationMs: 0,
-      isRunning: false,
+      ...initialTimerState,
       
       // Simple actions
       setMinutes: (minutes) => set({ minutes }),
@@ -311,7 +319,10 @@ export const useTimerStore = create<TimerState>()(
         // Set last session and show summary
         historyStore.setLastSession(sessionData);
         historyStore.setShowSummary(true);
-      }
+      },
+      
+      // Reset function for testing
+      reset: () => set(initialTimerState),
     }),
     {
       name: STORAGE_KEYS.TIMER, // localStorage key

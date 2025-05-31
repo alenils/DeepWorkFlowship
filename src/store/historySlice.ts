@@ -33,6 +33,14 @@ export interface BreakData {
 // Combined history item type
 export type HistoryItem = SessionData | BreakData;
 
+// Define the initial state for reuse in reset function and tests
+export const initialHistoryState = {
+  history: [] as HistoryItem[],
+  totalStreakSessions: 0,
+  lastSession: null as SessionData | null,
+  showSummary: false,
+};
+
 // Generate a simple UUID for item IDs
 export const generateId = () => {
   return Date.now().toString(36) + Math.random().toString(36).substring(2);
@@ -69,14 +77,12 @@ export const useHistoryStore = create<{
   setLastSession: (session: SessionData | null) => void;
   setShowSummary: (show: boolean) => void;
   updateBreakNote: (breakId: string, note: string) => void;
+  reset: () => void; // Reset function for testing
 }>()(
   persist(
     (set) => ({
       // Initial state
-      history: [],
-      totalStreakSessions: 0,
-      lastSession: null,
-      showSummary: false,
+      ...initialHistoryState,
       
       // Actions
       setHistory: (history) => set({ history }),
@@ -152,6 +158,8 @@ export const useHistoryStore = create<{
             : item
         )
       })),
+
+      reset: () => set(initialHistoryState), // Reset function for testing
     }),
     {
       name: STORAGE_KEYS.HISTORY,

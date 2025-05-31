@@ -1,6 +1,16 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+// Define the initial state for reuse in reset function and tests
+export const initialAppState = {
+  performanceMode: false,
+  sfxVolume: 0.7,
+  musicVolume: 0.5,
+  pwaInstallPromptShown: false,
+  isDarkMode: window.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? false,
+  currentMode: 'standby' as const,
+};
+
 // Define the type for our app state
 export interface AppState {
   // Global app settings
@@ -20,6 +30,7 @@ export interface AppState {
   setPwaInstallPromptShown: (shown: boolean) => void;
   setDarkMode: (isDark: boolean) => void;
   setCurrentMode: (mode: 'focus' | 'warp' | 'standby') => void;
+  reset: () => void; // Reset function for testing
 }
 
 // Create the store with persist middleware to save to localStorage
@@ -27,12 +38,7 @@ export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
       // Default state values
-      performanceMode: false,
-      sfxVolume: 0.7,
-      musicVolume: 0.5,
-      pwaInstallPromptShown: false,
-      isDarkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
-      currentMode: 'standby',
+      ...initialAppState,
 
       // Actions (state updaters)
       setPerformanceMode: (mode) => set({ performanceMode: mode }),
@@ -41,6 +47,7 @@ export const useAppStore = create<AppState>()(
       setPwaInstallPromptShown: (shown) => set({ pwaInstallPromptShown: shown }),
       setDarkMode: (isDark) => set({ isDarkMode: isDark }),
       setCurrentMode: (mode) => set({ currentMode: mode }),
+      reset: () => set(initialAppState), // Reset function for testing
     }),
     {
       name: 'deepwork-app-storage', // localStorage key
