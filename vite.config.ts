@@ -98,5 +98,10 @@ export default defineConfig({
   // For testing setup, imported from vitest
   define: {
     'import.meta.vitest': 'undefined'
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/vitest.setup.ts']
   }
 }) 
