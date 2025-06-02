@@ -128,7 +128,9 @@ export const useHistoryStore = create<{
           // Replace the item in the array
           newHistory[openBreakIndex] = updatedBreak;
           
-          console.log(`[HistoryStore] Closed open break. Duration: ${calculatedDurationMs}ms`);
+          console.log(`[HistoryStore] Closed open break (ID: ${openBreak.id}). Duration: ${calculatedDurationMs}ms, Start: ${new Date(openBreak.start).toLocaleTimeString()}, End: ${new Date(endTime).toLocaleTimeString()}`);
+        } else {
+          console.log('[HistoryStore] No open break found to close');
         }
         
         return { history: newHistory };

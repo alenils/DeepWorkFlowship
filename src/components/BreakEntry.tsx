@@ -44,7 +44,8 @@ export const BreakEntry = ({
       return () => clearInterval(intervalId);
     }
     
-    // Default case: set the initial time but don't start an interval
+    // For a break that was active but is now inactive (and doesn't have breakEndTime set),
+    // calculate the final elapsed time but don't keep updating
     setElapsedTime(Date.now() - breakStartTime);
   }, [isActive, breakStartTime, breakEndTime]);
   

@@ -209,6 +209,10 @@ export const useTimerStore = create<TimerState>()(
         const durationMs = state.isInfinite ? Number.MAX_SAFE_INTEGER : durationMinutes * 60 * 1000;
         const finalGoal = state.currentGoal.trim() || DEFAULT_GOAL;
         
+        // Close any open break before starting a new session
+        const historyStore = useHistoryStore.getState();
+        historyStore.closeOpenBreak();
+        
         // Play sound - moved to component for now
         // if (SFX && SFX.start) playSfx(SFX.start);
         
