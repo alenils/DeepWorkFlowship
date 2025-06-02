@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { WARP_MODE, WARP_ANIMATION } from '../constants';
+import { WARP_MODE, WARP_ANIMATION, STORAGE_KEYS } from '../constants';
 
 // Warp mode types using constants
 export type WarpMode = typeof WARP_MODE[keyof typeof WARP_MODE];
@@ -45,7 +45,7 @@ export const useWarpStore = create<WarpState & WarpActions>()(
       reset: () => set(initialWarpState), // Reset function for testing
     }),
     {
-      name: 'deepwork-warp-storage', // localStorage key
+      name: STORAGE_KEYS.WARP, // localStorage key
     }
   )
 ); 

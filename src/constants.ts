@@ -38,7 +38,8 @@ export const SOUND_FILES = {
   PAUSE: 'pause.mp3',
   DONE: 'done.mp3',
   CANCEL: 'cancel.mp3',
-  DISTRACTION: 'distraction.mp3'
+  DISTRACTION: 'distraction.mp3',
+  CHECK: 'check.mp3'
 } as const;
 
 // ===== WARP MODE =====
@@ -55,6 +56,13 @@ export const WARP_ANIMATION = {
   DEFAULT_SPEED: 1.1       // Default animation speed
 } as const;
 
+// ===== APPLICATION MODES =====
+export const APP_MODE = {
+  FOCUS: 'focus',
+  WARP: 'warp',
+  STANDBY: 'standby'
+} as const;
+
 // ===== AUDIO =====
 export const ALBUM_ID = {
   ALBUM1: 'album1',
@@ -63,15 +71,25 @@ export const ALBUM_ID = {
 
 export const AUDIO_VOLUME = {
   SFX: 0.4,                // Default SFX volume
-  MUSIC: 0.8               // Default music volume
+  MUSIC: 0.8,              // Default music volume
+  DEFAULT_SFX: 0.7,        // Default SFX volume from appSlice
+  DEFAULT_MUSIC: 0.5       // Default music volume from appSlice
 } as const;
 
 // ===== LOCAL STORAGE KEYS =====
 export const STORAGE_KEYS = {
   HISTORY: 'deepwork-history-storage',
   TIMER: 'deepwork-timer-storage',
+  APP: 'deepwork-app-storage',
+  WARP: 'deepwork-warp-storage',
   DARK_MODE: 'darkMode',
-  WARP_MODE: 'warpMode'
+  WARP_MODE: 'warpMode',
+  LAST_DIFFICULTY: 'lastDifficulty',
+  TOTAL_STREAK_SESSIONS: 'totalStreakSessions',
+  POSTURE_TRACKING_ACTIVE: 'postureTrackingActive',
+  NOTEPAD: 'notepad',
+  TODO: 'todo',
+  POSTURE_SENSITIVITY: 'postureSensitivity'
 } as const;
 
 // ===== STREAK SETTINGS =====

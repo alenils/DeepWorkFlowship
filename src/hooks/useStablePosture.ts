@@ -4,6 +4,7 @@ import { Camera } from '@mediapipe/camera_utils';
 import { Landmarks } from '../utils/poseMath';
 import { getEyeLine, detectPostureWithBaseline } from '../utils/postureDetect';
 import { NormalizedLandmark } from '@mediapipe/tasks-vision';
+import { STORAGE_KEYS } from '../constants';
 
 // Type conversion helper for landmark types
 function convertLandmarks(landmarks: Landmarks): NormalizedLandmark[] {
@@ -35,7 +36,7 @@ export function useStablePosture(_: boolean = true, sensitivity = 1.0): StablePo
     eyeY: null
   });
   const [isActive, setIsActive] = useState<boolean>(() => {
-    const storedValue = localStorage.getItem('postureTrackingActive');
+    const storedValue = localStorage.getItem(STORAGE_KEYS.POSTURE_TRACKING_ACTIVE);
     return storedValue ? storedValue === 'true' : true;
   });
   
@@ -180,7 +181,7 @@ export function useStablePosture(_: boolean = true, sensitivity = 1.0): StablePo
   const toggleActive = useCallback(() => {
     setIsActive(prev => {
       const newValue = !prev;
-      localStorage.setItem('postureTrackingActive', newValue.toString());
+      localStorage.setItem(STORAGE_KEYS.POSTURE_TRACKING_ACTIVE, newValue.toString());
       return newValue;
     });
   }, []);

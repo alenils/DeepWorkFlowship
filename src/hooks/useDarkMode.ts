@@ -1,43 +1,39 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { STORAGE_KEYS } from '../constants';
 
 export const useDarkMode = () => {
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    // Check localStorage first
-    const savedMode = localStorage.getItem('darkMode');
-    if (savedMode !== null) {
-      return savedMode === 'true';
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    // Check if user has a preference stored in localStorage
+    const storedValue = localStorage.getItem(STORAGE_KEYS.DARK_MODE);
+    if (storedValue) {
+      return storedValue === 'true';
     }
-    // Fall back to system preference
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    // Otherwise, check system preference
+    if (window.matchMedia) {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    
+    // Default to dark mode if no preference detected
+    return true;
   });
-
+  
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    // Add or remove the dark class from the body
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
     
-    // Update dark mode when system preference changes
-    const handleChange = (e: MediaQueryListEvent) => {
-      const systemPrefersDark = e.matches;
-      // Only update if there's no saved preference
-      if (localStorage.getItem('darkMode') === null) {
-        setIsDarkMode(systemPrefersDark);
-      }
-    };
-
-    // Listen for system dark mode changes
-    mediaQuery.addEventListener('change', handleChange);
-
-    // Update document class
-    document.documentElement.classList.toggle('dark', isDarkMode);
-    
-    // Save to localStorage
-    localStorage.setItem('darkMode', isDarkMode.toString());
-
-    return () => mediaQuery.removeEventListener('change', handleChange);
+    // Store the preference
+    localStorage.setItem(STORAGE_KEYS.DARK_MODE, isDarkMode.toString());
   }, [isDarkMode]);
 
+  // Function to toggle dark mode
   const toggleDarkMode = () => {
-    setIsDarkMode(prev => !prev);
+    setIsDarkMode(prevMode => !prevMode);
   };
-
+  
   return { isDarkMode, toggleDarkMode };
 }; 

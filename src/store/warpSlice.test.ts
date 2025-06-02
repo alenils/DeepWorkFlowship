@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useWarpStore, initialWarpState, WarpMode } from './warpSlice';
+import { useWarpStore, initialWarpState } from './warpSlice';
 import { WARP_MODE } from '../constants';
 import { act } from '@testing-library/react';
 

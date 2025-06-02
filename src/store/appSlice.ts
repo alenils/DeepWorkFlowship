@@ -1,14 +1,15 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { APP_MODE, AUDIO_VOLUME, STORAGE_KEYS } from '../constants';
 
 // Define the initial state for reuse in reset function and tests
 export const initialAppState = {
   performanceMode: false,
-  sfxVolume: 0.7,
-  musicVolume: 0.5,
+  sfxVolume: AUDIO_VOLUME.DEFAULT_SFX,
+  musicVolume: AUDIO_VOLUME.DEFAULT_MUSIC,
   pwaInstallPromptShown: false,
   isDarkMode: window.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? false,
-  currentMode: 'standby' as const,
+  currentMode: APP_MODE.STANDBY,
 };
 
 // Define the type for our app state
@@ -21,7 +22,7 @@ export interface AppState {
   isDarkMode: boolean;
   
   // App mode - 'focus', 'warp', etc.
-  currentMode: 'focus' | 'warp' | 'standby';
+  currentMode: typeof APP_MODE[keyof typeof APP_MODE];
   
   // Actions
   setPerformanceMode: (mode: boolean) => void;
@@ -29,7 +30,7 @@ export interface AppState {
   setMusicVolume: (volume: number) => void;
   setPwaInstallPromptShown: (shown: boolean) => void;
   setDarkMode: (isDark: boolean) => void;
-  setCurrentMode: (mode: 'focus' | 'warp' | 'standby') => void;
+  setCurrentMode: (mode: typeof APP_MODE[keyof typeof APP_MODE]) => void;
   reset: () => void; // Reset function for testing
 }
 
@@ -50,7 +51,7 @@ export const useAppStore = create<AppState>()(
       reset: () => set(initialAppState), // Reset function for testing
     }),
     {
-      name: 'deepwork-app-storage', // localStorage key
+      name: STORAGE_KEYS.APP, // localStorage key
       partialize: (state) => ({
         // Only persist these values in localStorage
         performanceMode: state.performanceMode,

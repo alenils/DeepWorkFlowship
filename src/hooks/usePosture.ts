@@ -4,6 +4,7 @@ import { Camera } from '@mediapipe/camera_utils';
 import { Landmarks } from '../utils/poseMath';
 import { detectPostureWithBaseline } from '../utils/postureDetect';
 import { NormalizedLandmark } from '@mediapipe/tasks-vision';
+import { STORAGE_KEYS } from '../constants';
 
 export interface PoseData {
   good: boolean;
@@ -37,7 +38,7 @@ export function usePosture(_enabled = true, sensitivityThreshold = 1.0): Posture
   const [poseInstance, setPoseInstance] = useState<Pose | null>(null);
   const [cameraInstance, setCameraInstance] = useState<Camera | null>(null);
   const [isActive, setIsActive] = useState<boolean>(() => {
-    const storedValue = localStorage.getItem('postureTrackingActive');
+    const storedValue = localStorage.getItem(STORAGE_KEYS.POSTURE_TRACKING_ACTIVE);
     return storedValue ? storedValue === 'true' : true;
   });
   
@@ -159,7 +160,7 @@ export function usePosture(_enabled = true, sensitivityThreshold = 1.0): Posture
   const toggleActive = () => {
     setIsActive(prev => {
       const newValue = !prev;
-      localStorage.setItem('postureTrackingActive', newValue.toString());
+      localStorage.setItem(STORAGE_KEYS.POSTURE_TRACKING_ACTIVE, newValue.toString());
       return newValue;
     });
   };

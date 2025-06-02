@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTimerStore } from '../store/timerSlice';
+import { STORAGE_KEYS } from '../constants';
 
 interface DeepFocusInputProps {
   className?: string;
@@ -48,7 +49,7 @@ export const DeepFocusInput = ({ className = '', onStartSession }: DeepFocusInpu
 
   // Store difficulty in localStorage
   useEffect(() => {
-    localStorage.setItem('lastDifficulty', difficulty);
+    localStorage.setItem(STORAGE_KEYS.LAST_DIFFICULTY, difficulty);
   }, [difficulty]);
 
   // Load difficulty from localStorage on init

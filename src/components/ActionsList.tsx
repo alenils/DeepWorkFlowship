@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSound } from '../features/audio/useSound';
+import { STORAGE_KEYS } from '../constants';
 
 interface TodoItem {
   id: string;
@@ -14,7 +15,7 @@ export const ActionsList = () => {
   
   // Load items from localStorage
   useEffect(() => {
-    const savedItems = localStorage.getItem('todo');
+    const savedItems = localStorage.getItem(STORAGE_KEYS.TODO);
     if (savedItems) {
       try {
         const parsedItems = JSON.parse(savedItems);
@@ -29,7 +30,7 @@ export const ActionsList = () => {
   
   // Save items to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('todo', JSON.stringify(items));
+    localStorage.setItem(STORAGE_KEYS.TODO, JSON.stringify(items));
   }, [items]);
   
   // Generate a simple ID for new items

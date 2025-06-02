@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useStablePosture } from '../hooks/useStablePosture';
 import { PoseLandmarksRenderer } from './PoseLandmarksRenderer';
 import { PoseOverlay } from './PoseOverlay';
+import { STORAGE_KEYS } from '../constants';
 
 // Focus statements for camera caption
 const FOCUS_STATEMENTS = [
@@ -32,7 +33,7 @@ export const CameraPlaceholder = ({ isSessionActive = false, onPostureChange = (
   const [videoSize, setVideoSize] = useState({ width: 0, height: 0 });
   const [sensitivityFactor, setSensitivityFactor] = useState<number>(() => {
     // Load sensitivity from localStorage, default to 1.0 (which means 10° neck threshold, 8° torso threshold)
-    const storedValue = localStorage.getItem('postureSensitivity');
+    const storedValue = localStorage.getItem(STORAGE_KEYS.POSTURE_SENSITIVITY);
     return storedValue ? parseFloat(storedValue) : 1.0;
   });
   
@@ -139,7 +140,7 @@ export const CameraPlaceholder = ({ isSessionActive = false, onPostureChange = (
   const handleSensitivityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = parseFloat(e.target.value);
     setSensitivityFactor(value);
-    localStorage.setItem('postureSensitivity', value.toString());
+    localStorage.setItem(STORAGE_KEYS.POSTURE_SENSITIVITY, value.toString());
   };
   
   return (

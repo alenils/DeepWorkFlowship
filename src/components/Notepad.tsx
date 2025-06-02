@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { STORAGE_KEYS } from '../constants';
 
 export const Notepad = () => {
   const [note, setNote] = useState('');
@@ -7,7 +8,7 @@ export const Notepad = () => {
   
   // Load saved note from localStorage
   useEffect(() => {
-    const savedNote = localStorage.getItem('notepad');
+    const savedNote = localStorage.getItem(STORAGE_KEYS.NOTEPAD);
     if (savedNote) {
       setNote(savedNote);
     }
@@ -33,14 +34,14 @@ export const Notepad = () => {
     
     // Set new timeout to save after 5 seconds of inactivity
     saveTimeoutRef.current = window.setTimeout(() => {
-      localStorage.setItem('notepad', newNote);
+      localStorage.setItem(STORAGE_KEYS.NOTEPAD, newNote);
       console.log('Note auto-saved');
     }, 5000);
   };
   
   // Save on blur
   const handleBlur = () => {
-    localStorage.setItem('notepad', note);
+    localStorage.setItem(STORAGE_KEYS.NOTEPAD, note);
     console.log('Note saved on blur');
   };
   
@@ -66,7 +67,7 @@ export const Notepad = () => {
         setNote(newValue);
         
         // Save immediately
-        localStorage.setItem('notepad', newValue);
+        localStorage.setItem(STORAGE_KEYS.NOTEPAD, newValue);
         
         // Set cursor position after the inserted timestamp
         setTimeout(() => {
