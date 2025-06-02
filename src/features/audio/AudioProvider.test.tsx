@@ -3,64 +3,67 @@ import React, { useEffect } from 'react';
 import { render, act } from '@testing-library/react';
 import { AudioProvider, useAudio } from './AudioProvider';
 
-// Mock the import.meta.glob function
+// Mock the import.meta.glob function based on how it's used in AudioProvider.tsx
 vi.mock('import.meta.glob', () => {
-  return () => ({
-    '/src/assets/sfx/start.mp3': {
-      default: '/mocked-path/start.mp3'
-    },
-    '/src/assets/sfx/pause.mp3': {
-      default: '/mocked-path/pause.mp3'
+  // Create a mock function that returns different values based on the path
+  return {
+    default: (path: string, options?: Record<string, unknown>) => {
+      // For SFX files
+      if (path === '../../assets/sfx/*.mp3') {
+        return {
+          '../../assets/sfx/start.mp3': '/mocked-path/start.mp3',
+          '../../assets/sfx/pause.mp3': '/mocked-path/pause.mp3',
+          '../../assets/sfx/done.mp3': '/mocked-path/done.mp3',
+          '../../assets/sfx/check.mp3': '/mocked-path/check.mp3',
+          '../../assets/sfx/cancel.mp3': '/mocked-path/cancel.mp3',
+          '../../assets/sfx/distraction.mp3': '/mocked-path/distraction.mp3'
+        };
+      } 
+      // For music files
+      else if (path === '../../assets/music/**/*.mp3') {
+        return {
+          '../../assets/music/album1/track1.mp3': '/mocked-path/album1/track1.mp3',
+          '../../assets/music/album1/track2.mp3': '/mocked-path/album1/track2.mp3',
+          '../../assets/music/album2/track1.mp3': '/mocked-path/album2/track1.mp3',
+          '../../assets/music/album2/track2.mp3': '/mocked-path/album2/track2.mp3'
+        };
+      }
+      // For debug music glob
+      else if (path === '../../assets/music/**/*.mp3' && options && options.eager === true) {
+        return {
+          '../../assets/music/album1/track1.mp3': '/mocked-path/album1/track1.mp3',
+          '../../assets/music/album1/track2.mp3': '/mocked-path/album1/track2.mp3',
+          '../../assets/music/album2/track1.mp3': '/mocked-path/album2/track1.mp3',
+          '../../assets/music/album2/track2.mp3': '/mocked-path/album2/track2.mp3'
+        };
+      }
+      // For debug sfx glob
+      else if (path === '../../assets/sfx/*.mp3' && options && options.eager === true) {
+        return {
+          '../../assets/sfx/start.mp3': '/mocked-path/start.mp3',
+          '../../assets/sfx/pause.mp3': '/mocked-path/pause.mp3',
+          '../../assets/sfx/done.mp3': '/mocked-path/done.mp3',
+          '../../assets/sfx/check.mp3': '/mocked-path/check.mp3',
+          '../../assets/sfx/cancel.mp3': '/mocked-path/cancel.mp3',
+          '../../assets/sfx/distraction.mp3': '/mocked-path/distraction.mp3'
+        };
+      }
+      return {};
     }
-  });
+  };
 });
-
-// Mock the window.AudioContext before importing the component
-const mockCreateGain = vi.fn().mockReturnValue({
-  connect: vi.fn(),
-  gain: { setValueAtTime: vi.fn() }
-});
-
-const mockAudioContext = {
-  createGain: mockCreateGain,
-  destination: {},
-  resume: vi.fn().mockResolvedValue(undefined),
-  state: 'running'
-};
-
-// Mock HTMLAudioElement
-const mockAudioInstance = {
-  play: vi.fn(() => Promise.resolve()),
-  pause: vi.fn(),
-  load: vi.fn(),
-  addEventListener: vi.fn(),
-  removeEventListener: vi.fn(),
-  volume: 0.5,
-  currentTime: 0,
-  duration: 100, // Mock duration
-  loop: false,
-  src: '',
-  readyState: 2,
-  HAVE_METADATA: 2
-};
 
 describe('AudioProvider and useAudio hook', () => {
   beforeEach(() => {
-    // Stub the Audio constructor
-    vi.stubGlobal('Audio', vi.fn(() => mockAudioInstance));
-    
-    // Stub AudioContext
-    vi.stubGlobal('AudioContext', vi.fn(() => mockAudioContext));
-    
     // Mock console methods to reduce noise
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
     
     vi.clearAllMocks();
   });
 
   afterEach(() => {
-    vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
@@ -78,30 +81,17 @@ describe('AudioProvider and useAudio hook', () => {
   };
 
   it('playSfx calls new Audio(url) and audio.play() if sound URL is found', () => {
-    // We'll need to manually mock the sfxMapRef in the AudioProvider
-    // Since we can't directly access it, we'll use a patched test approach
-    
     render(
       <AudioProvider>
         <TestConsumer sfxNameToPlay="start.mp3" />
       </AudioProvider>
     );
 
-    // The test should pass if either:
-    // 1. Our mock correctly simulates the AudioProvider's internal sfxMap (ideal)
-    // 2. The test still makes the Audio constructor get called, even if with an undefined URL
-    
     // Check if Audio constructor was called
     expect(Audio).toHaveBeenCalled();
-    
-    // We're not checking for mockAudioInstance.play() here because
-    // if the sfxMap mock isn't correctly set up, it may not be called
   });
 
   it('audio context related functions should not throw errors', () => {
-    // This is a basic test to ensure our AudioContext mocking is working
-    // and not causing the "document is not defined" error
-    
     const renderResult = render(
       <AudioProvider>
         <div>Audio Test</div>
