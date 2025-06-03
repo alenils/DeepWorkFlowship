@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { FocusSessionTimer } from './components/FocusSessionTimer'
 import { DeepFocusInput } from './components/DeepFocusInput'
 import { SessionSummaryPanel } from './components/SessionSummaryPanel'
@@ -15,26 +15,21 @@ import { Toast } from './components/Toast'
 import { useSound } from './features/audio/useSound'
 import { MusicPlayer } from './features/audio/MusicPlayer'
 import { useHistoryStore, SessionData, BreakData, HistoryItem } from './store/historySlice'
+import { useWarpStore } from './store/warpSlice'
+import { StarfieldCanvas } from './components/starfield/StarfieldCanvas'
+import { StarfieldControls } from './components/starfield/StarfieldControls'
 import { 
   SOUND_FILES, 
-  WARP_ANIMATION, 
   WARP_MODE, 
   BAD_POSTURE_TIME_THRESHOLD_MS,
-  STORAGE_KEYS,
   ELEMENT_IDS,
   CSS_CLASSES,
   SESSION_TYPE
 } from './constants'
 
-// Used TypeScript interfaces are imported from historySlice.ts now
-// No need to redefine them here
-
 // Type guards for history items
 const isSessionData = (item: HistoryItem): item is SessionData => item.type === SESSION_TYPE.FOCUS;
 const isBreakData = (item: HistoryItem): item is BreakData => item.type === SESSION_TYPE.BREAK;
-
-// Warp mode types - Using the type from constants.ts values
-type WarpMode = typeof WARP_MODE[keyof typeof WARP_MODE];
 
 function App() {
   // Sound effects
@@ -70,203 +65,26 @@ function App() {
     clearHistory
   } = useHistoryStore();
   
+  // Get warp state from store
+  const { warpMode, isThrusting } = useWarpStore();
+  
   // Toast state
   const [toast, setToast] = useState({ show: false, message: '' });
-  
-  // Warp state
-  const [warpMode, setWarpMode] = useState<WarpMode>(WARP_MODE.NONE);
-  const [warpSpeed] = useState(WARP_ANIMATION.DEFAULT_SPEED);
-  const warpCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const warpAnimationFrameIdRef = useRef<number | null>(null);
-  const warpStarsRef = useRef<Array<{x: number, y: number, z: number}>>([]);
   
   // Posture tracking state
   const [postureStatus, setPostureStatus] = useState<boolean>(true);
   const [badPostureStartTime, setBadPostureStartTime] = useState<number | null>(null);
   const badPostureTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
-  // Initialize warp stars
-  const initWarpStars = useCallback((count: number) => {
-    const stars = [];
-    for (let i = 0; i < count; i++) {
-      stars.push({
-        x: Math.random() * window.innerWidth * 2 - window.innerWidth,
-        y: Math.random() * window.innerHeight * 2 - window.innerHeight,
-        z: Math.random() * WARP_ANIMATION.MAX_DEPTH
-      });
-    }
-    warpStarsRef.current = stars;
-  }, []);
-
-  // Set warp mode
-  const setWarpModeWithEffects = useCallback((mode: WarpMode) => {
-    // Clean up existing warp if active
-    if (warpMode !== WARP_MODE.NONE) {
-      // Cancel animation
-      if (warpAnimationFrameIdRef.current) {
-        cancelAnimationFrame(warpAnimationFrameIdRef.current);
-        warpAnimationFrameIdRef.current = null;
-      }
-      
-      // Remove canvas
-      if (warpCanvasRef.current) {
-        document.body.removeChild(warpCanvasRef.current);
-        warpCanvasRef.current = null;
-      }
-      
-      document.body.classList.remove(CSS_CLASSES.BG_BLACK);
-      document.body.style.overflow = '';
-      
-      // Remove any UI fading classes
-      document.querySelectorAll(`.${CSS_CLASSES.WARP_DIMMED_TEXT}`).forEach(el => {
-        el.classList.remove(CSS_CLASSES.OPACITY_70, CSS_CLASSES.WARP_DIMMED_TEXT);
-      });
-      document.querySelectorAll(`.${CSS_CLASSES.WARP_CONTROL_BUTTON}`).forEach(el => {
-        el.classList.remove(CSS_CLASSES.OPACITY_50, CSS_CLASSES.WARP_FADED_BUTTON);
-      });
-      // Remove warp-dim class from minute input
-      const minutesInput = document.getElementById(ELEMENT_IDS.MINUTES_INPUT);
-      if (minutesInput) {
-        minutesInput.classList.remove(CSS_CLASSES.WARP_DIM);
-      }
-    }
-    
-    // Set up new warp mode
-    if (mode !== WARP_MODE.NONE) {
-      const isFull = mode === WARP_MODE.FULL;
-      
-      // Create canvas with appropriate z-index and styling
-      const canvas = document.createElement('canvas');
-      canvas.id = isFull ? ELEMENT_IDS.WARP_FULL : ELEMENT_IDS.WARP_BG;
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      
-      if (isFull) {
-        // Full warp
-        document.body.classList.add(CSS_CLASSES.BG_BLACK);
-        canvas.style.position = 'fixed';
-        canvas.style.top = '0';
-        canvas.style.left = '0';
-        canvas.style.zIndex = '9999';
-        canvas.style.opacity = '1';
-        document.body.style.overflow = 'hidden';
-      } else {
-        // Background warp
-        canvas.style.position = 'fixed';
-        canvas.style.top = '0';
-        canvas.style.left = '0';
-        canvas.style.zIndex = '0';
-        canvas.style.pointerEvents = 'none';
-        canvas.style.opacity = '0.7';
-        
-        // Fade numeric text immediately
-        document.querySelectorAll('.text-white, .dark\\:text-white, .text-gray-200, .dark\\:text-gray-200').forEach(el => {
-          if (el.textContent && /[0-9]/.test(el.textContent)) {
-            el.classList.add(CSS_CLASSES.OPACITY_70, CSS_CLASSES.WARP_DIMMED_TEXT);
-          }
-        });
-        // Dim the minutes input immediately
-        const minutesInput = document.getElementById(ELEMENT_IDS.MINUTES_INPUT);
-        if (minutesInput) {
-          minutesInput.classList.add(CSS_CLASSES.WARP_DIM);
-        }
-      }
-      
-      document.body.appendChild(canvas);
-      warpCanvasRef.current = canvas;
-      
-      // Initialize stars (more stars for full warp)
-      initWarpStars(isFull ? WARP_ANIMATION.STAR_COUNT : WARP_ANIMATION.STAR_COUNT_BG);
-      
-      // Start animation immediately
-      animateWarpStars(warpSpeed);
-    }
-    
-    // Update state and save to localStorage
-    setWarpMode(mode);
-    localStorage.setItem(STORAGE_KEYS.WARP_MODE, mode);
-  }, [warpMode, initWarpStars, warpSpeed]);
-
-  // Animate warp stars
-  const animateWarpStars = useCallback((speedMultiplier = 1.0) => {
-    if (!warpCanvasRef.current) return;
-    
-    const canvas = warpCanvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    // Clear canvas
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Update and draw stars
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    
-    warpStarsRef.current.forEach((star) => {
-      // Move star closer to viewer (faster with speedMultiplier)
-      star.z -= 1 * speedMultiplier;
-      
-      // Reset star when it gets too close
-      if (star.z <= 0) {
-        star.z = WARP_ANIMATION.MAX_DEPTH;
-        star.x = Math.random() * canvas.width * 2 - canvas.width;
-        star.y = Math.random() * canvas.height * 2 - canvas.height;
-      }
-      
-      // Project star position to 2D
-      const factor = WARP_ANIMATION.MAX_DEPTH / (star.z || 1);
-      const starX = star.x * factor + centerX;
-      const starY = star.y * factor + centerY;
-      
-      // Only draw stars within canvas bounds
-      if (starX >= 0 && starX <= canvas.width && starY >= 0 && starY <= canvas.height) {
-        // Calculate size and color based on z-position
-        const size = Math.max(0.5, (1 - star.z / WARP_ANIMATION.MAX_DEPTH) * 5);
-        const alpha = 1 - star.z / WARP_ANIMATION.MAX_DEPTH;
-        
-        // Draw star
-        ctx.beginPath();
-        ctx.arc(starX, starY, size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-        ctx.fill();
-      }
-    });
-    
-    // Request next frame
-    warpAnimationFrameIdRef.current = requestAnimationFrame(() => animateWarpStars(speedMultiplier));
-  }, []);
-
-  // Update warp animation when browser window resizes
-  useEffect(() => {
-    const handleResize = () => {
-      if (warpCanvasRef.current) {
-        warpCanvasRef.current.width = window.innerWidth;
-        warpCanvasRef.current.height = window.innerHeight;
-      }
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-  
   // Set up dark mode
   useEffect(() => {
-    const savedDarkMode = localStorage.getItem(STORAGE_KEYS.DARK_MODE);
+    const savedDarkMode = localStorage.getItem('darkMode');
     if (savedDarkMode === 'true' || 
         (!savedDarkMode && 
          window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       document.documentElement.classList.add('dark');
     }
   }, []);
-  
-  // Set up warp mode
-  useEffect(() => {
-    const savedWarpMode = localStorage.getItem(STORAGE_KEYS.WARP_MODE) as WarpMode | null;
-    if (savedWarpMode && savedWarpMode !== WARP_MODE.NONE) {
-      setWarpModeWithEffects(savedWarpMode);
-    }
-  }, [setWarpModeWithEffects]);
   
   // Handle posture status effect
   useEffect(() => {
@@ -322,13 +140,14 @@ function App() {
         case 'w':
           if (e.ctrlKey || e.metaKey) break; // Skip browser shortcuts
           
-          // Cycle through warp modes
+          // Cycle through warp modes - now handled by warpStore
+          const { setWarpMode } = useWarpStore.getState();
           if (warpMode === WARP_MODE.NONE) {
-            setWarpModeWithEffects(WARP_MODE.BACKGROUND);
+            setWarpMode(WARP_MODE.BACKGROUND);
           } else if (warpMode === WARP_MODE.BACKGROUND) {
-            setWarpModeWithEffects(WARP_MODE.FULL);
+            setWarpMode(WARP_MODE.FULL);
           } else {
-            setWarpModeWithEffects(WARP_MODE.NONE);
+            setWarpMode(WARP_MODE.NONE);
           }
           break;
           
@@ -339,7 +158,7 @@ function App() {
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [warpMode, setWarpModeWithEffects, isSessionActive, isPaused]);
+  }, [warpMode, isSessionActive, isPaused]);
   
   // Show toast message
   const showToast = (message: string) => {
@@ -358,7 +177,8 @@ function App() {
   
   // Handle exit warp
   const handleExitWarp = () => {
-    setWarpModeWithEffects(WARP_MODE.NONE);
+    const { setWarpMode } = useWarpStore.getState();
+    setWarpMode(WARP_MODE.NONE);
   };
   
   // Handle distraction button click
@@ -436,7 +256,10 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+    <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200 ${isThrusting ? CSS_CLASSES.THRUST_SHAKE : ''}`}>
+      {/* Starfield Canvas */}
+      <StarfieldCanvas />
+      
       {warpMode !== WARP_MODE.FULL && <DarkModeToggle />}
 
       {/* FULL WARP Controls */}
@@ -468,6 +291,7 @@ function App() {
           <aside className="flex flex-col gap-6">
             <ActionsList />
             <Notepad />
+            <StarfieldControls />
           </aside>
           
           {/* Middle Column: Timer & Session History */}

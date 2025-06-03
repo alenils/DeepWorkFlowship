@@ -56,6 +56,44 @@ export const WARP_ANIMATION = {
   DEFAULT_SPEED: 1.1       // Default animation speed
 } as const;
 
+// ===== STARFIELD QUALITY SETTINGS =====
+export const STARFIELD_QUALITY = {
+  OFF: 'off',
+  ECO: 'eco',
+  STANDARD: 'standard',
+  ULTRA: 'ultra'
+} as const;
+
+export const STARFIELD_QUALITY_LABELS = {
+  [STARFIELD_QUALITY.OFF]: 'Off',
+  [STARFIELD_QUALITY.ECO]: 'Eco',
+  [STARFIELD_QUALITY.STANDARD]: 'Standard',
+  [STARFIELD_QUALITY.ULTRA]: 'Ultra'
+} as const;
+
+export const STAR_COUNTS_BY_QUALITY = {
+  [STARFIELD_QUALITY.OFF]: 0,
+  [STARFIELD_QUALITY.ECO]: 200,
+  [STARFIELD_QUALITY.STANDARD]: 500,
+  [STARFIELD_QUALITY.ULTRA]: 1000
+} as const;
+
+export const STAR_SPEED_FACTORS_BY_QUALITY = {
+  [STARFIELD_QUALITY.OFF]: 0,
+  [STARFIELD_QUALITY.ECO]: 0.8,
+  [STARFIELD_QUALITY.STANDARD]: 1.0,
+  [STARFIELD_QUALITY.ULTRA]: 1.2
+} as const;
+
+export const STAR_DRAW_INTERVAL_BY_QUALITY = {
+  [STARFIELD_QUALITY.OFF]: 0,
+  [STARFIELD_QUALITY.ECO]: 30, // Draw every 30ms (approx 33 FPS)
+  [STARFIELD_QUALITY.STANDARD]: 16, // Draw every 16ms (approx 60 FPS)
+  [STARFIELD_QUALITY.ULTRA]: 8 // Draw every 8ms (approx 120 FPS)
+} as const;
+
+export const THRUST_SHAKE_DURATION_MS = 150; // Duration of thrust shake effect
+
 // ===== APPLICATION MODES =====
 export const APP_MODE = {
   FOCUS: 'focus',
@@ -85,6 +123,7 @@ export const STORAGE_KEYS = {
   POSTURE: 'deepwork-posture-storage',
   DARK_MODE: 'darkMode',
   WARP_MODE: 'warpMode',
+  STARFIELD_QUALITY: 'starfieldQuality',
   LAST_DIFFICULTY: 'lastDifficulty',
   TOTAL_STREAK_SESSIONS: 'totalStreakSessions',
   POSTURE_TRACKING_ACTIVE: 'postureTrackingActive',
@@ -117,7 +156,8 @@ export const CSS_CLASSES = {
   OPACITY_70: 'opacity-70',
   OPACITY_50: 'opacity-50',
   WARP_FADED_BUTTON: 'warp-faded-button',
-  BG_BLACK: 'bg-black'
+  BG_BLACK: 'bg-black',
+  THRUST_SHAKE: 'thrust-shake'
 } as const;
 
 // ===== TOAST SETTINGS =====

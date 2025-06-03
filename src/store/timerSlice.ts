@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useEffect, useRef } from 'react';
 import { useHistoryStore, generateId, SessionData, BreakData } from './historySlice';
+import { useWarpStore } from './warpSlice';
 import { 
   DEFAULT_TIMER_MINUTES, 
   TIMER_UPDATE_INTERVAL_MS, 
@@ -212,6 +213,10 @@ export const useTimerStore = create<TimerState>()(
         // Close any open break before starting a new session
         const historyStore = useHistoryStore.getState();
         historyStore.closeOpenBreak();
+        
+        // Trigger thrust effect in warp store
+        const warpStore = useWarpStore.getState();
+        warpStore.triggerThrust();
         
         // Play sound - moved to component for now
         // if (SFX && SFX.start) playSfx(SFX.start);
