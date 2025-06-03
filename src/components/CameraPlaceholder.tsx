@@ -2,26 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useStablePosture } from '../hooks/useStablePosture';
 import { PoseLandmarksRenderer } from './PoseLandmarksRenderer';
 import { PoseOverlay } from './PoseOverlay';
-import { STORAGE_KEYS } from '../constants';
-
-// Focus statements for camera caption
-const FOCUS_STATEMENTS = [
-  "THIS IS WHAT GRIT LOOKS LIKE",
-  "STAY ON MISSION",
-  "DOING IT",
-  "THIS IS SPARTA",
-  "FOCUS FACE",
-  "GRINDING",
-  "DEEP WORK HAPPENING",
-  "FLOW STATE ACTIVATED",
-  "EYES ON THE PRIZE",
-  "DISTRACTION-FREE ZONE",
-  "COMMITTING TO EXCELLENCE",
-  "PROGRESS IN MOTION",
-  "SHOWING UP FOR YOURSELF",
-  "DISCIPLINE OVER MOTIVATION",
-  "BUILDING NEURAL PATHWAYS"
-];
+import { STORAGE_KEYS, FOCUS_STATEMENTS } from '../constants';
 
 export const CameraPlaceholder = ({ isSessionActive = false, onPostureChange = (_: boolean) => {} }) => {
   const videoRef = useRef<HTMLVideoElement>(null);

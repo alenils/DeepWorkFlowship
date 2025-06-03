@@ -82,6 +82,7 @@ export const STORAGE_KEYS = {
   TIMER: 'deepwork-timer-storage',
   APP: 'deepwork-app-storage',
   WARP: 'deepwork-warp-storage',
+  POSTURE: 'deepwork-posture-storage',
   DARK_MODE: 'darkMode',
   WARP_MODE: 'warpMode',
   LAST_DIFFICULTY: 'lastDifficulty',
@@ -121,3 +122,22 @@ export const CSS_CLASSES = {
 
 // ===== TOAST SETTINGS =====
 export const TOAST_DURATION_MS = 3000; // Duration to show toast messages 
+
+// ===== FOCUS STATEMENTS =====
+export const FOCUS_STATEMENTS = [
+  "THIS IS WHAT GRIT LOOKS LIKE",
+  "STAY ON MISSION",
+  "DOING IT",
+  "THIS IS SPARTA",
+  "FOCUS FACE",
+  "GRINDING",
+  "DEEP WORK HAPPENING",
+  "FLOW STATE ACTIVATED",
+  "EYES ON THE PRIZE",
+  "DISTRACTION-FREE ZONE",
+  "COMMITTING TO EXCELLENCE",
+  "PROGRESS IN MOTION",
+  "SHOWING UP FOR YOURSELF",
+  "DISCIPLINE OVER MOTIVATION",
+  "BUILDING NEURAL PATHWAYS"
+]; 

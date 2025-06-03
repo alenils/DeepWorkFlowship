@@ -3,6 +3,7 @@ import { NormalizedLandmark } from "@mediapipe/tasks-vision";
 import { usePosture } from "@/context/PostureContext";
 import { POSE_LANDMARKS } from "@/utils/postureDetect";
 import PostureControls from './PostureControls';
+import { BaselineMetrics } from "@/store/postureSlice";
 
 // Connection lines commented out as per request
 /*
@@ -10,13 +11,6 @@ const POSE_CONNECTIONS: [number, number][] = [
   // ... (connections were here)
 ];
 */
-
-// Define BaselineMetrics interface (or import from context if exported)
-interface BaselineMetrics {
-  noseY: number;
-  noseX: number; 
-  earShoulderDistX: number; 
-}
 
 export interface PostureViewProps {
   isSessionActive?: boolean;

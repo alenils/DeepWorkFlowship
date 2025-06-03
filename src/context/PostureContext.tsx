@@ -1,45 +1,25 @@
 import React, {
   createContext,
   useContext,
-  useState,
   useRef,
   useEffect,
   useCallback,
 } from "react";
-// Ensure poseDetector is imported correctly (default export from the modified file)
-import poseDetector from "@/lib/poseDetector"; // Check this path if build fails
+// Import poseDetector
+import poseDetector from "@/lib/poseDetector";
 import {
-  PoseLandmarkerResult,
-  NormalizedLandmark,
+  PoseLandmarkerResult
 } from "@mediapipe/tasks-vision";
-import { isGoodPosture, POSE_LANDMARKS } from "@/utils/postureDetect"; // Ensure this path is correct
+import { isGoodPosture, POSE_LANDMARKS } from "@/utils/postureDetect";
+// Import the postureSlice
+import { usePostureStore, BaselineMetrics } from "@/store/postureSlice";
 
-// Define structure for baseline metrics
-interface BaselineMetrics {
-  noseY: number;
-  noseX: number; 
-  // shoulderY: number; // Not needed for current ref logic + lean check
-  earShoulderDistX: number; // For lean check
-  // noseShoulderDiffY: number; // Not needed
-}
-
-// Update the PostureContextType interface
+// Simplified context that mainly handles camera/detector functionality
 interface PostureContextType {
   videoRef: React.RefObject<HTMLVideoElement>;
   startPostureDetection: () => Promise<void>;
   stopPostureDetection: () => void;
-  isDetecting: boolean;
-  detectedLandmarks: NormalizedLandmark[] | undefined;
-  baselineMetrics: BaselineMetrics | null | undefined;
   handleCalibration: () => void;
-  cameraError: string | null;
-  postureStatus: { isGood: boolean; message: string };
-  isCalibrated: boolean;
-  isCalibrating: boolean;
-  isLoadingDetector: boolean;
-  countdown: number | null;
-  sensitivityPercentage: number;
-  setSensitivityPercentage: React.Dispatch<React.SetStateAction<number>>;
 }
 
 const PostureContext = createContext<PostureContextType | undefined>(undefined);
@@ -47,188 +27,177 @@ const PostureContext = createContext<PostureContextType | undefined>(undefined);
 export const PostureProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  // Keep video reference in context
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isDetecting, setIsDetecting] = useState(false);
-  const [detectedLandmarks, setDetectedLandmarks] = useState<
-    NormalizedLandmark[] | undefined
-  >(undefined);
-  const [baselineMetrics, setBaselineMetrics] = useState<BaselineMetrics | null | undefined>(null);
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const [postureStatus, setPostureStatus] = useState<{ isGood: boolean; message: string }>({
-    isGood: true, // Default to green bar initially, or false for red
-    message: "Initializing detector...", 
-  });
-  const [isCalibrated, setIsCalibrated] = useState(false);
-  const [isCalibrating, setIsCalibrating] = useState(false); // State for calibration process
-  const [isLoadingDetector, setIsLoadingDetector] = useState(false);
-  const [countdown, setCountdown] = useState<number | null>(null); // State for countdown display
-  const [sensitivityPercentage, setSensitivityPercentage] = useState(10); // New: Default to 10%
+  
+  // Reference to interval for detection
   const intervalIdRef = useRef<number | null>(null);
+  
+  // Reference to interval for calibration countdown
+  const calibrationTimerRef = useRef<number | null>(null);
+  
+  // Reference to detecting state for cleanup
   const detectingRef = useRef<boolean>(false);
-  const calibrationTimerRef = useRef<number | null>(null); // Ref for calibration countdown timer
-
-  // Refs for state values
-  const isCalibratedRef = useRef(isCalibrated);
-  const baselineMetricsRef = useRef(baselineMetrics);
-  const detectedLandmarksRef = useRef(detectedLandmarks);
-  const postureStatusRef = useRef(postureStatus);
-  const sensitivityPercentageRef = useRef(sensitivityPercentage); // New Ref
-
-  // Effects to keep refs in sync with state
-  useEffect(() => {
-    isCalibratedRef.current = isCalibrated;
-  }, [isCalibrated]);
-
-  useEffect(() => {
-    baselineMetricsRef.current = baselineMetrics;
-  }, [baselineMetrics]);
-
-  useEffect(() => {
-    detectedLandmarksRef.current = detectedLandmarks;
-  }, [detectedLandmarks]);
-
-  useEffect(() => {
-    postureStatusRef.current = postureStatus;
-  }, [postureStatus]);
-
-  useEffect(() => { // New effect to sync sensitivityPercentageRef
-    sensitivityPercentageRef.current = sensitivityPercentage;
-  }, [sensitivityPercentage]);
-
-  const handleCalibration = () => {
-    if (calibrationTimerRef.current) { // Prevent starting if already calibrating
-      console.log("CONTEXT: Calibration already in progress.");
-      return; 
-    }
-    if (isDetecting && !isLoadingDetector && !cameraError) { // Ensure detection is active and ready
-      const landmarksForCalibrationStart = detectedLandmarksRef.current;
-
-      if (landmarksForCalibrationStart && landmarksForCalibrationStart.length > 0) {
-        console.log("CONTEXT: Starting calibration countdown...");
-        setIsCalibrating(true); // Set calibrating flag
-        setIsCalibrated(false); // Not fully calibrated yet
-        setCountdown(3);
-        setPostureStatus({ isGood: true, message: "Calibrating... 3" });
-
-        let currentCountdown = 3;
-        calibrationTimerRef.current = window.setInterval(() => { // Use window.setInterval
-          currentCountdown -= 1;
-          setCountdown(currentCountdown);
-
-          if (currentCountdown > 0) {
-            setPostureStatus({ isGood: true, message: `Calibrating... ${currentCountdown}` });
-          } else {
-            // Countdown finished
-            if (calibrationTimerRef.current) clearInterval(calibrationTimerRef.current);
-            calibrationTimerRef.current = null;
-            setPostureStatus({ isGood: true, message: `Capturing...` }); 
-            setCountdown(null);
-
-            console.log("CONTEXT: Capturing baseline metrics after countdown...");
-            const landmarksAtCalibrationTime = detectedLandmarksRef.current;
-            const nose = landmarksAtCalibrationTime?.[POSE_LANDMARKS.NOSE];
-            const leftEar = landmarksAtCalibrationTime?.[POSE_LANDMARKS.LEFT_EAR];
-            const leftShoulder = landmarksAtCalibrationTime?.[POSE_LANDMARKS.LEFT_SHOULDER];
-
-            // Calculate baseline metrics
-            if (landmarksAtCalibrationTime && nose?.x && nose?.y && leftEar?.x && leftShoulder?.x) { 
-              const metrics: BaselineMetrics = {
-                noseY: nose.y,
-                noseX: nose.x,
-                earShoulderDistX: Math.abs(leftEar.x - leftShoulder.x)
-              };
-              setBaselineMetrics(metrics); // Store calculated metrics
-              setIsCalibrated(true); // Calibration complete
-              setIsCalibrating(false);
-              // Check posture immediately with the new metrics and sensitivity
-              const status = isGoodPosture(landmarksAtCalibrationTime, metrics, sensitivityPercentageRef.current); 
-              setPostureStatus(status);
-              console.log("CONTEXT: Calibration complete. isCalibrated=true. Metrics:", metrics, "Status:", status, "Sensitivity:", sensitivityPercentageRef.current);
-            } else {
-              console.warn("CONTEXT: Could not calculate baseline metrics - missing required landmarks after delay.");
-              setPostureStatus({ isGood: false, message: "Calibration failed: landmarks lost." });
-              setIsCalibrated(false);
-              setIsCalibrating(false);
-              setBaselineMetrics(null); // Ensure metrics are null
-            }
-          }
-        }, 1000); // 1-second interval
-
-      } else {
-        console.warn("CONTEXT: Calibration attempt failed: Required landmarks missing.");
-        setPostureStatus({ isGood: false, message: "Cannot calibrate - landmarks missing." });
-        setIsCalibrating(false); // Ensure calibrating is false if failed to start
-      }
-    } else {
-        console.warn("CONTEXT: Cannot calibrate - detection not active or ready.");
-        setPostureStatus({ isGood: false, message: "Cannot calibrate - detector not ready." });
-    }
-  };
-
+  
+  // Get state and actions from Zustand store
+  const postureStore = usePostureStore();
+  
+  // Create handler for pose detection results
   const handlePoseResults = useCallback(
     (result: PoseLandmarkerResult, _: number) => {
-      const currentIsCalibrated = isCalibratedRef.current;
-      const currentBaselineMetrics = baselineMetricsRef.current;
-      const currentSensitivityPercentage = sensitivityPercentageRef.current; // Get current sensitivity
-
+      // Update landmarks in store
       if (result.landmarks && result.landmarks.length > 0) {
         const newLandmarksFromDetector = result.landmarks[0];
-        setDetectedLandmarks(newLandmarksFromDetector);
-
-        if (currentIsCalibrated && currentBaselineMetrics) {
-          const status = isGoodPosture(newLandmarksFromDetector, currentBaselineMetrics, currentSensitivityPercentage); // Pass sensitivity
-          setPostureStatus(status);
-        } else if (!isCalibrating) { // Only update if not in the middle of calibrating
-          const preCalibrationStatus = isGoodPosture(newLandmarksFromDetector, null, currentSensitivityPercentage); // Pass sensitivity
-          const message = newLandmarksFromDetector.length > 0 ? "Ready to calibrate." : "Initializing detector...";
-          setPostureStatus({ isGood: preCalibrationStatus.isGood, message: message });
+        postureStore.setRawLandmarks(newLandmarksFromDetector);
+        
+        // Check posture status based on calibration state
+        if (postureStore.isCalibrated && postureStore.baselineMetrics) {
+          const status = isGoodPosture(
+            newLandmarksFromDetector, 
+            postureStore.baselineMetrics, 
+            postureStore.sensitivityPercentage
+          );
+          postureStore.setPostureStatus(status);
+        } else if (!postureStore.isCalibrating) {
+          // Only update if not in the middle of calibrating
+          const preCalibrationStatus = isGoodPosture(
+            newLandmarksFromDetector, 
+            null, 
+            postureStore.sensitivityPercentage
+          );
+          const message = newLandmarksFromDetector.length > 0 
+            ? "Ready to calibrate." 
+            : "Initializing detector...";
+          postureStore.setPostureStatus({ 
+            isGood: preCalibrationStatus.isGood, 
+            message: message 
+          });
         }
-        // If isCalibrating is true, do nothing here, let handleCalibration manage the message
-
       } else {
-        setDetectedLandmarks(undefined);
-        if (currentIsCalibrated) {
-          setPostureStatus({ isGood: false, message: "No person detected." });
-        } else if (!isCalibrating) { // Only update if not calibrating
-          setPostureStatus({ isGood: true, message: "Initializing detector..." });
+        postureStore.setRawLandmarks(undefined);
+        if (postureStore.isCalibrated) {
+          postureStore.setPostureStatus({ isGood: false, message: "No person detected." });
+        } else if (!postureStore.isCalibrating) {
+          postureStore.setPostureStatus({ isGood: true, message: "Initializing detector..." });
         }
       }
     },
-    [isCalibrating] // Depend on isCalibrating to change behavior based on calibration state
-                    // POSE_LANDMARKS is constant, refs handle state access
+    [postureStore]
   );
   
+  // Setup pose detector
   const setupPoseDetector = useCallback(async () => {
-    setIsLoadingDetector(true);
-    setCameraError(null);
+    postureStore.setIsLoadingDetector(true);
+    postureStore.setCameraError(null);
     try {
       await poseDetector.initialize(undefined, handlePoseResults); 
       console.log("Pose detector initialized in context.");
     } catch (error) {
       console.error("Error initializing pose detector in context:", error);
-      setCameraError(
+      postureStore.setCameraError(
         `Failed to initialize pose detector: ${
           error instanceof Error ? error.message : String(error)
         }`
       );
     } finally {
-      setIsLoadingDetector(false);
+      postureStore.setIsLoadingDetector(false);
     }
-  }, [handlePoseResults]);
+  }, [handlePoseResults, postureStore]);
 
+  // Handle calibration process
+  const handleCalibration = () => {
+    if (calibrationTimerRef.current) {
+      console.log("CONTEXT: Calibration already in progress.");
+      return; 
+    }
+    
+    if (postureStore.isDetecting && !postureStore.isLoadingDetector && !postureStore.cameraError) {
+      const currentLandmarks = postureStore.rawLandmarks;
+
+      if (currentLandmarks && currentLandmarks.length > 0) {
+        console.log("CONTEXT: Starting calibration countdown...");
+        postureStore.setIsCalibrating(true);
+        postureStore.setIsCalibrated(false);
+        postureStore.setCountdown(3);
+        postureStore.setPostureStatus({ isGood: true, message: "Calibrating... 3" });
+
+        let currentCountdown = 3;
+        calibrationTimerRef.current = window.setInterval(() => {
+          currentCountdown -= 1;
+          postureStore.setCountdown(currentCountdown);
+
+          if (currentCountdown > 0) {
+            postureStore.setPostureStatus({ isGood: true, message: `Calibrating... ${currentCountdown}` });
+          } else {
+            // Countdown finished
+            if (calibrationTimerRef.current) clearInterval(calibrationTimerRef.current);
+            calibrationTimerRef.current = null;
+            postureStore.setPostureStatus({ isGood: true, message: `Capturing...` }); 
+            postureStore.setCountdown(null);
+
+            console.log("CONTEXT: Capturing baseline metrics after countdown...");
+            const currentLandmarksAtCapture = postureStore.rawLandmarks;
+            const nose = currentLandmarksAtCapture?.[POSE_LANDMARKS.NOSE];
+            const leftEar = currentLandmarksAtCapture?.[POSE_LANDMARKS.LEFT_EAR];
+            const leftShoulder = currentLandmarksAtCapture?.[POSE_LANDMARKS.LEFT_SHOULDER];
+
+            // Calculate baseline metrics
+            if (currentLandmarksAtCapture && nose?.x && nose?.y && leftEar?.x && leftShoulder?.x) { 
+              const metrics: BaselineMetrics = {
+                noseY: nose.y,
+                noseX: nose.x,
+                earShoulderDistX: Math.abs(leftEar.x - leftShoulder.x)
+              };
+              
+              // Use store action to complete calibration
+              postureStore.completeCalibration(metrics);
+              
+              // Check posture immediately with the new metrics
+              const status = isGoodPosture(
+                currentLandmarksAtCapture, 
+                metrics, 
+                postureStore.sensitivityPercentage
+              ); 
+              postureStore.setPostureStatus(status);
+              
+              console.log("CONTEXT: Calibration complete. Metrics:", metrics);
+            } else {
+              console.warn("CONTEXT: Could not calculate baseline metrics - missing required landmarks.");
+              postureStore.setPostureStatus({ isGood: false, message: "Calibration failed: landmarks lost." });
+              postureStore.setIsCalibrated(false);
+              postureStore.setIsCalibrating(false);
+              postureStore.setBaselineMetrics(null);
+            }
+          }
+        }, 1000);
+      } else {
+        console.warn("CONTEXT: Calibration attempt failed: Required landmarks missing.");
+        postureStore.setPostureStatus({ isGood: false, message: "Cannot calibrate - landmarks missing." });
+        postureStore.setIsCalibrating(false);
+      }
+    } else {
+      console.warn("CONTEXT: Cannot calibrate - detection not active or ready.");
+      postureStore.setPostureStatus({ isGood: false, message: "Cannot calibrate - detector not ready." });
+    }
+  };
+
+  // Start posture detection
   const startPostureDetection = async () => {
     if (!videoRef.current) {
-      setCameraError("Video element not available.");
+      postureStore.setCameraError("Video element not available.");
       return;
     }
-    setIsLoadingDetector(true);
-    setCameraError(null);
+    
+    postureStore.setIsLoadingDetector(true);
+    postureStore.setCameraError(null);
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 640, height: 480 }, 
       });
+      
       videoRef.current.srcObject = stream;
+      
       await new Promise<void>((resolve, reject) => { 
         if (videoRef.current) {
           videoRef.current.onloadedmetadata = () => resolve();
@@ -237,6 +206,7 @@ export const PostureProvider: React.FC<{ children: React.ReactNode }> = ({
           reject(new Error("Video element not available for metadata load"));
         }
       });
+      
       if (videoRef.current) {
         await videoRef.current.play();
         console.log("Camera stream started.");
@@ -245,18 +215,18 @@ export const PostureProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       
       if (!poseDetector['poseLandmarker']) { 
-          console.log("Detector not yet initialized, initializing now...");
-          await setupPoseDetector(); 
+        console.log("Detector not yet initialized, initializing now...");
+        await setupPoseDetector(); 
       }
       
       if (!poseDetector['poseLandmarker']) {
-          throw new Error("Pose detector could not be initialized after attempt.");
+        throw new Error("Pose detector could not be initialized after attempt.");
       }
 
       console.log("CONTEXT: Posture detection starting interval (500ms).");
-      setIsDetecting(true);
+      postureStore.setIsDetecting(true);
       detectingRef.current = true;
-      setIsLoadingDetector(false);
+      postureStore.setIsLoadingDetector(false);
 
       if (intervalIdRef.current) clearInterval(intervalIdRef.current);
 
@@ -265,21 +235,22 @@ export const PostureProvider: React.FC<{ children: React.ReactNode }> = ({
           const now = performance.now();
           poseDetector.detect(videoRef.current, now);
         } else if (!detectingRef.current) {
-             if (intervalIdRef.current) clearInterval(intervalIdRef.current);
-             intervalIdRef.current = null;
+          if (intervalIdRef.current) clearInterval(intervalIdRef.current);
+          intervalIdRef.current = null;
         }
       }, 500);
 
     } catch (err) {
       console.error("Error starting posture detection:", err);
-      setCameraError(
+      postureStore.setCameraError(
         `Error accessing camera or starting detection: ${
           err instanceof Error ? err.message : String(err)
         }`
       );
-      setIsDetecting(false);
+      postureStore.setIsDetecting(false);
       detectingRef.current = false;
-      setIsLoadingDetector(false);
+      postureStore.setIsLoadingDetector(false);
+      
       if (intervalIdRef.current) {
         clearInterval(intervalIdRef.current);
         intervalIdRef.current = null;
@@ -287,16 +258,18 @@ export const PostureProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  // Stop posture detection
   const stopPostureDetection = () => {
     console.log("CONTEXT: Stopping posture detection.");
     detectingRef.current = false;
-    setIsDetecting(false);
+    postureStore.setIsDetecting(false);
 
     if (intervalIdRef.current) { 
       clearInterval(intervalIdRef.current);
       intervalIdRef.current = null;
       console.log("CONTEXT: Detection interval cleared.");
     }
+    
     if (calibrationTimerRef.current) { 
       clearInterval(calibrationTimerRef.current);
       calibrationTimerRef.current = null;
@@ -306,8 +279,8 @@ export const PostureProvider: React.FC<{ children: React.ReactNode }> = ({
     if (videoRef.current && videoRef.current.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
       stream.getTracks().forEach((track) => {
-          console.log("Stopping track:", track.kind, track.label);
-          track.stop(); 
+        console.log("Stopping track:", track.kind, track.label);
+        track.stop(); 
       });
       videoRef.current.srcObject = null;
       console.log("CONTEXT: Camera stream stopped and srcObject cleared.");
@@ -315,38 +288,41 @@ export const PostureProvider: React.FC<{ children: React.ReactNode }> = ({
       console.log("CONTEXT: No active stream found to stop.");
     }
 
-    setDetectedLandmarks(undefined);
-    setIsCalibrated(false); 
-    setBaselineMetrics(null);
-    setIsCalibrating(false); 
-    setCountdown(null);
-    setPostureStatus({ isGood: true, message: "Detection stopped." });
+    postureStore.setRawLandmarks(undefined);
+    postureStore.setIsCalibrated(false);
+    postureStore.setBaselineMetrics(null);
+    postureStore.setIsCalibrating(false);
+    postureStore.setCountdown(null);
+    postureStore.setPostureStatus({ isGood: true, message: "Detection stopped." });
   };
   
+  // Initialize detector when component mounts
   useEffect(() => {
-    if (videoRef.current && !poseDetector['poseLandmarker'] && !isLoadingDetector) {
-        setupPoseDetector();
+    if (videoRef.current && !poseDetector['poseLandmarker'] && !postureStore.isLoadingDetector) {
+      setupPoseDetector();
     }
-  }, [isLoadingDetector, setupPoseDetector]); 
+  }, [postureStore.isLoadingDetector, setupPoseDetector]); 
 
+  // Cleanup on unmount
   useEffect(() => {
     return () => { 
       console.log("CONTEXT: PostureProvider unmounting cleanup.");
-      if (calibrationTimerRef.current) { // Clear calibration timer
+      if (calibrationTimerRef.current) {
         clearInterval(calibrationTimerRef.current);
       }
-      if (intervalIdRef.current) { // Clear detection interval
+      if (intervalIdRef.current) {
         clearInterval(intervalIdRef.current);
       }
-      // Explicitly stop tracks before closing detector
+      
       if (videoRef.current && videoRef.current.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
         stream.getTracks().forEach((track) => track.stop());
-        console.log("Camera stream stopped during unmount cleanup.")
+        console.log("Camera stream stopped during unmount cleanup.");
       } 
+      
       if (poseDetector && typeof poseDetector.close === 'function') {
-          poseDetector.close(); 
-          console.log("CONTEXT: Pose detector closed during unmount cleanup.");
+        poseDetector.close(); 
+        console.log("CONTEXT: Pose detector closed during unmount cleanup.");
       }
     };
   }, []);
@@ -357,18 +333,7 @@ export const PostureProvider: React.FC<{ children: React.ReactNode }> = ({
         videoRef,
         startPostureDetection,
         stopPostureDetection,
-        isDetecting,
-        detectedLandmarks,
-        baselineMetrics,
         handleCalibration,
-        cameraError,
-        postureStatus,
-        isCalibrated,
-        isCalibrating,
-        isLoadingDetector,
-        countdown,
-        sensitivityPercentage,
-        setSensitivityPercentage,
       }}
     >
       {children}
@@ -376,10 +341,34 @@ export const PostureProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 };
 
-export const usePosture = (): PostureContextType => {
+// Custom hook to use the posture context
+export const usePosture = () => {
   const context = useContext(PostureContext);
+  const postureStore = usePostureStore();
+  
   if (context === undefined) {
     throw new Error("usePosture must be used within a PostureProvider");
   }
-  return context;
+  
+  // Combine context and store into a unified API
+  return {
+    // From context (camera/detector operations)
+    videoRef: context.videoRef,
+    startPostureDetection: context.startPostureDetection,
+    stopPostureDetection: context.stopPostureDetection,
+    handleCalibration: context.handleCalibration,
+    
+    // From store (state)
+    isDetecting: postureStore.isDetecting,
+    detectedLandmarks: postureStore.rawLandmarks,
+    baselineMetrics: postureStore.baselineMetrics,
+    cameraError: postureStore.cameraError,
+    postureStatus: postureStore.postureStatus,
+    isCalibrated: postureStore.isCalibrated,
+    isCalibrating: postureStore.isCalibrating,
+    isLoadingDetector: postureStore.isLoadingDetector,
+    countdown: postureStore.countdown,
+    sensitivityPercentage: postureStore.sensitivityPercentage,
+    setSensitivityPercentage: postureStore.setSensitivityPercentage,
+  };
 }; 
