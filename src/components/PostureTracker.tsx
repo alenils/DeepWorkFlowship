@@ -64,7 +64,7 @@ const PostureTrackerComponent = ({
               });
               
               // Start posture detection once video is loaded
-              posture.startDetection(videoRef.current);
+              posture.startDetection();
             }
           });
         }

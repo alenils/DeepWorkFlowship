@@ -5,11 +5,7 @@ import { PoseOverlay } from './PoseOverlay';
 import { STORAGE_KEYS, FOCUS_STATEMENTS } from '../constants';
 
 export const CameraPlaceholder = ({ isSessionActive = false, onPostureChange = (_: boolean) => {} }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [cameraActive, setCameraActive] = useState(false);
-  const [error, setError] = useState('');
   const [cameraEnabled, setCameraEnabled] = useState(true);
-  const streamRef = useRef<MediaStream | null>(null);
   const [currentCaption, setCurrentCaption] = useState('');
   const [videoSize, setVideoSize] = useState({ width: 0, height: 0 });
   const [sensitivityFactor, setSensitivityFactor] = useState<number>(() => {
@@ -39,70 +35,32 @@ export const CameraPlaceholder = ({ isSessionActive = false, onPostureChange = (
     }
   }, [isSessionActive, cameraEnabled]);
   
-  // Initialize webcam
+  // Initialize webcam when cameraEnabled changes
   useEffect(() => {
-    let stream: MediaStream | null = null;
-    
-    const setupCamera = async () => {
-      if (!cameraEnabled) {
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach(track => track.stop());
-          streamRef.current = null;
-        }
-        if (videoRef.current) {
-          videoRef.current.srcObject = null;
-        }
-        setCameraActive(false);
-        return;
-      }
-
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { facingMode: 'user' }, 
-          audio: false 
-        });
-        
-        streamRef.current = stream;
-
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          setCameraActive(true);
-          setError('');
-          
-          // Initialize video dimensions
-          videoRef.current.addEventListener('loadedmetadata', () => {
-            if (videoRef.current) {
-              setVideoSize({
-                width: videoRef.current.videoWidth,
-                height: videoRef.current.videoHeight
-              });
-              
-              // Start posture detection once video is loaded
-              console.log("Video loaded, starting pose detection");
-              posture.startDetection(videoRef.current);
-            }
+    if (cameraEnabled) {
+      // The video reference is now managed by PostureContext
+      // Start detection through the hook, which delegates to PostureContext
+      posture.startDetection().then(() => {
+        // Get video element through PostureContext's videoRef
+        const videoElement = document.querySelector('video[autoplay][playsInline][muted]') as HTMLVideoElement;
+        if (videoElement) {
+          // Update video dimensions for rendering overlays
+          videoElement.addEventListener('loadedmetadata', () => {
+            setVideoSize({
+              width: videoElement.videoWidth,
+              height: videoElement.videoHeight
+            });
           });
         }
-      } catch (err) {
-        console.error('Failed to access webcam:', err);
-        if (err instanceof Error) {
-          setError(err.message);
-        } else {
-          setError('Failed to access webcam');
-        }
-        setCameraActive(false);
-      }
-    };
+      }).catch(err => {
+        console.error('Failed to start posture detection:', err);
+      });
+    } else {
+      // Stop detection through the hook, which delegates to PostureContext
+      posture.stopDetection();
+    }
     
-    setupCamera();
-    
-    // Cleanup
-    return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-        streamRef.current = null;
-      }
-    };
+    // No need to clean up MediaStream as that's handled by PostureContext
   }, [cameraEnabled, posture]);
   
   // Report posture changes to parent component (only when session is active)
@@ -162,24 +120,11 @@ export const CameraPlaceholder = ({ isSessionActive = false, onPostureChange = (
               Camera Off
             </p>
           </div>
-        ) : error ? (
-          <div className="absolute inset-0 flex items-center justify-center p-6">
-            <p className="text-white text-center text-sm">
-              {error.includes('denied') 
-                ? 'Camera access denied. Please allow camera access to use the posture tracker.' 
-                : `Camera error: ${error}`}
-            </p>
-          </div>
         ) : (
           <>
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-full object-cover"
-            />
-            {posture.landmarks && cameraActive && (
+            {/* No need to render a video element here as it's managed by PostureContext */}
+            {/* The landmarks and overlays still work, but now based on the store state */}
+            {posture.landmarks && (
               <PoseLandmarksRenderer 
                 landmarks={posture.landmarks} 
                 width={videoSize.width} 
@@ -190,15 +135,13 @@ export const CameraPlaceholder = ({ isSessionActive = false, onPostureChange = (
               />
             )}
             {/* Add the eye-line guide overlay */}
-            {cameraActive && (
-              <PoseOverlay
-                width={videoSize.width}
-                height={videoSize.height}
-                good={posture.good}
-                baselineEye={posture.baselineEye}
-                currentEye={latestEye.current}
-              />
-            )}
+            <PoseOverlay
+              width={videoSize.width}
+              height={videoSize.height}
+              good={posture.good}
+              baselineEye={posture.baselineEye}
+              currentEye={latestEye.current}
+            />
             {currentCaption && (
               <div className="absolute bottom-14 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 flex justify-center">
                 <p className="text-white text-xs italic opacity-90 font-medium text-center">
@@ -206,35 +149,31 @@ export const CameraPlaceholder = ({ isSessionActive = false, onPostureChange = (
                 </p>
               </div>
             )}
-            {cameraActive && (
-              <div className="absolute top-2 right-2 p-2 rounded bg-black/50 text-white text-xs">
-                Posture: {posture.isActive ? (posture.good ? 'Good ✅' : 'Bad ❌') : 'Off'}<br />
-                {posture.baselineEye !== null && latestEye.current !== null && 
-                  `Eye Pos: ${((latestEye.current - posture.baselineEye) * videoSize.height).toFixed(1)}px`}
-              </div>
-            )}
+            <div className="absolute top-2 right-2 p-2 rounded bg-black/50 text-white text-xs">
+              Posture: {posture.isActive ? (posture.good ? 'Good ✅' : 'Bad ❌') : 'Off'}<br />
+              {posture.baselineEye !== null && latestEye.current !== null && 
+                `Eye Pos: ${((latestEye.current - posture.baselineEye) * videoSize.height).toFixed(1)}px`}
+            </div>
             
             {/* Always visible camera controls */}
-            {cameraActive && (
-              <div className="absolute bottom-3 inset-x-0 flex justify-center gap-4 text-xs">
-                <button
-                  onClick={posture.toggleActive}
-                  className={`px-3 py-1 rounded font-semibold ${
-                    posture.isActive 
-                      ? 'bg-blue-500/80 hover:bg-blue-600 text-white' 
-                      : 'bg-gray-500/80 hover:bg-gray-600 text-white'
-                  }`}
-                >
-                  {posture.isActive ? 'Posture ON' : 'Posture OFF'}
-                </button>
-                <button
-                  onClick={posture.calibrate}
-                  className="bg-gray-700/80 hover:bg-gray-600 text-white px-3 py-1 rounded font-semibold"
-                >
-                  Calibrate
-                </button>
-              </div>
-            )}
+            <div className="absolute bottom-3 inset-x-0 flex justify-center gap-4 text-xs">
+              <button
+                onClick={posture.toggleActive}
+                className={`px-3 py-1 rounded font-semibold ${
+                  posture.isActive 
+                    ? 'bg-blue-500/80 hover:bg-blue-600 text-white' 
+                    : 'bg-gray-500/80 hover:bg-gray-600 text-white'
+                }`}
+              >
+                {posture.isActive ? 'Posture ON' : 'Posture OFF'}
+              </button>
+              <button
+                onClick={posture.calibrate}
+                className="bg-gray-700/80 hover:bg-gray-600 text-white px-3 py-1 rounded font-semibold"
+              >
+                Calibrate
+              </button>
+            </div>
           </>
         )}
       </div>

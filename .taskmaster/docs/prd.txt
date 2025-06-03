@@ -1,0 +1,55 @@
+# DeepWorkFlowship MVP Foundation PRD
+
+## Project Overview
+
+DeepWorkFlowship is a productivity application designed to help users achieve deep focus and maintain good posture during work sessions. The application includes features such as session timers, posture detection, music integration, and a "Warp Mode" for enhanced focus.
+
+## Current Status and Goals
+
+The application has a working prototype with functioning timer, posture detection using MediaPipe, and music player functionality. However, there are structural improvements needed to enhance maintainability, scalability, and adherence to best practices before further feature development.
+
+## Key Requirements
+
+### Phase 0: Critical Foundation & Repo Hygiene
+- Repository cleanup to remove duplicate project folders and ensure a clean structure
+- Establish global state management using Zustand
+- Configure PWA functionality for offline use and optimal asset management
+- Implement basic E2E testing to ensure core functionality remains intact during refactoring
+
+### Phase 1: Code Quality, Structure & Core Refactoring
+- Consolidate posture detection logic to eliminate redundancy
+- Refactor App.tsx to reduce complexity and improve component organization
+- Define constants for all magic strings and significant numerical values
+- Ensure type safety for all helper and utility functions
+- Review audio management to align with global state strategy
+- Enhance error handling with user-facing feedback
+
+### Phase 2: Tooling, Workflow & Documentation
+- Enhance linting and formatting configuration
+- Implement security linting
+- Expand unit and integration tests
+- Setup basic CI pipeline
+- Improve documentation
+- Optimize asset path management
+
+### Phase 3: Nice-to-Haves
+- Automated release notes
+- Dependency update automation
+- Update MediaPipe dependencies when stable versions are available
+
+## Technical Requirements
+- React + TypeScript frontend
+- Zustand for state management
+- Tailwind CSS for styling
+- Vite for building
+- PWA capabilities
+- MediaPipe for posture detection
+- Web Audio API for music playback
+- Vitest + Playwright for testing
+
+## User Experience Requirements
+- Maintain a 10-second slouch grace period before alerts
+- Ensure alerts don't block or pause the timer
+- Respect user settings for nudge type (blink, sound, etc.)
+- Clean, responsive UI that works well on desktop and mobile devices
+- Offline functionality via PWA 

@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { NormalizedLandmark } from '@mediapipe/tasks-vision';
-import poseDetector from '@/lib/poseDetector';
-import { POSE_LANDMARKS, isGoodPosture } from '@/utils/postureDetect';
-import { usePostureStore, BaselineMetrics } from '@/store/postureSlice';
+import { POSE_LANDMARKS } from '@/utils/postureDetect';
+import { usePostureStore } from '@/store/postureSlice';
+import { usePosture } from '@/context/PostureContext';
 import { STORAGE_KEYS } from '@/constants';
 
 interface StablePostureResult {
@@ -13,18 +13,14 @@ interface StablePostureResult {
   landmarks: NormalizedLandmark[] | undefined;
   toggleActive: () => void;
   calibrate: () => void;
-  startDetection: (videoElement: HTMLVideoElement) => void;
+  startDetection: () => Promise<void>;
   stopDetection: () => void;
 }
 
 export const useStablePosture = (initialActive = true, sensitivityFactor = 1.0): StablePostureResult => {
-  // Reference to the video element
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  // Reference to keep track of interval IDs
-  const intervalRef = useRef<number | null>(null);
-
-  // Use the posture store for state management
+  // Use the centralized posture store and context
   const postureStore = usePostureStore();
+  const postureContext = usePosture();
   
   // Track local active state (whether posture detection is being used)
   const [isActive, setIsActive] = useState(() => {
@@ -37,7 +33,14 @@ export const useStablePosture = (initialActive = true, sensitivityFactor = 1.0):
     localStorage.setItem(STORAGE_KEYS.POSTURE_TRACKING_ACTIVE, isActive.toString());
   }, [isActive]);
 
-  // Compute baselineEye and eyeY based on landmarks
+  // Set adjusted sensitivity when sensitivityFactor changes
+  useEffect(() => {
+    // Convert the factor to a percentage (1.0 = 10%)
+    const adjustedSensitivity = Math.round(sensitivityFactor * 10);
+    postureStore.setSensitivityPercentage(adjustedSensitivity);
+  }, [sensitivityFactor, postureStore]);
+
+  // Compute baselineEye and eyeY based on landmarks from the store
   const baselineEye = postureStore.isCalibrated && postureStore.baselineMetrics 
     ? postureStore.baselineMetrics.noseY
     : null;
@@ -46,112 +49,27 @@ export const useStablePosture = (initialActive = true, sensitivityFactor = 1.0):
     ? postureStore.rawLandmarks[POSE_LANDMARKS.NOSE]?.y || null 
     : null;
 
-  // Handler for pose detection results
-  const handlePoseResults = useCallback((landmarks: NormalizedLandmark[]) => {
-    if (landmarks && landmarks.length > 0) {
-      postureStore.setRawLandmarks(landmarks);
-      
-      // If calibrated, check posture with the specified sensitivity factor
-      if (postureStore.isCalibrated && postureStore.baselineMetrics) {
-        const adjustedSensitivity = Math.round(sensitivityFactor * 10);
-        const status = isGoodPosture(landmarks, postureStore.baselineMetrics, adjustedSensitivity);
-        postureStore.setPostureStatus(status);
-      }
-    }
-  }, [postureStore, sensitivityFactor]);
-
-  // Adapter function for the poseDetector callback
-  const detectorCallback = useCallback((result: any, timestampMs: number) => {
-    if (result.landmarks && result.landmarks.length > 0) {
-      handlePoseResults(result.landmarks[0]);
-    }
-  }, [handlePoseResults]);
-
-  // Start detection with a video element
-  const startDetection = useCallback(async (videoElement: HTMLVideoElement) => {
-    if (!videoElement) {
-      console.error('No video element provided to startDetection');
-      return;
-    }
-    
-    videoRef.current = videoElement;
-    postureStore.setIsLoadingDetector(true);
-    
-    try {
-      // Initialize detector if needed
-      if (!poseDetector['poseLandmarker']) {
-        await poseDetector.initialize(undefined, detectorCallback);
-      }
-      
-      // Set up the detection interval
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-      
-      intervalRef.current = window.setInterval(() => {
-        if (videoElement && videoElement.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-          try {
-            poseDetector.detect(videoElement, performance.now());
-          } catch (err) {
-            console.error('Error in pose detection:', err);
-          }
-        }
-      }, 100);
-      
-      postureStore.setIsDetecting(true);
-    } catch (err) {
-      console.error('Failed to initialize pose detector:', err);
-      postureStore.setCameraError(`Pose detector init error: ${err instanceof Error ? err.message : String(err)}`);
-    } finally {
-      postureStore.setIsLoadingDetector(false);
-    }
-  }, [detectorCallback, postureStore]);
-
-  // Stop detection
-  const stopDetection = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    
-    postureStore.setIsDetecting(false);
-    postureStore.setRawLandmarks(undefined);
-  }, [postureStore]);
-
   // Toggle active state
   const toggleActive = useCallback(() => {
     setIsActive(prev => !prev);
   }, []);
 
-  // Calibrate posture
-  const calibrate = useCallback(() => {
-    const landmarks = postureStore.rawLandmarks;
-    
-    if (landmarks && landmarks.length > 0) {
-      const nose = landmarks[POSE_LANDMARKS.NOSE];
-      const leftEar = landmarks[POSE_LANDMARKS.LEFT_EAR];
-      const leftShoulder = landmarks[POSE_LANDMARKS.LEFT_SHOULDER];
-      
-      if (nose?.y && leftEar?.x && leftShoulder?.x) {
-        const metrics: BaselineMetrics = {
-          noseY: nose.y,
-          noseX: nose.x,
-          earShoulderDistX: Math.abs(leftEar.x - leftShoulder.x)
-        };
-        
-        postureStore.completeCalibration(metrics);
-      }
+  // Start detection - now delegates to context's startPostureDetection
+  const startDetection = useCallback(async () => {
+    if (isActive) {
+      await postureContext.startPostureDetection();
     }
-  }, [postureStore]);
+  }, [isActive, postureContext]);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, []);
+  // Stop detection - delegates to context's stopPostureDetection
+  const stopDetection = useCallback(() => {
+    postureContext.stopPostureDetection();
+  }, [postureContext]);
+
+  // Calibrate posture - delegates to context's handleCalibration
+  const calibrate = useCallback(() => {
+    postureContext.handleCalibration();
+  }, [postureContext]);
 
   return {
     good: isActive && postureStore.postureStatus.isGood,
