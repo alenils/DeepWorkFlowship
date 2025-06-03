@@ -10,7 +10,7 @@ import poseDetector from "@/lib/poseDetector";
 import {
   PoseLandmarkerResult
 } from "@mediapipe/tasks-vision";
-import { isGoodPosture, POSE_LANDMARKS } from "@/utils/postureDetect";
+import { POSE_LANDMARKS } from "@/utils/postureDetect";
 // Import the postureSlice
 import { usePostureStore, BaselineMetrics } from "@/store/postureSlice";
 
@@ -48,36 +48,21 @@ export const PostureProvider: React.FC<{ children: React.ReactNode }> = ({
       // Update landmarks in store
       if (result.landmarks && result.landmarks.length > 0) {
         const newLandmarksFromDetector = result.landmarks[0];
+        console.log('[PostureContext] Raw landmarks from detector received, count:', newLandmarksFromDetector.length);
+        console.log('[PostureContext] Current state - isCalibrated:', postureStore.isCalibrated, 'isDetecting:', postureStore.isDetecting);
+        
+        // Just update landmarks in the store - the store will handle evaluation
         postureStore.setRawLandmarks(newLandmarksFromDetector);
         
-        // Check posture status based on calibration state
-        if (postureStore.isCalibrated && postureStore.baselineMetrics) {
-          const status = isGoodPosture(
-            newLandmarksFromDetector, 
-            postureStore.baselineMetrics, 
-            postureStore.sensitivityPercentage
-          );
-          postureStore.setPostureStatus(status);
-        } else if (!postureStore.isCalibrating) {
-          // Only update if not in the middle of calibrating
-          const preCalibrationStatus = isGoodPosture(
-            newLandmarksFromDetector, 
-            null, 
-            postureStore.sensitivityPercentage
-          );
-          const message = newLandmarksFromDetector.length > 0 
-            ? "Ready to calibrate." 
-            : "Initializing detector...";
-          postureStore.setPostureStatus({ 
-            isGood: preCalibrationStatus.isGood, 
-            message: message 
-          });
-        }
+        // No need to call isGoodPosture here, as postureSlice will handle it in setRawLandmarks
       } else {
+        console.log('[PostureContext] No landmarks received from detector');
         postureStore.setRawLandmarks(undefined);
         if (postureStore.isCalibrated) {
+          console.log('[PostureContext] Setting status to "No person detected"');
           postureStore.setPostureStatus({ isGood: false, message: "No person detected." });
         } else if (!postureStore.isCalibrating) {
+          console.log('[PostureContext] Setting status to "Initializing detector..."');
           postureStore.setPostureStatus({ isGood: true, message: "Initializing detector..." });
         }
       }
@@ -152,14 +137,7 @@ export const PostureProvider: React.FC<{ children: React.ReactNode }> = ({
               // Use store action to complete calibration
               postureStore.completeCalibration(metrics);
               
-              // Check posture immediately with the new metrics
-              const status = isGoodPosture(
-                currentLandmarksAtCapture, 
-                metrics, 
-                postureStore.sensitivityPercentage
-              ); 
-              postureStore.setPostureStatus(status);
-              
+              // No need to check posture immediately here, the store will handle it in completeCalibration
               console.log("CONTEXT: Calibration complete. Metrics:", metrics);
             } else {
               console.warn("CONTEXT: Could not calculate baseline metrics - missing required landmarks.");

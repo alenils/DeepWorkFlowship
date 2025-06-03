@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { NormalizedLandmark } from '@mediapipe/tasks-vision';
 import { STORAGE_KEYS } from '../constants';
+import { isGoodPosture } from '@/utils/postureDetect';
 
 // Define the baseline metrics structure (imported from PostureContext)
 export interface BaselineMetrics {
@@ -76,6 +77,7 @@ interface PostureState {
   startCalibrationSequence: () => void;
   completeCalibration: (metrics: BaselineMetrics) => void;
   clearCalibration: () => void;
+  evaluatePosture: (landmarks: NormalizedLandmark[]) => void;
   
   // Reset function for testing
   reset: () => void;
@@ -84,7 +86,7 @@ interface PostureState {
 // Create the Zustand store
 export const usePostureStore = create<PostureState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       // Initial state
       ...initialPostureState,
       
@@ -95,18 +97,74 @@ export const usePostureStore = create<PostureState>()(
       setIsLoadingDetector: (isLoading) => set({ isLoadingDetector: isLoading }),
       setCameraError: (error) => set({ cameraError: error }),
       setCountdown: (countdown) => set({ countdown }),
-      setRawLandmarks: (landmarks) => set({ rawLandmarks: landmarks }),
-      setBaselineMetrics: (metrics) => set({ baselineMetrics: metrics }),
-      setPostureStatus: (status) => set({ postureStatus: status }),
-      setSensitivityPercentage: (percentage) => set({ sensitivityPercentage: percentage }),
+      
+      // Enhanced setRawLandmarks that triggers posture evaluation
+      setRawLandmarks: (landmarks) => {
+        console.log('[postureSlice] Action: setRawLandmarks called with landmarks:', landmarks ? 'landmarks present' : 'undefined');
+        
+        set({ rawLandmarks: landmarks });
+        
+        // If we have landmarks, calibration is complete, and detection is active, evaluate posture
+        if (landmarks && get().isCalibrated && get().baselineMetrics && get().isDetecting && !get().isCalibrating) {
+          console.log('[postureSlice] Conditions met for auto-evaluation after landmark update');
+          get().evaluatePosture(landmarks);
+        } else {
+          console.log('[postureSlice] Skipping auto-evaluation. isCalibrated:', get().isCalibrated, 
+            'baselineMetrics:', get().baselineMetrics ? 'present' : 'null', 
+            'isDetecting:', get().isDetecting,
+            'isCalibrating:', get().isCalibrating);
+        }
+      },
+      
+      setBaselineMetrics: (metrics) => {
+        console.log('[postureSlice] Action: setBaselineMetrics called with metrics:', metrics);
+        set({ baselineMetrics: metrics });
+      },
+      
+      setPostureStatus: (status) => {
+        console.log('[postureSlice] Action: setPostureStatus called with status:', status);
+        set({ postureStatus: status });
+      },
+      
+      setSensitivityPercentage: (percentage) => {
+        console.log('[postureSlice] Action: setSensitivityPercentage called with percentage:', percentage);
+        set({ sensitivityPercentage: percentage });
+        
+        // Re-evaluate posture with new sensitivity if we're calibrated and have landmarks
+        const state = get();
+        if (state.isCalibrated && state.baselineMetrics && state.rawLandmarks && state.isDetecting) {
+          console.log('[postureSlice] Re-evaluating posture after sensitivity change');
+          get().evaluatePosture(state.rawLandmarks);
+        }
+      },
+      
+      // New action to evaluate posture with current landmarks and baseline
+      evaluatePosture: (landmarks) => {
+        const state = get();
+        
+        if (!state.isCalibrated || !state.baselineMetrics) {
+          console.log('[postureSlice] evaluatePosture called but not calibrated or no baseline metrics');
+          return;
+        }
+        
+        console.log('[postureSlice] Calling isGoodPosture with: landmarks present, baseline:', 
+          JSON.stringify(state.baselineMetrics), 
+          'sensitivity:', state.sensitivityPercentage);
+        
+        const status = isGoodPosture(landmarks, state.baselineMetrics, state.sensitivityPercentage);
+        
+        console.log('[postureSlice] isGoodPosture returned:', JSON.stringify(status));
+        
+        set({ postureStatus: status });
+      },
       
       // Complex actions
       startCalibrationSequence: () => {
-        const state = usePostureStore.getState();
+        const state = get();
         
         // Only start if not already calibrating and landmarks are available
         if (state.isCalibrating || !state.rawLandmarks || state.rawLandmarks.length === 0) {
-          console.log("Cannot start calibration: already calibrating or no landmarks available");
+          console.log("[postureSlice] Cannot start calibration: already calibrating or no landmarks available");
           return;
         }
         
@@ -117,10 +175,12 @@ export const usePostureStore = create<PostureState>()(
           postureStatus: { isGood: true, message: "Calibrating... 3" }
         });
         
-        console.log("Started calibration sequence with countdown");
+        console.log("[postureSlice] Started calibration sequence with countdown");
       },
       
       completeCalibration: (metrics) => {
+        console.log("[postureSlice] Completing calibration with metrics:", metrics);
+        
         set({ 
           baselineMetrics: metrics,
           isCalibrated: true,
@@ -129,7 +189,14 @@ export const usePostureStore = create<PostureState>()(
           postureStatus: { isGood: true, message: "Posture OK!" }
         });
         
-        console.log("Completed calibration with metrics:", metrics);
+        // If we have current landmarks, immediately evaluate posture with the new baseline
+        const state = get();
+        if (state.rawLandmarks && state.rawLandmarks.length > 0) {
+          console.log("[postureSlice] Evaluating posture immediately after calibration");
+          setTimeout(() => {
+            get().evaluatePosture(state.rawLandmarks!);
+          }, 100); // Small delay to ensure state is updated
+        }
       },
       
       clearCalibration: () => {
@@ -139,7 +206,7 @@ export const usePostureStore = create<PostureState>()(
           postureStatus: { isGood: true, message: "Calibration cleared" }
         });
         
-        console.log("Calibration cleared");
+        console.log("[postureSlice] Calibration cleared");
       },
       
       // Reset function for testing
