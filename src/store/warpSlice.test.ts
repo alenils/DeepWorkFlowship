@@ -24,14 +24,14 @@ describe('warpSlice', () => {
   it('should update warpMode correctly', () => {
     const { setWarpMode } = useWarpStore.getState();
     
-    // Initially 'none'
-    expect(useWarpStore.getState().warpMode).toBe(WARP_MODE.NONE);
-    
-    // Set to 'background'
-    act(() => {
-      setWarpMode(WARP_MODE.BACKGROUND);
-    });
+    // Initially 'background' (changed from 'none' to match new default)
     expect(useWarpStore.getState().warpMode).toBe(WARP_MODE.BACKGROUND);
+    
+    // Set to 'none'
+    act(() => {
+      setWarpMode(WARP_MODE.NONE);
+    });
+    expect(useWarpStore.getState().warpMode).toBe(WARP_MODE.NONE);
     
     // Set to 'full'
     act(() => {
@@ -39,11 +39,11 @@ describe('warpSlice', () => {
     });
     expect(useWarpStore.getState().warpMode).toBe(WARP_MODE.FULL);
     
-    // Set back to 'none'
+    // Set back to 'background'
     act(() => {
-      setWarpMode(WARP_MODE.NONE);
+      setWarpMode(WARP_MODE.BACKGROUND);
     });
-    expect(useWarpStore.getState().warpMode).toBe(WARP_MODE.NONE);
+    expect(useWarpStore.getState().warpMode).toBe(WARP_MODE.BACKGROUND);
   });
   
   it('should update warpSpeed correctly', () => {

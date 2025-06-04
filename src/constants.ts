@@ -53,7 +53,18 @@ export const WARP_ANIMATION = {
   STAR_COUNT: 520,         // For full warp
   STAR_COUNT_BG: 455,      // For background warp
   MAX_DEPTH: 300,          // Z-depth for star field
-  DEFAULT_SPEED: 1.1       // Default animation speed
+  DEFAULT_SPEED: 1.1,      // Default animation speed
+  MIN_SPEED_FOR_STREAKS: 1.3,  // Further reduced threshold for easier streaking visibility
+  STREAK_INTENSITY: 1.8,   // Significantly increased intensity for streaking effect
+  IDLE_SPEED_FACTOR: 0,    // Speed factor when no session is active (0 = completely static)
+  THRUST_SPEED_MULTIPLIER: 6.0, // Speed multiplier during thrust effect
+  THRUST_FADE_DURATION_MS: 1800, // Extended duration for thrust effect to fade back to normal speed
+  MAX_STREAK_LENGTH: 85,   // Significantly increased maximum streak length for dramatic effect
+  MAX_EFFECTIVE_SPEED: 15.0, // Increased maximum effective speed for animation calculations
+  THRUST_EFFECT_SPEED: 18.0, // Dramatically increased speed for thrust effect
+  STREAK_BASE_LENGTH: 15,  // Increased base length for star streaks even at minimum streaking speed
+  STREAK_LENGTH_FACTOR: 25, // Increased multiplier for calculating streak length based on speed
+  HYPERSPACE_THRESHOLD: 7.0 // Speed threshold for hyperspace-like effects
 } as const;
 
 // ===== STARFIELD QUALITY SETTINGS =====

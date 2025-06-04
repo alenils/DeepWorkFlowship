@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useWarpStore } from '../../store/warpSlice';
+import { useTimerStore } from '../../store/timerSlice';
 import {
   WARP_MODE,
   WARP_ANIMATION,
@@ -18,22 +19,29 @@ interface Star {
   z: number;
   size?: number;
   color?: string;
+  // Previous position for streaking effect
+  prevX?: number;
+  prevY?: number;
 }
 
 export const StarfieldCanvas: React.FC = () => {
   // Get state from warp store
   const {
     warpMode,
-    warpSpeed,
     starfieldQuality,
-    isThrusting
+    effectiveSpeed,
+    updateEffectiveSpeed
   } = useWarpStore();
+
+  // Get session state from timer store
+  const { isSessionActive } = useTimerStore();
 
   // Refs for animation and DOM elements
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const starsRef = useRef<Star[]>([]);
   const animationFrameIdRef = useRef<number | null>(null);
   const lastDrawTimeRef = useRef<number>(0);
+  const lastSpeedUpdateRef = useRef<number>(0);
 
   // Local state for canvas dimensions
   const [dimensions, setDimensions] = useState({
@@ -52,12 +60,18 @@ export const StarfieldCanvas: React.FC = () => {
     const stars: Star[] = [];
 
     for (let i = 0; i < count; i++) {
+      const x = Math.random() * window.innerWidth * 2 - window.innerWidth;
+      const y = Math.random() * window.innerHeight * 2 - window.innerHeight;
+      const z = Math.random() * WARP_ANIMATION.MAX_DEPTH;
+      
       stars.push({
-        x: Math.random() * window.innerWidth * 2 - window.innerWidth,
-        y: Math.random() * window.innerHeight * 2 - window.innerHeight,
-        z: Math.random() * WARP_ANIMATION.MAX_DEPTH,
+        x,
+        y,
+        z,
+        prevX: x,
+        prevY: y,
         size: Math.random() * 1.5 + 0.5, // Base star size (will be scaled by z-position)
-        color: `rgba(${Math.floor(Math.random() * 55) + 200}, ${Math.floor(Math.random() * 55) + 200}, ${Math.floor(Math.random() * 55) + 200}, 1)` // Slightly varied white/blue colors
+        color: `rgba(${Math.floor(Math.random() * 55) + 200}, ${Math.floor(Math.random() * 55) + 200}, ${Math.floor(Math.random() * 55) + 230}, 1)` // Slightly varied white/blue colors
       });
     }
 
@@ -99,32 +113,68 @@ export const StarfieldCanvas: React.FC = () => {
 
     lastDrawTimeRef.current = timestamp;
 
+    // Update effective speed based on session state (every 500ms)
+    if (timestamp - lastSpeedUpdateRef.current > 500) {
+      updateEffectiveSpeed(isSessionActive);
+      lastSpeedUpdateRef.current = timestamp;
+    }
+
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear canvas
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+    // Clear canvas with a solid black background for better edge behavior
+    ctx.fillStyle = 'rgb(0, 0, 0)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Calculate speed based on quality and current state
     const baseSpeedFactor = STAR_SPEED_FACTORS_BY_QUALITY[starfieldQuality];
-    const thrustBoost = isThrusting ? 2.5 : 1.0; // Boost speed during thrust
-    const effectiveSpeed = warpSpeed * baseSpeedFactor * thrustBoost;
+    
+    // Use effectiveSpeed from the store which handles:
+    // - Idle speed when no session is active (completely static with 0)
+    // - Thrust speed during thrust effect
+    // - Smooth transition after thrust
+    const speedMultiplier = Math.min(
+      effectiveSpeed * baseSpeedFactor,
+      WARP_ANIMATION.MAX_EFFECTIVE_SPEED
+    );
+
+    // Check if we should keep stars static (when not in session and in background mode)
+    // Force completely static stars in background mode when no session is active
+    const shouldBeStatic = !isSessionActive && warpMode === WARP_MODE.BACKGROUND;
+    
+    // Determine if we're in hyperspace mode based on our speed threshold
+    const isHyperspace = speedMultiplier >= WARP_ANIMATION.HYPERSPACE_THRESHOLD;
 
     // Update and draw stars
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
 
     starsRef.current.forEach((star) => {
-      // Move star closer to viewer (faster with speedFactor)
-      star.z -= 1 * effectiveSpeed;
+      // Store previous position for streaking effect
+      // For static stars, ensure prevX/Y match the current position to avoid any streaking
+      if (shouldBeStatic) {
+        const factor = WARP_ANIMATION.MAX_DEPTH / (star.z || 1);
+        star.prevX = star.x * factor + centerX;
+        star.prevY = star.y * factor + centerY;
+      } else {
+        // For moving stars, store previous position for streaking
+        star.prevX = star.x * (WARP_ANIMATION.MAX_DEPTH / (star.z || 1)) + centerX;
+        star.prevY = star.y * (WARP_ANIMATION.MAX_DEPTH / (star.z || 1)) + centerY;
 
-      // Reset star when it gets too close
-      if (star.z <= 0) {
-        star.z = WARP_ANIMATION.MAX_DEPTH;
-        star.x = Math.random() * canvas.width * 2 - canvas.width;
-        star.y = Math.random() * canvas.height * 2 - canvas.height;
+        // Move star closer to viewer (faster with speedFactor)
+        // This is only done for non-static stars
+        star.z -= 1 * speedMultiplier;
+
+        // Reset star when it gets too close
+        if (star.z <= 0) {
+          star.z = WARP_ANIMATION.MAX_DEPTH;
+          star.x = Math.random() * canvas.width * 2 - canvas.width;
+          star.y = Math.random() * canvas.height * 2 - canvas.height;
+          // Reset previous position to avoid streaking from old position
+          star.prevX = star.x;
+          star.prevY = star.y;
+        }
       }
 
       // Project star position to 2D
@@ -138,21 +188,122 @@ export const StarfieldCanvas: React.FC = () => {
         const sizeFactor = 1 - star.z / WARP_ANIMATION.MAX_DEPTH;
         const size = (star.size || 1) * sizeFactor * 5;
         const alpha = sizeFactor;
-
-        // Draw star
-        ctx.beginPath();
-        ctx.arc(starX, starY, size, 0, Math.PI * 2);
         
-        // Use star's color if available, otherwise use white with alpha
-        ctx.fillStyle = star.color ? star.color.replace('1)', `${alpha})`) : `rgba(255, 255, 255, ${alpha})`;
-        ctx.fill();
-
-        // Add glow effect for larger stars in ultra quality
-        if (starfieldQuality === STARFIELD_QUALITY.ULTRA && size > 2) {
+        // Determine if we should draw a streak based on speed
+        // We never streak static stars, but we always show streaks at appropriate speeds when stars are moving
+        const shouldStreak = speedMultiplier >= WARP_ANIMATION.MIN_SPEED_FOR_STREAKS && !shouldBeStatic;
+        
+        if (shouldStreak && star.prevX !== undefined && star.prevY !== undefined) {
+          // Calculate streak length based on speed and star's z-position using enhanced formula
+          // Speed ratio is proportional to how much over the min streak speed we are
+          const speedRatio = Math.max(0, (speedMultiplier - WARP_ANIMATION.MIN_SPEED_FOR_STREAKS) / WARP_ANIMATION.MIN_SPEED_FOR_STREAKS);
+          
+          // Enhanced streak length calculation:
+          // - Base length + additional length proportional to speed
+          // - Use new constants for more control and more dramatic results at high speeds
+          const depthFactor = Math.pow(1 - star.z / WARP_ANIMATION.MAX_DEPTH, 1.5); // Enhanced depth factor
+          const streakLength = WARP_ANIMATION.STREAK_BASE_LENGTH + 
+            (speedRatio * WARP_ANIMATION.STREAK_LENGTH_FACTOR * depthFactor);
+          
+          // Cap at max streak length - increased for more dramatic effect at high speeds
+          const maxLength = Math.min(WARP_ANIMATION.MAX_STREAK_LENGTH, streakLength);
+          
+          // Calculate streak vector
+          const dx = starX - star.prevX;
+          const dy = starY - star.prevY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          // Only draw streak if there's movement - reduced threshold to draw more streaks
+          if (distance > 0.3) {
+            // Normalize and scale the vector
+            const length = Math.min(distance, maxLength);
+            const nx = dx / distance;
+            const ny = dy / distance;
+            
+            // Draw streak as a line
+            ctx.beginPath();
+            
+            // Create gradient for streak
+            const gradient = ctx.createLinearGradient(
+              starX, starY, 
+              starX - nx * length, starY - ny * length
+            );
+            
+            // Get base color - add more blue/white tint for faster streaks
+            let streakColor;
+            if (isHyperspace) {
+              // Pure blue-white for hyperspace effect
+              streakColor = 'rgba(235, 245, 255,';
+            } else if (speedMultiplier > WARP_ANIMATION.MIN_SPEED_FOR_STREAKS * 2) {
+              // Blueish for medium-high speeds
+              streakColor = 'rgba(225, 240, 255,';
+            } else {
+              // Use star's color or default white for lower speeds
+              streakColor = star.color ? star.color.replace(/[^,]+\)$/, '') : 'rgba(255, 255, 255,';
+            }
+            
+            // Add gradient stops with higher opacity for more visible streaks
+            // Boost alpha significantly in hyperspace mode and based on speed
+            const speedBoost = Math.min(speedRatio * 0.5, 0.5); // Additional boost based on speed
+            const headAlpha = isHyperspace ? 1.0 : Math.min(alpha * 2.0 + speedBoost, 1.0);
+            
+            // Three-stop gradient for more realistic streak effect
+            gradient.addColorStop(0, `${streakColor} ${headAlpha})`); // Start of streak (brightest)
+            gradient.addColorStop(0.2, `${streakColor} ${headAlpha * 0.9})`); // Near start (still bright)
+            gradient.addColorStop(0.6, `${streakColor} ${headAlpha * 0.5})`); // Middle (fading)
+            gradient.addColorStop(1, `${streakColor} 0)`); // End of streak (transparent)
+            
+            ctx.strokeStyle = gradient;
+            
+            // Adjust line width based on speed and hyperspace mode
+            // Thinner at extreme speeds for a more streamlined look, thicker at lower speeds
+            let lineWidthFactor;
+            if (isHyperspace) {
+              // Very thin lines in hyperspace for a sleek look
+              lineWidthFactor = 0.4;
+            } else if (speedMultiplier > 5) {
+              // Thinner at high speeds
+              lineWidthFactor = 0.6;
+            } else if (speedMultiplier > 3) {
+              // Medium thickness at medium speeds
+              lineWidthFactor = 0.8;
+            } else {
+              // Standard thickness at lower speeds
+              lineWidthFactor = 1.0;
+            }
+            
+            ctx.lineWidth = size * lineWidthFactor;
+            ctx.lineCap = 'round';
+            
+            // Draw the streak line
+            ctx.moveTo(starX, starY);
+            ctx.lineTo(starX - nx * length, starY - ny * length);
+            ctx.stroke();
+          }
+        }
+        
+        // Only draw the star point if not in hyperspace mode or not streaking
+        // For static stars, always draw points
+        // For moving stars, draw points unless in full hyperspace mode
+        const shouldDrawPoint = shouldBeStatic || !isHyperspace || !shouldStreak;
+        
+        if (shouldDrawPoint) {
           ctx.beginPath();
-          ctx.arc(starX, starY, size * 2, 0, Math.PI * 2);
-          ctx.fillStyle = star.color ? star.color.replace('1)', `${alpha * 0.3})`) : `rgba(255, 255, 255, ${alpha * 0.3})`;
+          ctx.arc(starX, starY, size, 0, Math.PI * 2);
+          
+          // Use star's color if available, otherwise use white with alpha
+          // For static stars, make them slightly dimmer to indicate "idle" state
+          const pointAlpha = shouldBeStatic ? alpha * 0.85 : alpha;
+          ctx.fillStyle = star.color ? star.color.replace('1)', `${pointAlpha})`) : `rgba(255, 255, 255, ${pointAlpha})`;
           ctx.fill();
+
+          // Add glow effect for larger stars in ultra quality
+          if (starfieldQuality === STARFIELD_QUALITY.ULTRA && size > 2) {
+            ctx.beginPath();
+            ctx.arc(starX, starY, size * 2, 0, Math.PI * 2);
+            ctx.fillStyle = star.color ? star.color.replace('1)', `${pointAlpha * 0.3})`) : `rgba(255, 255, 255, ${pointAlpha * 0.3})`;
+            ctx.fill();
+          }
         }
       }
     });
@@ -185,19 +336,16 @@ export const StarfieldCanvas: React.FC = () => {
     if (mode === WARP_MODE.FULL) {
       document.body.classList.add(CSS_CLASSES.BG_BLACK);
       document.body.style.overflow = 'hidden';
-    } else if (mode === WARP_MODE.BACKGROUND) {
-      // Fade numeric text
+      
+      // In full mode, we may dim UI elements that should be less prominent
       document.querySelectorAll('.text-white, .dark\\:text-white, .text-gray-200, .dark\\:text-gray-200').forEach(el => {
         if (el.textContent && /[0-9]/.test(el.textContent)) {
           el.classList.add(CSS_CLASSES.OPACITY_70, CSS_CLASSES.WARP_DIMMED_TEXT);
         }
       });
-      
-      // Dim the minutes input
-      if (minutesInput) {
-        minutesInput.classList.add(CSS_CLASSES.WARP_DIM);
-      }
     }
+    // For BACKGROUND mode, we do NOT apply any dimming to UI elements
+    // This ensures all UI elements retain full opacity when in background mode
   };
 
   // Setup and cleanup effects
@@ -244,6 +392,9 @@ export const StarfieldCanvas: React.FC = () => {
         animationFrameIdRef.current = null;
       }
     }
+    
+    // Update effective speed based on new mode
+    updateEffectiveSpeed(isSessionActive);
   }, [warpMode]);
 
   // Handle changes to starfield quality
@@ -263,6 +414,12 @@ export const StarfieldCanvas: React.FC = () => {
       }
     }
   }, [starfieldQuality]);
+  
+  // Handle changes to session state
+  useEffect(() => {
+    // Update effective speed based on session state
+    updateEffectiveSpeed(isSessionActive);
+  }, [isSessionActive]);
 
   // Skip rendering if warp mode is none or quality is off
   if (warpMode === WARP_MODE.NONE || starfieldQuality === STARFIELD_QUALITY.OFF) {
@@ -276,9 +433,11 @@ export const StarfieldCanvas: React.FC = () => {
     left: 0,
     width: '100%',
     height: '100%',
-    zIndex: warpMode === WARP_MODE.FULL ? 9999 : 0,
+    zIndex: warpMode === WARP_MODE.FULL ? 9999 : -10, // Use -10 for background to ensure it's behind all content
     pointerEvents: warpMode === WARP_MODE.FULL ? 'auto' : 'none',
-    opacity: warpMode === WARP_MODE.FULL ? 1 : 0.7,
+    opacity: warpMode === WARP_MODE.FULL ? 1 : 0.85, // Slightly reduced opacity for background mode to ensure UI readability
+    backgroundColor: 'black', // Ensure black background to prevent edge artifacts
+    transition: 'opacity 0.3s ease-in-out', // Smooth opacity transitions
   };
 
   return (
