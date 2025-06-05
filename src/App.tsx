@@ -256,45 +256,28 @@ function App() {
   };
 
   return (
-    <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200 ${isThrusting ? CSS_CLASSES.THRUST_SHAKE : ''}`}>
-      {/* Starfield Canvas */}
-      <StarfieldCanvas />
+    // 1. New outermost container. Sets the true background color and stacking context. Applies shake effect.
+    <div className={`relative isolate min-h-screen w-full h-full bg-gray-900 dark:bg-black ${isThrusting ? 'thrust-shake' : ''}`}>
       
-      {warpMode !== WARP_MODE.FULL && <DarkModeToggle />}
+      {/* 2. Starfield Canvas is rendered first. It will sit at z-index: 0 by default. */}
+      {(warpMode === WARP_MODE.BACKGROUND || warpMode === WARP_MODE.FULL) && <StarfieldCanvas />}
 
-      {/* FULL WARP Controls */}
-      {(warpMode === WARP_MODE.BACKGROUND || warpMode === WARP_MODE.FULL) && (
-        <div id={ELEMENT_IDS.WARP_CONTROLS} className="absolute bottom-4 right-4 z-[10000] flex gap-3 items-center">
-          <button
-            id={ELEMENT_IDS.WARP_DISTRACT}
-            onClick={handleWarpDistraction}
-            className="bg-red-700/80 hover:bg-red-600/100 text-white font-semibold text-xs px-3 py-1.5 rounded-md backdrop-blur-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-900/50 opacity-60 hover:opacity-100"
-            title="Log distraction"
-          >
-            DISTRACTED
-          </button>
-          <button
-            id={ELEMENT_IDS.EXIT_WARP}
-            onClick={handleExitWarp}
-            className="bg-sky-700/80 hover:bg-sky-600/100 text-white font-semibold text-xs px-3 py-1.5 rounded-md backdrop-blur-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-gray-900/50 opacity-60 hover:opacity-100"
-            title="Exit warp"
-          >
-            EXIT WARP
-          </button>
-        </div>
-      )}
-      
-      <div className="max-w-6xl mx-auto p-6">
-        {/* Main layout grid - updated column widths */}
-        <div className="grid gap-6 grid-cols-1 lg:grid-cols-[345px_minmax(575px,1fr)_300px]">
-          {/* Left Column: Actions (top) and Notepad (bottom) */}
+      {/* 3. Main UI Content Wrapper. It must have a HIGHER z-index and a TRANSPARENT background. */}
+      <main className="relative z-10 max-w-6xl mx-auto p-6 min-h-screen flex flex-col bg-transparent">
+        
+        {/* DarkModeToggle (if it should be on top of starfield but not in full warp) */}
+        {warpMode !== WARP_MODE.FULL && <DarkModeToggle />}
+
+        {/* Grid Container */}
+        <div className="grid gap-6 grid-cols-1 lg:grid-cols-[345px_minmax(575px,1fr)_300px] flex-grow">
+          {/* Left Column: The components inside here MUST have their own opaque backgrounds. */}
           <aside className="flex flex-col gap-6">
             <ActionsList />
             <Notepad />
             <StarfieldControls />
           </aside>
           
-          {/* Middle Column: Timer & Session History */}
+          {/* Middle Column: The components inside here MUST have their own opaque backgrounds. */}
           <div className="space-y-6 min-w-0">
             {/* Centered Main Title over middle column with Starfield button */}
             <div className="flex justify-center pt-2 pb-4 relative">
@@ -425,7 +408,7 @@ function App() {
             </div>
           </div>
           
-          {/* Right Column: PostureView */}
+          {/* Right Column: The components inside here MUST have their own opaque backgrounds. */}
           <aside className="space-y-6">
             <div className="mb-4">
               <PostureView 
@@ -437,8 +420,30 @@ function App() {
             />
           </aside>
         </div>
-      </div>
-      
+      </main>
+
+      {/* Full Warp Controls (Positioned absolutely, will be above the canvas when z-index is high) */}
+      {(warpMode === WARP_MODE.BACKGROUND || warpMode === WARP_MODE.FULL) && (
+        <div id={ELEMENT_IDS.WARP_CONTROLS} className="absolute bottom-4 right-4 z-[10000] flex gap-3 items-center">
+          <button
+            id={ELEMENT_IDS.WARP_DISTRACT}
+            onClick={handleWarpDistraction}
+            className="bg-red-700/80 hover:bg-red-600/100 text-white font-semibold text-xs px-3 py-1.5 rounded-md backdrop-blur-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-900/50 opacity-60 hover:opacity-100"
+            title="Log distraction"
+          >
+            DISTRACTED
+          </button>
+          <button
+            id={ELEMENT_IDS.EXIT_WARP}
+            onClick={handleExitWarp}
+            className="bg-sky-700/80 hover:bg-sky-600/100 text-white font-semibold text-xs px-3 py-1.5 rounded-md backdrop-blur-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-gray-900/50 opacity-60 hover:opacity-100"
+            title="Exit warp"
+          >
+            EXIT WARP
+          </button>
+        </div>
+      )}
+
       {/* Summary Panel */}
       {showSummary && lastSession && (
         <SessionSummaryPanel 

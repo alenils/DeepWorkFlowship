@@ -56,7 +56,11 @@ export const StarfieldCanvas: React.FC = () => {
       return;
     }
 
-    const count = STAR_COUNTS_BY_QUALITY[starfieldQuality];
+    // Use appropriate star count based on mode
+    const count = warpMode === WARP_MODE.FULL 
+      ? STAR_COUNTS_BY_QUALITY[starfieldQuality]
+      : WARP_ANIMATION.STAR_COUNT_BG;
+
     const stars: Star[] = [];
 
     for (let i = 0; i < count; i++) {
@@ -64,14 +68,19 @@ export const StarfieldCanvas: React.FC = () => {
       const y = Math.random() * window.innerHeight * 2 - window.innerHeight;
       const z = Math.random() * WARP_ANIMATION.MAX_DEPTH;
       
+      // Increase brightness of stars in background mode
+      const brightness = warpMode === WARP_MODE.BACKGROUND 
+        ? Math.floor(Math.random() * 25) + 230  // Brighter for background mode (230-255)
+        : Math.floor(Math.random() * 55) + 200; // Normal for full mode (200-255)
+      
       stars.push({
         x,
         y,
         z,
         prevX: x,
         prevY: y,
-        size: Math.random() * 1.5 + 0.5, // Base star size (will be scaled by z-position)
-        color: `rgba(${Math.floor(Math.random() * 55) + 200}, ${Math.floor(Math.random() * 55) + 200}, ${Math.floor(Math.random() * 55) + 230}, 1)` // Slightly varied white/blue colors
+        size: Math.random() * 1.5 + (warpMode === WARP_MODE.BACKGROUND ? 1.0 : 0.5), // Larger stars in background mode
+        color: `rgba(${brightness}, ${brightness}, ${Math.min(brightness + 30, 255)}, 1)` // Slightly bluer white
       });
     }
 
@@ -356,16 +365,25 @@ export const StarfieldCanvas: React.FC = () => {
     // This ensures all UI elements retain full opacity when in background mode
   };
 
+  // Debug console log to verify the component is rendering with the correct mode
+  console.log(`Rendering StarfieldCanvas with mode: ${warpMode}, quality: ${starfieldQuality}, isSessionActive: ${isSessionActive}`);
+
   // Setup and cleanup effects
   useEffect(() => {
+    console.log('StarfieldCanvas initialization, warpMode:', warpMode, 'quality:', starfieldQuality);
+    
     // Initialize stars
     initStars();
     
     // Set up resize handler
     window.addEventListener('resize', handleResize);
     
+    // Make sure canvas is properly sized on initialization
+    handleResize();
+    
     // Start animation if warp mode is active
     if (warpMode !== WARP_MODE.NONE && starfieldQuality !== STARFIELD_QUALITY.OFF) {
+      console.log('Starting animation');
       animationFrameIdRef.current = requestAnimationFrame(animateStars);
     }
     
@@ -386,6 +404,9 @@ export const StarfieldCanvas: React.FC = () => {
 
   // Handle changes to warp mode
   useEffect(() => {
+    // Reinitialize stars with new mode
+    initStars();
+    
     // Apply DOM effects
     applyWarpModeEffects(warpMode);
     
@@ -434,19 +455,28 @@ export const StarfieldCanvas: React.FC = () => {
     return null;
   }
 
+  // Debug console log to verify the component is rendering with the correct mode
+  console.log(`Rendering StarfieldCanvas with mode: ${warpMode}, quality: ${starfieldQuality}`);
+
   // Determine canvas styling based on warp mode
   const canvasStyle: React.CSSProperties = {
     position: 'fixed',
     top: 0,
     left: 0,
-    width: '100%',
-    height: '100%',
-    zIndex: warpMode === WARP_MODE.FULL ? 9999 : -10, // Use -10 for background to ensure it's behind all content
-    pointerEvents: warpMode === WARP_MODE.FULL ? 'auto' : 'none',
-    opacity: warpMode === WARP_MODE.FULL ? 1 : 0.9, // Increased opacity for better visibility in background mode
-    backgroundColor: 'black', // Ensure black background to prevent edge artifacts
+    width: '100vw',
+    height: '100vh',
+    zIndex: 1, // Lower than the main content's z-index
+    pointerEvents: 'none',
+    opacity: 1, // Use full opacity to ensure visibility
+    backgroundColor: 'black', // Ensure black background
     transition: 'opacity 0.3s ease-in-out', // Smooth opacity transitions
   };
+
+  // Override specific properties for FULL mode
+  if (warpMode === WARP_MODE.FULL) {
+    canvasStyle.zIndex = 9999;
+    canvasStyle.pointerEvents = 'auto';
+  }
 
   return (
     <canvas
@@ -455,6 +485,9 @@ export const StarfieldCanvas: React.FC = () => {
       width={dimensions.width}
       height={dimensions.height}
       style={canvasStyle}
+      className="starfield-canvas"
+      data-warp-mode={warpMode}
+      data-quality={starfieldQuality}
     />
   );
 }; 
