@@ -21,7 +21,7 @@
     overflow-y: auto; /* Allow vertical scrolling */
     margin: 0;
     padding: 0;
-    position: fixed; /* Prevent any movement */
+    position: relative; /* Changed from fixed to prevent scroll issues */
   }
   
   /* Force app container to fill viewport with solid background */
@@ -34,6 +34,7 @@
     height: 100%;
     overflow-x: hidden;
     overflow-y: auto;
+    isolation: isolate; /* Create stacking context */
   }
   
   /* Make sure all containers have proper background */
@@ -82,23 +83,24 @@
 
   /* Improved thrust shake animation - reduced displacement to prevent edge artifacts */
   @keyframes thrustShake {
-    0% { transform: translate(0, 0); }
-    10% { transform: translate(-0.8px, -0.8px); }
-    20% { transform: translate(0.8px, -0.4px); }
-    30% { transform: translate(-0.4px, 0.8px); }
-    40% { transform: translate(0.4px, -0.4px); }
-    50% { transform: translate(-0.4px, 0.8px); }
-    60% { transform: translate(-0.8px, 0.4px); }
-    70% { transform: translate(0.8px, 0.4px); }
-    80% { transform: translate(-0.4px, -0.4px); }
-    90% { transform: translate(0.4px, 0.8px); }
-    100% { transform: translate(0, 0); }
+    0% { transform: translate(0, 0) scale(1.001); }
+    10% { transform: translate(-0.7px, -0.7px) scale(1.001); }
+    20% { transform: translate(0.7px, -0.3px) scale(1.001); }
+    30% { transform: translate(-0.3px, 0.7px) scale(1.001); }
+    40% { transform: translate(0.3px, -0.3px) scale(1.001); }
+    50% { transform: translate(-0.3px, 0.7px) scale(1.001); }
+    60% { transform: translate(-0.7px, 0.3px) scale(1.001); }
+    70% { transform: translate(0.7px, 0.3px) scale(1.001); }
+    80% { transform: translate(-0.3px, -0.3px) scale(1.001); }
+    90% { transform: translate(0.3px, 0.7px) scale(1.001); }
+    100% { transform: translate(0, 0) scale(1.001); }
   }
 
   .thrust-shake {
     animation: thrustShake 0.15s cubic-bezier(.36,.07,.19,.97) both;
     transform-origin: center;
-    background-color: black; /* Ensure the element being shaken has a solid background */
+    background-color: black !important; /* Force black background during shake */
     overflow: hidden; /* Hide any overflow during animation */
+    outline: 1px solid black; /* Add outline to prevent edge artifacts */
   }
 } 

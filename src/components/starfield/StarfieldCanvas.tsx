@@ -145,13 +145,13 @@ export const StarfieldCanvas: React.FC = () => {
     
     // Determine if we're in hyperspace mode based on our speed threshold
     const isHyperspace = speedMultiplier >= WARP_ANIMATION.HYPERSPACE_THRESHOLD;
+    const isUltraSpeed = speedMultiplier >= WARP_ANIMATION.HYPERSPACE_THRESHOLD * 1.5;
 
     // Update and draw stars
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
 
     starsRef.current.forEach((star) => {
-      // Store previous position for streaking effect
       // For static stars, ensure prevX/Y match the current position to avoid any streaking
       if (shouldBeStatic) {
         const factor = WARP_ANIMATION.MAX_DEPTH / (star.z || 1);
@@ -201,7 +201,7 @@ export const StarfieldCanvas: React.FC = () => {
           // Enhanced streak length calculation:
           // - Base length + additional length proportional to speed
           // - Use new constants for more control and more dramatic results at high speeds
-          const depthFactor = Math.pow(1 - star.z / WARP_ANIMATION.MAX_DEPTH, 1.5); // Enhanced depth factor
+          const depthFactor = Math.pow(1 - star.z / WARP_ANIMATION.MAX_DEPTH, 1.8); // Enhanced depth factor
           const streakLength = WARP_ANIMATION.STREAK_BASE_LENGTH + 
             (speedRatio * WARP_ANIMATION.STREAK_LENGTH_FACTOR * depthFactor);
           
@@ -214,7 +214,7 @@ export const StarfieldCanvas: React.FC = () => {
           const distance = Math.sqrt(dx * dx + dy * dy);
           
           // Only draw streak if there's movement - reduced threshold to draw more streaks
-          if (distance > 0.3) {
+          if (distance > 0.2) {
             // Normalize and scale the vector
             const length = Math.min(distance, maxLength);
             const nx = dx / distance;
@@ -231,8 +231,11 @@ export const StarfieldCanvas: React.FC = () => {
             
             // Get base color - add more blue/white tint for faster streaks
             let streakColor;
-            if (isHyperspace) {
-              // Pure blue-white for hyperspace effect
+            if (isUltraSpeed) {
+              // Pure blue-white for ultra-high speed effect
+              streakColor = 'rgba(245, 250, 255,';
+            } else if (isHyperspace) {
+              // Blue-white for hyperspace effect
               streakColor = 'rgba(235, 245, 255,';
             } else if (speedMultiplier > WARP_ANIMATION.MIN_SPEED_FOR_STREAKS * 2) {
               // Blueish for medium-high speeds
@@ -244,13 +247,13 @@ export const StarfieldCanvas: React.FC = () => {
             
             // Add gradient stops with higher opacity for more visible streaks
             // Boost alpha significantly in hyperspace mode and based on speed
-            const speedBoost = Math.min(speedRatio * 0.5, 0.5); // Additional boost based on speed
-            const headAlpha = isHyperspace ? 1.0 : Math.min(alpha * 2.0 + speedBoost, 1.0);
+            const speedBoost = Math.min(speedRatio * 0.6, 0.6); // Additional boost based on speed
+            const headAlpha = isHyperspace ? 1.0 : Math.min(alpha * 2.2 + speedBoost, 1.0);
             
             // Three-stop gradient for more realistic streak effect
             gradient.addColorStop(0, `${streakColor} ${headAlpha})`); // Start of streak (brightest)
-            gradient.addColorStop(0.2, `${streakColor} ${headAlpha * 0.9})`); // Near start (still bright)
-            gradient.addColorStop(0.6, `${streakColor} ${headAlpha * 0.5})`); // Middle (fading)
+            gradient.addColorStop(0.15, `${streakColor} ${headAlpha * 0.95})`); // Near start (still bright)
+            gradient.addColorStop(0.5, `${streakColor} ${headAlpha * 0.6})`); // Middle (fading)
             gradient.addColorStop(1, `${streakColor} 0)`); // End of streak (transparent)
             
             ctx.strokeStyle = gradient;
@@ -258,7 +261,10 @@ export const StarfieldCanvas: React.FC = () => {
             // Adjust line width based on speed and hyperspace mode
             // Thinner at extreme speeds for a more streamlined look, thicker at lower speeds
             let lineWidthFactor;
-            if (isHyperspace) {
+            if (isUltraSpeed) {
+              // Very thin lines in ultra speed for a sleek look
+              lineWidthFactor = 0.35;
+            } else if (isHyperspace) {
               // Very thin lines in hyperspace for a sleek look
               lineWidthFactor = 0.4;
             } else if (speedMultiplier > 5) {
@@ -282,18 +288,20 @@ export const StarfieldCanvas: React.FC = () => {
           }
         }
         
-        // Only draw the star point if not in hyperspace mode or not streaking
-        // For static stars, always draw points
-        // For moving stars, draw points unless in full hyperspace mode
-        const shouldDrawPoint = shouldBeStatic || !isHyperspace || !shouldStreak;
+        // Only draw the star point if:
+        // 1. It's a static star (always draw points for static stars)
+        // 2. OR it's not in hyperspace mode
+        // 3. OR it's not streaking
+        // This creates a cleaner, streak-dominated look at high speeds
+        const shouldDrawPoint = shouldBeStatic || (!isUltraSpeed && (!isHyperspace || !shouldStreak));
         
         if (shouldDrawPoint) {
           ctx.beginPath();
           ctx.arc(starX, starY, size, 0, Math.PI * 2);
           
           // Use star's color if available, otherwise use white with alpha
-          // For static stars, make them slightly dimmer to indicate "idle" state
-          const pointAlpha = shouldBeStatic ? alpha * 0.85 : alpha;
+          // For static stars, make them slightly brighter to ensure visibility
+          const pointAlpha = shouldBeStatic ? Math.min(alpha * 1.2, 1.0) : alpha;
           ctx.fillStyle = star.color ? star.color.replace('1)', `${pointAlpha})`) : `rgba(255, 255, 255, ${pointAlpha})`;
           ctx.fill();
 
@@ -435,7 +443,7 @@ export const StarfieldCanvas: React.FC = () => {
     height: '100%',
     zIndex: warpMode === WARP_MODE.FULL ? 9999 : -10, // Use -10 for background to ensure it's behind all content
     pointerEvents: warpMode === WARP_MODE.FULL ? 'auto' : 'none',
-    opacity: warpMode === WARP_MODE.FULL ? 1 : 0.85, // Slightly reduced opacity for background mode to ensure UI readability
+    opacity: warpMode === WARP_MODE.FULL ? 1 : 0.9, // Increased opacity for better visibility in background mode
     backgroundColor: 'black', // Ensure black background to prevent edge artifacts
     transition: 'opacity 0.3s ease-in-out', // Smooth opacity transitions
   };

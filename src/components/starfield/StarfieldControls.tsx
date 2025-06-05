@@ -31,7 +31,7 @@ export const StarfieldControls: React.FC = () => {
     // Apply a custom non-linear mapping for more natural and perceivable speed changes
     // Lower end is more subtle and controllable, high end produces dramatic speed increases
     const minSpeed = 0.1;
-    const maxSpeed = 5.0;
+    // Maximum speed is 5.0, defined implicitly in the mapping functions below
     
     // Use a hybrid curve with multiple components for optimal control across the range:
     // 1. Linear component for predictable low-end control (0-30%)
@@ -40,28 +40,25 @@ export const StarfieldControls: React.FC = () => {
     let newSpeed;
     
     if (sliderValue <= 30) {
-      // Linear for subtle changes at the lower end (0-30% of slider)
-      const linearRange = maxSpeed * 0.2; // First 20% of the speed range
-      newSpeed = minSpeed + (sliderValue / 30) * linearRange;
+      // Linear mapping for low-end control (0-30% of slider range)
+      // Maps to 0.1 - 1.0 speed range
+      newSpeed = minSpeed + (sliderValue / 30) * 0.9;
     } else if (sliderValue <= 70) {
-      // Quadratic for middle range (30-70% of slider)
-      const midPoint = minSpeed + maxSpeed * 0.2; // Starting from end of linear section
-      const midRange = maxSpeed * 0.4; // Middle 40% of the speed range
-      const normalized = (sliderValue - 30) / 40; // Normalize to 0-1 within this range
-      newSpeed = midPoint + midRange * (normalized * normalized);
+      // Quadratic mapping for mid-range (30-70% of slider range)
+      // Maps to 1.0 - 2.5 speed range
+      const normalizedValue = (sliderValue - 30) / 40; // 0-1 for this range
+      newSpeed = 1.0 + (Math.pow(normalizedValue, 2) * 1.5);
     } else {
-      // Exponential for dramatic changes at the high end (70-100% of slider)
-      const highStart = minSpeed + maxSpeed * 0.6; // Starting from end of quadratic section
-      const highRange = maxSpeed * 0.4; // Final 40% of the speed range
-      const normalized = (sliderValue - 70) / 30; // Normalize to 0-1 within this range
-      // More aggressive exponential curve for high end
-      newSpeed = highStart + highRange * (Math.exp(normalized * 2.5) - 1) / (Math.exp(2.5) - 1);
+      // Exponential mapping for high-end (70-100% of slider range)
+      // Maps to 2.5 - 5.0 speed range with dramatic curve
+      const normalizedValue = (sliderValue - 70) / 30; // 0-1 for this range
+      newSpeed = 2.5 + (Math.pow(normalizedValue, 3) * 2.5);
     }
     
     // Round to 1 decimal place for display
     const roundedSpeed = Math.round(newSpeed * 10) / 10;
     
-    // Update store with new speed
+    // Update warp speed in store
     setWarpSpeed(roundedSpeed);
     
     // Update effective speed immediately for responsive feel
