@@ -30,6 +30,7 @@ export const StarfieldCanvas: React.FC = () => {
     warpMode,
     starfieldQuality,
     effectiveSpeed,
+    isThrusting,
     updateEffectiveSpeed
   } = useWarpStore();
 
@@ -140,7 +141,7 @@ export const StarfieldCanvas: React.FC = () => {
     const baseSpeedFactor = STAR_SPEED_FACTORS_BY_QUALITY[starfieldQuality];
     
     // Use effectiveSpeed from the store which handles:
-    // - Idle speed when no session is active (completely static with 0)
+    // - Idle speed when no session is active (subtle drift with IDLE_SPEED_FACTOR)
     // - Thrust speed during thrust effect
     // - Smooth transition after thrust
     const speedMultiplier = Math.min(
@@ -148,9 +149,8 @@ export const StarfieldCanvas: React.FC = () => {
       WARP_ANIMATION.MAX_EFFECTIVE_SPEED
     );
 
-    // Check if we should keep stars static (when not in session and in background mode)
-    // Force completely static stars in background mode when no session is active
-    const shouldBeStatic = !isSessionActive && warpMode === WARP_MODE.BACKGROUND;
+    // Check if we are in idle mode (not static anymore, but very slow drift)
+    const isIdleMode = !isSessionActive && warpMode === WARP_MODE.BACKGROUND;
     
     // Determine if we're in hyperspace mode based on our speed threshold
     const isHyperspace = speedMultiplier >= WARP_ANIMATION.HYPERSPACE_THRESHOLD;
@@ -161,29 +161,31 @@ export const StarfieldCanvas: React.FC = () => {
     const centerY = canvas.height / 2;
 
     starsRef.current.forEach((star) => {
-      // For static stars, ensure prevX/Y match the current position to avoid any streaking
-      if (shouldBeStatic) {
-        const factor = WARP_ANIMATION.MAX_DEPTH / (star.z || 1);
-        star.prevX = star.x * factor + centerX;
-        star.prevY = star.y * factor + centerY;
+      // For idle stars, ensure prevX/Y are properly tracked but with minimal movement
+      if (isIdleMode) {
+        // Save previous position for minimal streaking effect
+        star.prevX = star.x * (WARP_ANIMATION.MAX_DEPTH / (star.z || 1)) + centerX;
+        star.prevY = star.y * (WARP_ANIMATION.MAX_DEPTH / (star.z || 1)) + centerY;
+        
+        // Move star closer to viewer with the idle speed factor (very subtle)
+        star.z -= 0.25 * speedMultiplier; // Further reduced for idle mode to be extra subtle
       } else {
         // For moving stars, store previous position for streaking
         star.prevX = star.x * (WARP_ANIMATION.MAX_DEPTH / (star.z || 1)) + centerX;
         star.prevY = star.y * (WARP_ANIMATION.MAX_DEPTH / (star.z || 1)) + centerY;
 
         // Move star closer to viewer (faster with speedFactor)
-        // This is only done for non-static stars
         star.z -= 1 * speedMultiplier;
+      }
 
-        // Reset star when it gets too close
-        if (star.z <= 0) {
-          star.z = WARP_ANIMATION.MAX_DEPTH;
-          star.x = Math.random() * canvas.width * 2 - canvas.width;
-          star.y = Math.random() * canvas.height * 2 - canvas.height;
-          // Reset previous position to avoid streaking from old position
-          star.prevX = star.x;
-          star.prevY = star.y;
-        }
+      // Reset star when it gets too close
+      if (star.z <= 0) {
+        star.z = WARP_ANIMATION.MAX_DEPTH;
+        star.x = Math.random() * canvas.width * 2 - canvas.width;
+        star.y = Math.random() * canvas.height * 2 - canvas.height;
+        // Reset previous position to avoid streaking from old position
+        star.prevX = star.x;
+        star.prevY = star.y;
       }
 
       // Project star position to 2D
@@ -199,8 +201,15 @@ export const StarfieldCanvas: React.FC = () => {
         const alpha = sizeFactor;
         
         // Determine if we should draw a streak based on speed
-        // We never streak static stars, but we always show streaks at appropriate speeds when stars are moving
-        const shouldStreak = speedMultiplier >= WARP_ANIMATION.MIN_SPEED_FOR_STREAKS && !shouldBeStatic;
+        // For idle mode, we can have very subtle streaks
+        let shouldStreak;
+        if (isIdleMode) {
+          // In idle mode, only show subtle streaks occasionally for stars that are closer
+          shouldStreak = star.z < WARP_ANIMATION.MAX_DEPTH * 0.3 && speedMultiplier > 0;
+        } else {
+          // Normal streak logic for active sessions
+          shouldStreak = speedMultiplier >= WARP_ANIMATION.MIN_SPEED_FOR_STREAKS;
+        }
         
         if (shouldStreak && star.prevX !== undefined && star.prevY !== undefined) {
           // Calculate streak length based on speed and star's z-position using enhanced formula
@@ -302,7 +311,7 @@ export const StarfieldCanvas: React.FC = () => {
         // 2. OR it's not in hyperspace mode
         // 3. OR it's not streaking
         // This creates a cleaner, streak-dominated look at high speeds
-        const shouldDrawPoint = shouldBeStatic || (!isUltraSpeed && (!isHyperspace || !shouldStreak));
+        const shouldDrawPoint = isIdleMode || (!isUltraSpeed && (!isHyperspace || !shouldStreak));
         
         if (shouldDrawPoint) {
           ctx.beginPath();
@@ -310,7 +319,7 @@ export const StarfieldCanvas: React.FC = () => {
           
           // Use star's color if available, otherwise use white with alpha
           // For static stars, make them slightly brighter to ensure visibility
-          const pointAlpha = shouldBeStatic ? Math.min(alpha * 1.2, 1.0) : alpha;
+          const pointAlpha = isIdleMode ? Math.min(alpha * 1.2, 1.0) : alpha;
           ctx.fillStyle = star.color ? star.color.replace('1)', `${pointAlpha})`) : `rgba(255, 255, 255, ${pointAlpha})`;
           ctx.fill();
 
@@ -444,11 +453,22 @@ export const StarfieldCanvas: React.FC = () => {
     }
   }, [starfieldQuality]);
   
-  // Handle changes to session state
+  // Handle changes to session state or effective speed
   useEffect(() => {
-    // Update effective speed based on session state
+    // Immediately update the effective speed based on session state
     updateEffectiveSpeed(isSessionActive);
-  }, [isSessionActive]);
+    
+    // If animation is already running, no need to restart it
+    if (animationFrameIdRef.current) {
+      return;
+    }
+    
+    // Start animation if it should be running
+    if (warpMode !== WARP_MODE.NONE && starfieldQuality !== STARFIELD_QUALITY.OFF) {
+      console.log('Starting animation due to session state change:', isSessionActive, 'or effectiveSpeed change:', effectiveSpeed);
+      animationFrameIdRef.current = requestAnimationFrame(animateStars);
+    }
+  }, [isSessionActive, effectiveSpeed, isThrusting]);
 
   // Skip rendering if warp mode is none or quality is off
   if (warpMode === WARP_MODE.NONE || starfieldQuality === STARFIELD_QUALITY.OFF) {

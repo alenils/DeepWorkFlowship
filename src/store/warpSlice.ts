@@ -115,9 +115,9 @@ export const useWarpStore = create<WarpState & WarpActions>()(
           return;
         }
         
-        // If not in a session and in background mode, set speed to zero (completely static)
+        // If not in a session and in background mode, set speed to idle factor (subtle drift)
         if (!isSessionActive && state.warpMode === WARP_MODE.BACKGROUND) {
-          set({ effectiveSpeed: 0 }); // Ensure stars are completely static when not in session
+          set({ effectiveSpeed: WARP_ANIMATION.IDLE_SPEED_FACTOR }); // Use idle speed factor for subtle movement
         } else {
           // Otherwise use normal warp speed
           set({ effectiveSpeed: state.warpSpeed });
