@@ -29,9 +29,16 @@ export const SessionSummaryPanel = ({
   const [distractionCount, setDistractionCount] = useState(0);
   const [streakEnded, setStreakEnded] = useState(false);
 
+  // Effect for setting the quote only when panel first becomes visible
+  useEffect(() => {
+    if (isVisible) {
+      setQuote(getRandomQuote());
+    }
+  }, [isVisible]);
+
+  // Separate effect for handling session data changes
   useEffect(() => {
     if (isVisible && sessionData) {
-      setQuote(getRandomQuote());
       setComment(sessionData.comment || '');
       setDistractionCount(sessionData.distractions);
       

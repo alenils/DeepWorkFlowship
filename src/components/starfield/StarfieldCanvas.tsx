@@ -458,9 +458,10 @@ export const StarfieldCanvas: React.FC = () => {
     // Immediately update the effective speed based on session state
     updateEffectiveSpeed(isSessionActive);
     
-    // If animation is already running, no need to restart it
+    // Cancel any existing animation frame to avoid multiple loops
     if (animationFrameIdRef.current) {
-      return;
+      cancelAnimationFrame(animationFrameIdRef.current);
+      animationFrameIdRef.current = null;
     }
     
     // Start animation if it should be running
@@ -468,7 +469,7 @@ export const StarfieldCanvas: React.FC = () => {
       console.log('Starting animation due to session state change:', isSessionActive, 'or effectiveSpeed change:', effectiveSpeed);
       animationFrameIdRef.current = requestAnimationFrame(animateStars);
     }
-  }, [isSessionActive, effectiveSpeed, isThrusting]);
+  }, [isSessionActive, effectiveSpeed, warpMode, starfieldQuality, isThrusting, dimensions]);
 
   // Skip rendering if warp mode is none or quality is off
   if (warpMode === WARP_MODE.NONE || starfieldQuality === STARFIELD_QUALITY.OFF) {
