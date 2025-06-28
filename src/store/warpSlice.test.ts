@@ -16,7 +16,7 @@ describe('warpSlice', () => {
     
     // Check if state matches initialWarpState
     expect(state.warpMode).toBe(initialWarpState.warpMode);
-    expect(state.warpSpeed).toBe(initialWarpState.warpSpeed);
+    expect(state.speedMultiplier).toBe(initialWarpState.speedMultiplier);
     expect(state.showExitButton).toBe(initialWarpState.showExitButton);
     expect(state.showDistractionInWarp).toBe(initialWarpState.showDistractionInWarp);
   });
@@ -46,18 +46,18 @@ describe('warpSlice', () => {
     expect(useWarpStore.getState().warpMode).toBe(WARP_MODE.BACKGROUND);
   });
   
-  it('should update warpSpeed correctly', () => {
-    const { setWarpSpeed } = useWarpStore.getState();
-    const newSpeed = 2.0;
+  it('should update speedMultiplier correctly', () => {
+    const { setSpeedMultiplier } = useWarpStore.getState();
+    const newMultiplier = 0.5; // Value between 0.1 and 1.0
     
     // Check initial value
-    expect(useWarpStore.getState().warpSpeed).toBe(initialWarpState.warpSpeed);
+    expect(useWarpStore.getState().speedMultiplier).toBe(initialWarpState.speedMultiplier);
     
-    // Update speed
+    // Update multiplier
     act(() => {
-      setWarpSpeed(newSpeed);
+      setSpeedMultiplier(newMultiplier);
     });
-    expect(useWarpStore.getState().warpSpeed).toBe(newSpeed);
+    expect(useWarpStore.getState().speedMultiplier).toBe(newMultiplier);
   });
   
   it('should update showExitButton correctly', () => {

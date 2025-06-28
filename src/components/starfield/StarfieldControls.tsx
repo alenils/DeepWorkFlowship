@@ -3,90 +3,86 @@ import {
   WARP_MODE, 
   STARFIELD_QUALITY, 
   STARFIELD_QUALITY_LABELS,
-  STAR_COUNTS_BY_QUALITY,
-  WARP_ANIMATION
+  STAR_COUNTS_BY_QUALITY
 } from '../../constants';
+import { useTimerStore } from '../../store/timerSlice';
+import { useFocusBoosterStore } from '../../store/focusBoosterSlice';
 
 export const StarfieldControls: React.FC = () => {
   const {
     warpMode,
-    warpSpeed,
+    speedMultiplier,
     starfieldQuality,
     setWarpMode,
-    setWarpSpeed,
+    setSpeedMultiplier,
     setStarfieldQuality,
-    updateEffectiveSpeed
+    effectiveSpeed
   } = useWarpStore();
+
+  // Get focus booster state
+  const { startBooster } = useFocusBoosterStore();
+
+  // Get session state to determine label context
+  const { isSessionActive } = useTimerStore();
 
   // Handle warp mode change
   const handleWarpModeChange = (mode: typeof WARP_MODE[keyof typeof WARP_MODE]) => {
-    setWarpMode(mode);
+    if (mode === WARP_MODE.FULL) {
+      // Start the focus booster when entering full warp mode
+      startBooster();
+    } else {
+      setWarpMode(mode);
+    }
   };
 
-  // Handle warp speed change with more intuitive mapping for better control
-  const handleWarpSpeedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle speed multiplier change (0.1 to 1.0)
+  const handleSpeedMultiplierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Get slider value (0-100)
     const sliderValue = parseFloat(e.target.value);
     
-    // Apply a custom non-linear mapping for more natural and perceivable speed changes
-    // Lower end is more subtle and controllable, high end produces dramatic speed increases
-    const minSpeed = 0.1;
-    // Maximum speed is 5.0, defined implicitly in the mapping functions below
-    
-    // Use a hybrid curve with multiple components for optimal control across the range:
-    // 1. Linear component for predictable low-end control (0-30%)
-    // 2. Quadratic component for smooth mid-range acceleration (30-70%)
-    // 3. Exponential component for dramatic high-end speeds (70-100%)
-    let newSpeed;
+    // Convert slider value (0-100) to multiplier (0.1-1.0)
+    // Use a non-linear mapping for better control
+    let multiplier;
     
     if (sliderValue <= 30) {
-      // Linear mapping for low-end control (0-30% of slider range)
-      // Maps to 0.1 - 1.0 speed range
-      newSpeed = minSpeed + (sliderValue / 30) * 0.9;
+      // Lower range (0-30%) maps to 0.1-0.4 (30% of range)
+      multiplier = 0.1 + (sliderValue / 30) * 0.3;
     } else if (sliderValue <= 70) {
-      // Quadratic mapping for mid-range (30-70% of slider range)
-      // Maps to 1.0 - 2.5 speed range
-      const normalizedValue = (sliderValue - 30) / 40; // 0-1 for this range
-      newSpeed = 1.0 + (Math.pow(normalizedValue, 2) * 1.5);
+      // Mid range (30-70%) maps to 0.4-0.7 (30% of range)
+      const normalizedValue = (sliderValue - 30) / 40;
+      multiplier = 0.4 + normalizedValue * 0.3;
     } else {
-      // Exponential mapping for high-end (70-100% of slider range)
-      // Maps to 2.5 - 5.0 speed range with dramatic curve
-      const normalizedValue = (sliderValue - 70) / 30; // 0-1 for this range
-      newSpeed = 2.5 + (Math.pow(normalizedValue, 3) * 2.5);
+      // Upper range (70-100%) maps to 0.7-1.0 (30% of range)
+      // Use exponential curve for finer control at higher speeds
+      const normalizedValue = (sliderValue - 70) / 30;
+      multiplier = 0.7 + Math.pow(normalizedValue, 1.5) * 0.3;
     }
     
-    // Round to 1 decimal place for display
-    const roundedSpeed = Math.round(newSpeed * 10) / 10;
+    // Round to 2 decimal places
+    const roundedMultiplier = Math.round(multiplier * 100) / 100;
     
-    // Update warp speed in store
-    setWarpSpeed(roundedSpeed);
-    
-    // Update effective speed immediately for responsive feel
-    updateEffectiveSpeed(true); // Pass true to ensure we get normal speed, not idle
+    // Update speed multiplier in store
+    setSpeedMultiplier(roundedMultiplier);
   };
 
-  // Convert warp speed back to slider value (inverse of the curve above)
-  const speedToSliderValue = (speed: number) => {
-    const minSpeed = 0.1;
-    const maxSpeed = 5.0;
+  // Convert multiplier back to slider value
+  const multiplierToSliderValue = (multiplier: number) => {
+    // Ensure multiplier is within range
+    const clampedMultiplier = Math.max(0.1, Math.min(1.0, multiplier));
     
-    // Normalize speed to 0-1 range
-    const normalizedSpeed = Math.max(0, Math.min(1, (speed - minSpeed) / (maxSpeed - minSpeed)));
+    // Inverse mapping
     let sliderValue;
     
-    // Apply inverse of our curve segments
-    if (normalizedSpeed <= 0.2) {
-      // Inverse of linear section (first 20% of speed range)
-      sliderValue = (normalizedSpeed / 0.2) * 30;
-    } else if (normalizedSpeed <= 0.6) {
-      // Inverse of quadratic section (middle 40% of speed range)
-      const normalizedInRange = (normalizedSpeed - 0.2) / 0.4;
-      sliderValue = 30 + 40 * Math.sqrt(normalizedInRange);
+    if (clampedMultiplier <= 0.4) {
+      // Inverse of lower range
+      sliderValue = ((clampedMultiplier - 0.1) / 0.3) * 30;
+    } else if (clampedMultiplier <= 0.7) {
+      // Inverse of mid range
+      sliderValue = 30 + ((clampedMultiplier - 0.4) / 0.3) * 40;
     } else {
-      // Inverse of exponential section (final 40% of speed range)
-      const normalizedInRange = (normalizedSpeed - 0.6) / 0.4;
-      // Approximate inverse of exponential function
-      sliderValue = 70 + 30 * (Math.log(normalizedInRange * (Math.exp(2.5) - 1) + 1) / 2.5);
+      // Inverse of upper range with exponential curve
+      const normalizedValue = (clampedMultiplier - 0.7) / 0.3;
+      sliderValue = 70 + Math.pow(normalizedValue, 1/1.5) * 30;
     }
     
     return Math.min(100, Math.max(0, sliderValue));
@@ -98,18 +94,32 @@ export const StarfieldControls: React.FC = () => {
     setStarfieldQuality(quality);
   };
 
-  // Get descriptive speed label with enhanced feedback
-  const getSpeedLabel = (speed: number) => {
-    if (speed >= 4.5) {
-      return `${speed.toFixed(1)}x (Hyperspace)`;
-    } else if (speed >= 3.0) {
-      return `${speed.toFixed(1)}x (Warp)`;  
-    } else if (speed >= WARP_ANIMATION.MIN_SPEED_FOR_STREAKS) {
-      return `${speed.toFixed(1)}x (Streaking)`;
-    } else if (speed <= 0.2) {
-      return `${speed.toFixed(1)}x (Crawl)`;
+  // Get descriptive speed label based on current context
+  const getSpeedLabel = () => {
+    // Show percentage of maximum speed based on multiplier
+    const percentValue = Math.round(speedMultiplier * 100);
+    
+    // Base label shows the percentage
+    let baseLabel = `${percentValue}%`;
+    
+    // Add context based on session state and effective speed
+    if (isSessionActive) {
+      // During a session, show what the effective speed actually is
+      const actualSpeed = effectiveSpeed.toFixed(1);
+      
+      if (effectiveSpeed >= 8.0) {
+        return `${baseLabel} (Ultra Hyperspace - ${actualSpeed}x)`;
+      } else if (effectiveSpeed >= 5.0) {
+        return `${baseLabel} (Hyperspace - ${actualSpeed}x)`;
+      } else if (effectiveSpeed >= 3.0) {
+        return `${baseLabel} (Warp - ${actualSpeed}x)`;
+      } else {
+        return `${baseLabel} (${actualSpeed}x)`;
+      }
+    } else {
+      // When not in a session, just show the percentage
+      return `${baseLabel} Speed`;
     }
-    return `${speed.toFixed(1)}x`;
   };
 
   return (
@@ -151,25 +161,27 @@ export const StarfieldControls: React.FC = () => {
           </button>
         </div>
 
-        {/* Warp Speed Slider */}
+        {/* Speed Multiplier Slider */}
         <div className="space-y-1">
           <div className="flex justify-between">
-            <label className="text-sm text-gray-700 dark:text-gray-300">Warp Speed</label>
-            <span className="text-sm text-gray-700 dark:text-gray-300">{getSpeedLabel(warpSpeed)}</span>
+            <label className="text-sm text-gray-700 dark:text-gray-300">
+              {isSessionActive ? "Warp Speed Limiter" : "Warp Speed"}
+            </label>
+            <span className="text-sm text-gray-700 dark:text-gray-300">{getSpeedLabel()}</span>
           </div>
           <input
             type="range"
             min="0"
             max="100"
             step="1"
-            value={speedToSliderValue(warpSpeed)}
-            onChange={handleWarpSpeedChange}
+            value={multiplierToSliderValue(speedMultiplier)}
+            onChange={handleSpeedMultiplierChange}
             disabled={warpMode === WARP_MODE.NONE}
             className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
           />
           <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
-            <span>Slow</span>
-            <span>Fast</span>
+            <span>10%</span>
+            <span>100%</span>
           </div>
         </div>
 

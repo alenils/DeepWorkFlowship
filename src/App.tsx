@@ -18,6 +18,7 @@ import { useHistoryStore, SessionData, BreakData, HistoryItem } from './store/hi
 import { useWarpStore } from './store/warpSlice'
 import { StarfieldCanvas } from './components/starfield/StarfieldCanvas'
 import { StarfieldControls } from './components/starfield/StarfieldControls'
+import { FocusBooster } from './components/focusBooster/FocusBooster'
 import { 
   SOUND_FILES, 
   WARP_MODE, 
@@ -459,6 +460,9 @@ function App() {
       <Toast 
         message={toast.message}
       />
+
+      {/* Focus Booster */}
+      <FocusBooster />
     </div>
   );
 }

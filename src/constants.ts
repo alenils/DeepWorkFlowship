@@ -42,6 +42,20 @@ export const SOUND_FILES = {
   CHECK: 'check.mp3'
 } as const;
 
+// ===== FOCUS BOOSTER =====
+export const FOCUS_BOOSTER = {
+  DURATION_MS: 30000, // 30 seconds for the gaze-lock exercise
+  FADE_DURATION_MS: 1000, // 1 second fade in/out for UI elements
+  TEXT_FADE_IN_DURATION_MS: 1500, // 1.5 seconds fade in for text
+  TEXT_FADE_OUT_DURATION_MS: 1500, // 1.5 seconds fade out for text
+  COMPLETION_TEXT_DURATION_MS: 2000, // 2 seconds to show "FOCUS PRIMED" text
+  SFX: {
+    START: 'booster_start.mp3',
+    AMBIENT: 'booster_ambient.mp3',
+    COMPLETE: 'booster_complete.mp3'
+  }
+} as const;
+
 // ===== WARP MODE =====
 export const WARP_MODE = {
   NONE: 'none',
@@ -58,10 +72,12 @@ export const WARP_ANIMATION = {
   STREAK_INTENSITY: 2.0,   // Significantly increased intensity for streaking effect
   IDLE_SPEED_FACTOR: 0.05, // Speed factor when no session is active (subtle drift instead of static)
   THRUST_SPEED_MULTIPLIER: 8.0, // Increased speed multiplier during thrust effect
-  THRUST_FADE_DURATION_MS: 2000, // Extended duration for thrust effect to fade back to normal speed
+  THRUST_FADE_DURATION_MS: 3000, // Extended from 2000ms to 3000ms for a longer initial thrust feel
   MAX_STREAK_LENGTH: 100,  // Significantly increased maximum streak length for dramatic effect
-  MAX_EFFECTIVE_SPEED: 20.0, // Increased maximum effective speed for animation calculations
+  MAX_EFFECTIVE_SPEED: 25.0, // Increased from 20.0 to 25.0 to allow for higher maximum speeds
   THRUST_EFFECT_SPEED: 25.0, // Dramatically increased speed for thrust effect
+  DEFAULT_SESSION_SPEED: 8.0, // Default speed during an active session (high warp speed)
+  DECELERATION_DURATION_MS: 2000, // Duration of smooth deceleration when a session ends
   STREAK_BASE_LENGTH: 18,  // Increased base length for star streaks even at minimum streaking speed
   STREAK_LENGTH_FACTOR: 35, // Increased multiplier for calculating streak length based on speed
   HYPERSPACE_THRESHOLD: 6.0 // Reduced threshold for hyperspace-like effects
@@ -132,6 +148,7 @@ export const STORAGE_KEYS = {
   APP: 'deepwork-app-storage',
   WARP: 'deepwork-warp-storage',
   POSTURE: 'deepwork-posture-storage',
+  FOCUS_BOOSTER: 'deepwork-focus-booster-storage',
   DARK_MODE: 'darkMode',
   WARP_MODE: 'warpMode',
   STARFIELD_QUALITY: 'starfieldQuality',

@@ -214,9 +214,9 @@ export const useTimerStore = create<TimerState>()(
         const historyStore = useHistoryStore.getState();
         historyStore.closeOpenBreak();
         
-        // Trigger thrust effect in warp store
+        // Use the new startSessionWarp function instead of triggerThrust
         const warpStore = useWarpStore.getState();
-        warpStore.triggerThrust();
+        warpStore.startSessionWarp();
         
         // Play sound - moved to component for now
         // if (SFX && SFX.start) playSfx(SFX.start);
@@ -286,6 +286,10 @@ export const useTimerStore = create<TimerState>()(
           isRunning: false,
           remainingTime: 0,
         });
+        
+        // Trigger smooth deceleration in warp store
+        const warpStore = useWarpStore.getState();
+        warpStore.endSessionWarp();
         
         // Create session data for history
         const sessionData: SessionData = {
