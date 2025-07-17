@@ -29,6 +29,7 @@ export const initialTimerState = {
   currentGoal: '',
   currentDifficulty: DIFFICULTY.MEDIUM,
   sessionStartTime: 0,
+  sessionEndTime: null as number | null,
   remainingTime: 0,
   distractionCount: 0,
   sessionDurationMs: 0,
@@ -49,6 +50,7 @@ export interface TimerState {
   currentGoal: string;
   currentDifficulty: Difficulty;
   sessionStartTime: number;
+  sessionEndTime: number | null; // New field for accurate background timing
   remainingTime: number;
   distractionCount: number;
   sessionDurationMs: number;
@@ -64,6 +66,7 @@ export interface TimerState {
   setCurrentGoal: (goal: string) => void;
   setCurrentDifficulty: (difficulty: Difficulty) => void;
   setSessionStartTime: (time: number) => void;
+  setSessionEndTime: (time: number | null) => void; // New setter
   setRemainingTime: (time: number | ((prevTime: number) => number)) => void;
   setDistractionCount: (count: number) => void;
   incrementDistractionCount: () => void;
@@ -80,6 +83,7 @@ export interface TimerState {
   stopTimer: () => void;
   addDistraction: () => void;
   endSession: () => void;
+  tick: () => void; // New function to update timer based on real time
   
   // Reset function for testing
   reset: () => void;
@@ -91,6 +95,22 @@ export const useTimerHook = () => {
   const intervalRef = useRef<TimerId>(null);
   const timerEndedRef = useRef<boolean>(false);
   
+  // Handle visibility change to update timer when tab becomes active
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && timerStore.isSessionActive && !timerStore.isPaused) {
+        // When tab becomes visible again, trigger an immediate tick
+        console.log('[TimerHook] Tab became visible, triggering immediate tick');
+        timerStore.tick();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [timerStore]);
+  
   // Handle timer tick effect - this replaces the old useTimer hook logic
   useEffect(() => {
     // Clear any existing interval
@@ -101,28 +121,27 @@ export const useTimerHook = () => {
     
     // If timer should be running, start the interval
     if (timerStore.isRunning && !timerStore.isPaused) {
+      console.log('[TimerHook] Starting timer interval');
       timerEndedRef.current = false;
       
+      // Initial tick to set the correct time immediately
+      try {
+        timerStore.tick();
+      } catch (error) {
+        console.error('[TimerHook] Error in initial tick:', error);
+      }
+      
       intervalRef.current = setInterval(() => {
-        // Update remainingTime and check for timer end
-        timerStore.setRemainingTime((prevTime: number) => {
-          const isInfinite = timerStore.sessionDurationMs === Number.MAX_SAFE_INTEGER;
-          if (!isInfinite && prevTime <= TIMER_UPDATE_INTERVAL_MS) {
-            if (!timerEndedRef.current) {
-              timerEndedRef.current = true;
-              if (intervalRef.current) {
-                clearInterval(intervalRef.current);
-                intervalRef.current = null;
-              }
-              
-              // End the session
-              setTimeout(() => timerStore.endSession(), 0);
-              return 0;
-            }
-            return 0;
+        try {
+          timerStore.tick();
+        } catch (error) {
+          console.error('[TimerHook] Error in timer tick:', error);
+          // On error, clear the interval to prevent repeated errors
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
           }
-          return prevTime - TIMER_UPDATE_INTERVAL_MS;
-        });
+        }
       }, TIMER_UPDATE_INTERVAL_MS);
     }
     
@@ -133,7 +152,7 @@ export const useTimerHook = () => {
         intervalRef.current = null;
       }
     };
-  }, [timerStore]);
+  }, [timerStore.isRunning, timerStore.isPaused]);
   
   return timerStore;
 };
@@ -152,6 +171,7 @@ export const useTimerStore = create<TimerState>()(
       setCurrentGoal: (goal) => set({ currentGoal: goal }),
       setCurrentDifficulty: (difficulty) => set({ currentDifficulty: difficulty }),
       setSessionStartTime: (time) => set({ sessionStartTime: time }),
+      setSessionEndTime: (time) => set({ sessionEndTime: time }),
       setRemainingTime: (time) => {
         if (typeof time === 'function') {
           set((state) => ({ remainingTime: time(state.remainingTime) }));
@@ -168,10 +188,54 @@ export const useTimerStore = create<TimerState>()(
         isRunning: false,
         currentGoal: '',
         sessionStartTime: 0,
+        sessionEndTime: null,
         remainingTime: 0,
         distractionCount: 0,
         sessionDurationMs: 0
       }),
+      
+      // New tick function for accurate timing
+      tick: () => {
+        const state = get();
+        
+        // Skip if not in active session or paused
+        if (!state.isSessionActive || state.isPaused) return;
+        
+        // Handle infinite sessions differently
+        if (state.isInfinite) {
+          // For infinite sessions, just decrement by interval time
+          // This keeps the timer running without an end condition
+          const newTime = state.remainingTime - TIMER_UPDATE_INTERVAL_MS;
+          console.log(`[TimerStore] Infinite tick: remainingTime=${newTime}`);
+          set({ remainingTime: newTime });
+          return;
+        }
+        
+        // For finite sessions, calculate based on end time
+        const { sessionEndTime } = state;
+        
+        // If no end time is set (should not happen for finite sessions), return
+        if (sessionEndTime === null) {
+          console.error('[TimerStore] Error: sessionEndTime is null for finite session');
+          return;
+        }
+        
+        // Calculate new remaining time based on current time and end time
+        const now = Date.now();
+        const newRemainingTime = Math.max(0, sessionEndTime - now);
+        
+        console.log(`[TimerStore] Finite tick: remainingTime=${newRemainingTime}, endTime=${sessionEndTime}, now=${now}`);
+        
+        // Update remaining time
+        set({ remainingTime: newRemainingTime });
+        
+        // Check if timer is finished
+        if (newRemainingTime <= 0) {
+          // End the session
+          console.log(`[TimerStore] Session finished`);
+          setTimeout(() => get().endSession(), 0);
+        }
+      },
       
       // Complex actions
       handleMinutesChange: (value) => {
@@ -221,19 +285,24 @@ export const useTimerStore = create<TimerState>()(
         // Play sound - moved to component for now
         // if (SFX && SFX.start) playSfx(SFX.start);
         
+        const now = Date.now();
+        const endTime = state.isInfinite ? null : (now + durationMs);
+        
+        console.log(`[TimerStore] Starting Session: Goal='${finalGoal}', Duration=${durationMinutes}min (${durationMs}ms)`);
+        console.log(`[TimerStore] isInfinite=${state.isInfinite}, sessionEndTime=${endTime}`);
+        
         // Update state
         set({
           sessionDurationMs: durationMs,
           currentGoal: finalGoal,
-          sessionStartTime: Date.now(),
+          sessionStartTime: now,
+          sessionEndTime: endTime,
           remainingTime: durationMs,
           distractionCount: 0,
           isPaused: false,
           isSessionActive: true,
           isRunning: true
         });
-        
-        console.log(`[TimerStore] Starting Session: Goal='${finalGoal}', Duration=${durationMinutes}min (${durationMs}ms)`);
       },
       
       pauseTimer: () => {
@@ -285,6 +354,7 @@ export const useTimerStore = create<TimerState>()(
           isPaused: false,
           isRunning: false,
           remainingTime: 0,
+          sessionEndTime: null,
         });
         
         // Trigger smooth deceleration in warp store

@@ -53,6 +53,31 @@ function App() {
     addDistraction
   } = useTimerStore();
   
+  // Update browser tab title based on session status and remaining time
+  useEffect(() => {
+    const DEFAULT_TITLE = "Deep Work: Ultimate Dashboard";
+    
+    if (isSessionActive && remainingTime > 0) {
+      // Calculate minutes and seconds from remaining milliseconds
+      const totalSeconds = Math.floor(remainingTime / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      
+      // Format as MM:SS
+      const newTitle = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} - Deep Work`;
+      console.log(`[App] Updating tab title: ${newTitle} (remainingTime: ${remainingTime}ms)`);
+      document.title = newTitle;
+    } else {
+      console.log(`[App] Resetting tab title to default (isSessionActive: ${isSessionActive}, remainingTime: ${remainingTime}ms)`);
+      document.title = DEFAULT_TITLE;
+    }
+    
+    // Cleanup function to reset title when component unmounts
+    return () => {
+      document.title = DEFAULT_TITLE;
+    };
+  }, [isSessionActive, remainingTime]);
+  
   // Get history state from store
   const {
     history,
