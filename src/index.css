@@ -10,15 +10,26 @@
     --accent-red: #ef4444;
   }
   
-  /* Base styles for HTML, body and root - transparent backgrounds */
-  html, body, #root {
+  /* Base styles for HTML, body and root - ensure black background */
+  html, body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden; /* Prevent horizontal scrollbar */
+    background-color: black; /* Critical for dark theme consistency */
+    color: white; /* Default text color for dark theme */
+  }
+
+  /* Root container styles */
+  #root {
     height: 100%;
     width: 100%;
     margin: 0;
     padding: 0;
     overflow-x: hidden; /* Prevent horizontal scrollbar */
     overflow-y: auto; /* Allow vertical scrolling */
-    background-color: transparent; /* Critical for layering */
+    background-color: transparent; /* Allow root to be transparent against black body */
     position: relative;
     transform-style: preserve-3d; /* Force a stacking context */
     -webkit-transform-style: preserve-3d; /* For Safari */
