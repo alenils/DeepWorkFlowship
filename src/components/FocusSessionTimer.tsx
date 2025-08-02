@@ -170,9 +170,9 @@ export const FocusSessionTimer = ({
             goalInput
             w-[60px] text-center
             px-3 py-2 border rounded-lg
-            focus:outline-none focus:ring-2 focus:ring-blue-500
+            focus:outline-none focus:ring-2 focus:ring-deep-purple-500
             dark:bg-gray-700 dark:border-gray-600 dark:text-white
-            dark:focus:ring-blue-400
+            dark:focus:ring-deep-purple-400
             text-[0.85rem]
             ${isSessionActive ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed' : ''}
           `}
@@ -189,7 +189,7 @@ export const FocusSessionTimer = ({
             tabIndex={4}
             onClick={handleStart}
             disabled={!isInfinite && !minutes}
-            className="w-28 h-10 rounded-full bg-[color:var(--accent-red)] text-white font-semibold hover:bg-red-700 transition-colors"
+            className="w-28 h-10 rounded-full bg-deep-purple-600 text-white font-semibold hover:bg-deep-purple-700 dark:bg-deep-purple-700 dark:hover:bg-deep-purple-800 transition-colors"
             title={`Streak sessions: ${streakCount}`}
           >
             JUST DO IT
@@ -203,10 +203,7 @@ export const FocusSessionTimer = ({
               className={`
                 px-4 py-2 rounded-lg font-medium text-sm
                 transition-all duration-300 ease-in-out
-                ${isPaused
-                  ? 'bg-green-500 text-white hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700'
-                  : 'bg-orange-500 text-white hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700'
-                }
+                bg-deep-purple-600 text-white hover:bg-deep-purple-700 dark:bg-deep-purple-700 dark:hover:bg-deep-purple-800
                 ${isCompact ? 'text-sm py-2' : ''}
               `}
               title={pauseMessage}
@@ -218,7 +215,7 @@ export const FocusSessionTimer = ({
               onClick={handleStop}
               className={`
                 px-3 py-1 rounded font-semibold 
-                bg-red-600 hover:bg-red-700 text-white
+                bg-deep-purple-600 text-white hover:bg-deep-purple-700 dark:bg-deep-purple-700 dark:hover:bg-deep-purple-800
                 transition-opacity dark:opacity-90 dark:hover:opacity-100
                 ${isCompact ? 'text-sm' : ''}
               `}

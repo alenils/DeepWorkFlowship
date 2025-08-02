@@ -112,26 +112,40 @@ export const FocusBooster: React.FC = () => {
           />
         </div>
         
-        {/* Initial text - Apple-inspired design */}
-        <div 
-          className={`absolute text-center transition-opacity duration-1500 ${
+        {/* Initial text - curved around the circle */}
+        <svg 
+          className={`absolute transition-opacity duration-1500 ${
             showInitialText ? 'opacity-100' : 'opacity-0'
           }`}
-          style={{ 
-            top: '120px',
-            color: '#ffffff',
-            fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif',
-            fontSize: '15px',
-            fontWeight: '400',
-            letterSpacing: '-0.01em',
-            lineHeight: '1.3'
+          width="240" 
+          height="240" 
+          viewBox="0 0 240 240"
+          style={{
+            top: '-60px',
+            left: '-60px'
           }}
         >
-          <div>Fixate</div>
-          <div>on</div>
-          <div>the</div>
-          <div>star</div>
-        </div>
+          <path
+            id="textPath"
+            d="M120,180 A90,90 0 0,1 120,30"
+            fill="none"
+            stroke="none"
+          />
+          <text
+            style={{
+              fill: '#ffffff',
+              fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+              fontSize: '14px',
+              fontWeight: '700',
+              letterSpacing: '0.1em',
+              textShadow: '0 0 1px white'
+            }}
+          >
+            <textPath href="#textPath" startOffset="50%" textAnchor="middle">
+              FIXATE ON THE STAR
+            </textPath>
+          </text>
+        </svg>
         
         {/* Completion text - Apple-inspired design */}
         <div 
@@ -141,10 +155,11 @@ export const FocusBooster: React.FC = () => {
           style={{ 
             top: '120px',
             color: '#ffffff',
-            fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif',
+            fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
             fontSize: '18px',
-            fontWeight: '600',
-            letterSpacing: '-0.02em'
+            fontWeight: '700',
+            letterSpacing: '-0.05em',
+            textShadow: '0 0 1px white'
           }}
         >
           FOCUS PRIMED

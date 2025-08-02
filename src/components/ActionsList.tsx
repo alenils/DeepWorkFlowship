@@ -76,7 +76,7 @@ export const ActionsList = () => {
   
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
-      <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">✅ Today's Actions</h2>
+      <h2 className="text-lg text-gray-800 dark:text-white mb-4">Today's Actions</h2>
       
       {/* Add new item form */}
       <form onSubmit={handleAddItem} className="mb-4 flex items-center gap-2">
@@ -85,12 +85,12 @@ export const ActionsList = () => {
           value={newItemText}
           onChange={e => setNewItemText(e.target.value)}
           placeholder="Add a new task..."
-          className="flex-grow min-w-0 max-w-[calc(100%-96px)] p-2 border rounded-l focus:outline-none focus:ring-2 focus:ring-blue-500 
+          className="flex-grow min-w-0 max-w-[calc(100%-96px)] p-2 border rounded-l focus:outline-none focus:ring-2 focus:ring-deep-purple-500 
             dark:bg-gray-700 dark:border-gray-600 dark:text-white"
         />
         <button 
           type="submit"
-          className="w-16 bg-blue-500 text-white p-2 rounded-r font-medium hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
+          className="w-16 bg-deep-purple-600 text-white p-2 rounded-r font-medium hover:bg-deep-purple-700 dark:bg-deep-purple-700 dark:hover:bg-deep-purple-800"
         >
           Add
         </button>
@@ -117,8 +117,8 @@ export const ActionsList = () => {
                   type="checkbox"
                   checked={item.done}
                   onChange={() => handleToggleItem(item.id)}
-                  className="h-5 w-5 rounded border-gray-300 text-blue-600 transition-colors
-                    focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 cursor-pointer"
+                  className="h-5 w-5 rounded border-gray-300 text-deep-purple-600 transition-colors
+                    focus:ring-deep-purple-500 dark:border-gray-600 dark:bg-gray-700 cursor-pointer"
                 />
                 <span className={`text-gray-800 dark:text-gray-200 ${item.done ? 'text-gray-500 dark:text-gray-400' : ''}`}>
                   {item.text}

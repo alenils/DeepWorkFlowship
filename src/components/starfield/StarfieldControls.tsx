@@ -124,7 +124,7 @@ export const StarfieldControls: React.FC = () => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-4">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Starfield Controls</h3>
+      <h3 className="text-lg text-gray-900 dark:text-white mb-3">Starfield Controls</h3>
       
       <div className="space-y-4">
         {/* Warp Mode Selection */}
@@ -133,7 +133,7 @@ export const StarfieldControls: React.FC = () => {
             onClick={() => handleWarpModeChange(WARP_MODE.NONE)}
             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
               warpMode === WARP_MODE.NONE
-                ? 'bg-blue-600 text-white'
+                ? 'bg-deep-purple-600 text-white'
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
             }`}
           >
@@ -143,7 +143,7 @@ export const StarfieldControls: React.FC = () => {
             onClick={() => handleWarpModeChange(WARP_MODE.BACKGROUND)}
             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
               warpMode === WARP_MODE.BACKGROUND
-                ? 'bg-blue-600 text-white'
+                ? 'bg-deep-purple-600 text-white'
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
             }`}
           >
@@ -153,7 +153,7 @@ export const StarfieldControls: React.FC = () => {
             onClick={() => handleWarpModeChange(WARP_MODE.FULL)}
             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
               warpMode === WARP_MODE.FULL
-                ? 'bg-blue-600 text-white'
+                ? 'bg-deep-purple-600 text-white'
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
             }`}
           >
@@ -192,7 +192,7 @@ export const StarfieldControls: React.FC = () => {
             value={starfieldQuality}
             onChange={handleQualityChange}
             disabled={warpMode === WARP_MODE.NONE}
-            className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
+            className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-deep-purple-500 focus:border-deep-purple-500 disabled:opacity-50"
           >
             {Object.entries(STARFIELD_QUALITY).map(([_, value]) => (
               <option key={value} value={value}>

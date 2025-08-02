@@ -167,7 +167,7 @@ export const SessionSummaryPanel = ({
                 onKeyDown={(e) => { if (e.key === 'Enter') { handleSave(); e.preventDefault(); } }}
                 maxLength={40}
                 placeholder="Brief comment on this session..."
-                className="w-full p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="w-full p-2 border rounded-md focus:ring-deep-purple-500 focus:border-deep-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
             
@@ -175,7 +175,7 @@ export const SessionSummaryPanel = ({
             <div className="flex justify-end mt-2">
               <button
                 onClick={handleSave}
-                className="px-4 py-2 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-600 transition-colors"
+                className="px-4 py-2 bg-deep-purple-600 text-white rounded-md text-sm hover:bg-deep-purple-700 transition-colors"
               >
                 Save &amp; Close
               </button>

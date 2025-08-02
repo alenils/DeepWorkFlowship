@@ -50,7 +50,7 @@ export const TimerProgressBar: React.FC<TimerProgressBarProps> = () => {
     <div className="w-full h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden relative mt-2">
       <div 
         ref={progressRef}
-        className="h-full bg-blue-500 dark:bg-blue-400 rounded-full"
+        className="h-full bg-deep-purple-600 dark:bg-deep-purple-500 rounded-full"
         style={{
           width: `${progress * 100}%`,
           transform: `translateY(${verticalPosition}px)`,

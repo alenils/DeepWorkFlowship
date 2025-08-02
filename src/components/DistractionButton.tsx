@@ -20,7 +20,7 @@ const TallyMarks = ({ count }: { count: number }) => {
   // Remainder
   marks += '|'.repeat(remainder);
 
-  return <span className="text-red-500 dark:text-red-400 font-mono tracking-tighter text-sm ml-2">{marks || '0'}</span>;
+  return <span className="text-white dark:text-white font-mono tracking-tighter text-sm ml-2">{marks || '0'}</span>;
 };
 
 export const DistractionButton = ({ 
@@ -50,9 +50,10 @@ export const DistractionButton = ({
       onClick={handleButtonClick}
       className={`
         flex items-center
-        bg-red-600 hover:bg-red-700 text-white
+        bg-deep-purple-600 text-white hover:bg-deep-purple-700 dark:bg-deep-purple-700 dark:hover:bg-deep-purple-800
         px-3 py-1 rounded font-semibold 
-        transition-opacity dark:opacity-90 dark:hover:opacity-100
+        shadow-md border-2 border-white
+        transition-all dark:opacity-95 dark:hover:opacity-100
         ${className}
       `}
       title="Log a distraction"

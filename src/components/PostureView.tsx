@@ -143,14 +143,14 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden max-w-[640px] mx-auto">
       <div className="p-4 pb-2 flex justify-between items-center">
-        <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
-          🎥 Posture Tracker
+        <h2 className="text-lg text-gray-800 dark:text-white">
+          Posture Tracker
         </h2>
         <div className="flex space-x-2">
           <button 
             onClick={handleCalibration} 
             disabled={!detectedLandmarks || detectedLandmarks.length === 0 || isLoadingDetector || !!cameraError || isCalibrating} 
-            className="bg-gray-700/80 hover:bg-gray-600 text-white px-3 py-1 rounded font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-deep-purple-600 text-white hover:bg-deep-purple-700 dark:bg-deep-purple-700 dark:hover:bg-deep-purple-800 px-3 py-1 rounded font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isCalibrating ? `Calibrating (${countdown ?? ''}...)` : "Calibrate"} 
           </button>
@@ -206,7 +206,7 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
                 {(() => {
                     const msg = postureStatus.message;
                     console.log("UI RENDER - Rendering status message:", msg);
-                    return `${postureStatus.isGood ? '✅ Good' : '❌ Bad'} | ${msg}`;
+                    return `${postureStatus.isGood ? 'Good' : 'Bad'} | ${msg}`;
                 })()}
               </span>
             }

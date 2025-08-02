@@ -86,7 +86,7 @@ const InstallPrompt = () => {
         </button>
         <button 
           onClick={handleInstall}
-          className="px-3 py-1 text-sm rounded-md bg-blue-600 hover:bg-blue-700 text-white"
+          className="px-3 py-1 text-sm rounded-md bg-deep-purple-600 hover:bg-deep-purple-700 text-white"
         >
           Install
         </button>

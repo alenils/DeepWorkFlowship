@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Konsekvent typografi för hela appen */
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    letter-spacing: -0.05em;
+    font-weight: 700;
+  }
+}
+
 @layer base {
   :root {
     --accent-green: #10b981;

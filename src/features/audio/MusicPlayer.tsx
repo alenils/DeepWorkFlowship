@@ -189,18 +189,18 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ isSessionActive = fals
       <audio ref={audioElementRef} loop={isLoopEnabled} />
       <div className="flex justify-between items-center mb-3">
         <div className="flex items-center space-x-2">
-            <button onClick={toggleShuffle} className={`p-1.5 rounded text-xl ${isShuffleActive ? 'bg-purple-100 text-purple-800 dark:bg-purple-800/30 dark:text-purple-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`} title={isShuffleActive ? "Disable Shuffle" : "Enable Shuffle"}>🔀</button>
+            <button onClick={toggleShuffle} className={`p-1.5 rounded text-xs ${isShuffleActive ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`} title={isShuffleActive ? "Disable Shuffle" : "Enable Shuffle"}>Shuffle</button>
         </div>
-        <h2 className="text-lg font-semibold text-gray-800 dark:text-white mx-2">🎵 Flow Booster</h2>
+        <h2 className="text-lg text-gray-800 dark:text-white mx-2">Flow Booster</h2>
         <div className="flex items-center space-x-2">
-          <button onClick={togglePlayInSessionLocal} className={`p-1 rounded text-xs ${playInSessionOnly ? 'bg-green-100 text-green-800 dark:bg-green-800/30 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`} title="Only play when session is active">⏱️</button>
-          <button onClick={toggleLoopLocal} className={`p-1 rounded text-xs ${isLoopEnabled ? 'bg-blue-100 text-blue-800 dark:bg-blue-800/30 dark:text-blue-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`} title={isLoopEnabled ? "Disable Loop" : "Enable Loop"}>⟳</button>
-          <button onClick={toggleEqLocal} className={`p-1 rounded text-xs ${isEqEnabled ? 'bg-blue-100 text-blue-800 dark:bg-blue-800/30 dark:text-blue-300' : 'bg-gray-100 text-gray-600 hover:bg-blue-50 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600'} transition-colors`} title="Toggle Equalizer">EQ</button>
+          <button onClick={togglePlayInSessionLocal} className={`p-1 rounded text-xs ${playInSessionOnly ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`} title="Only play when session is active">Session</button>
+          <button onClick={toggleLoopLocal} className={`p-1 rounded text-xs ${isLoopEnabled ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`} title={isLoopEnabled ? "Disable Loop" : "Enable Loop"}>Loop</button>
+          <button onClick={toggleEqLocal} className={`p-1 rounded text-xs ${isEqEnabled ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600'} transition-colors`} title="Toggle Equalizer">EQ</button>
         </div>
       </div>
 
       <div className="mb-1">
-        <select onChange={handleAlbumChange} value={selectedAlbum} className="w-full p-2 mb-2 text-sm bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md border border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500">
+        <select onChange={handleAlbumChange} value={selectedAlbum} className="w-full p-2 mb-2 text-sm bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md border border-gray-300 dark:border-gray-600 focus:ring-deep-purple-500 focus:border-deep-purple-500">
             <option value="album1">Album 1</option>
             <option value="album2">Album 2</option>
         </select>
@@ -216,21 +216,21 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ isSessionActive = fals
           <span>{msToClock(duration * 1000)}</span>
         </div>
         <div ref={progressRef} className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full mt-1 mb-3 cursor-pointer overflow-hidden" onClick={handleProgressClick}>
-          <div className="h-full bg-blue-500 dark:bg-blue-600 rounded-full transition-all duration-100" style={{ width: `${(duration > 0 ? currentTime / duration : 0) * 100}%` }} />
+          <div className="h-full bg-deep-purple-600 dark:bg-deep-purple-700 rounded-full transition-all duration-100" style={{ width: `${(duration > 0 ? currentTime / duration : 0) * 100}%` }} />
         </div>
       </div>
 
       <div className="flex justify-center space-x-4">
-        <button onClick={prevTrack} className={`w-10 h-10 flex items-center justify-center rounded-full ${songs.length > 1 ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-pointer' : 'bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'} transition-colors`} aria-label="Previous song" disabled={songs.length <= 1 || !currentTrack}>⏮️</button>
+        <button onClick={prevTrack} className={`w-10 h-10 flex items-center justify-center rounded-full ${songs.length > 1 ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-pointer' : 'bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'} transition-colors`} aria-label="Previous song" disabled={songs.length <= 1 || !currentTrack}>Prev</button>
         <button 
           onClick={playPause}
-          className={`w-12 h-12 flex items-center justify-center rounded-full cursor-pointer ${currentTrack ? (isPlaying ? 'bg-orange-500 text-white hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700' : 'bg-blue-500 text-white hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700') : 'bg-gray-400 text-white cursor-not-allowed'} transition-colors`}
+          className={`w-12 h-12 flex items-center justify-center rounded-full cursor-pointer ${currentTrack ? (isPlaying ? 'bg-gray-300 text-gray-800 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500' : 'bg-gray-300 text-gray-800 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500') : 'bg-gray-400 text-white cursor-not-allowed'} transition-colors`}
           aria-label={isPlaying ? "Pause" : "Play"}
           disabled={!currentTrack}
         >
-          {isPlaying ? "⏸️" : "▶️"}
+          {isPlaying ? "Pause" : "Play"}
         </button>
-        <button onClick={nextTrack} className={`w-10 h-10 flex items-center justify-center rounded-full ${songs.length > 1 ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-pointer' : 'bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'} transition-colors`} aria-label="Next song" disabled={songs.length <= 1 || !currentTrack}>⏭️</button>
+        <button onClick={nextTrack} className={`w-10 h-10 flex items-center justify-center rounded-full ${songs.length > 1 ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-pointer' : 'bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'} transition-colors`} aria-label="Next song" disabled={songs.length <= 1 || !currentTrack}>Next</button>
       </div>
     </div>
   );

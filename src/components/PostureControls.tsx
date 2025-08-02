@@ -31,11 +31,9 @@ const PostureControls: React.FC = () => {
           onClick={handleToggleDetection}
           // Disable if loading detector OR if calibrating
           disabled={isLoadingDetector || isCalibrating} 
-          className={`px-4 py-2 rounded font-semibold text-sm text-white transition-colors ${ 
-            isDetecting 
-              ? 'bg-red-600 hover:bg-red-700' 
-              : 'bg-green-600 hover:bg-green-700' 
-          } ${isLoadingDetector || isCalibrating ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`px-4 py-2 rounded font-semibold text-sm text-white transition-colors
+            bg-deep-purple-600 hover:bg-deep-purple-700 dark:bg-deep-purple-700 dark:hover:bg-deep-purple-800
+            ${isLoadingDetector || isCalibrating ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           {isDetecting ? 'Stop Camera' : 'Start Camera'}
         </button>
@@ -57,7 +55,7 @@ const PostureControls: React.FC = () => {
           step="1"
           value={sensitivityPercentage}
           onChange={(e) => setSensitivityPercentage(Number(e.target.value))}
-          className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-500 dark:accent-blue-400"
+          className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-deep-purple-600 dark:accent-deep-purple-500"
           disabled={isCalibrating || isLoadingDetector}
         />
       </div>

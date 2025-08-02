@@ -63,7 +63,7 @@ export const HistoryTest = () => {
       
       <div className="flex gap-2 mb-4">
         <button 
-          className="px-4 py-2 bg-blue-500 text-white rounded" 
+          className="px-4 py-2 bg-deep-purple-600 text-white rounded" 
           onClick={addTestSession}
         >
           Add Session

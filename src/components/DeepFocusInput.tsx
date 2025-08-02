@@ -139,9 +139,9 @@ export const DeepFocusInput = ({ className = '', onStartSession }: DeepFocusInpu
           onBlur={() => setIsFocused(false)}
           disabled={isSessionActive}
           className="goalInput w-full flex-grow min-w-0 max-w-[500px] px-4 py-2 border rounded-lg 
-            focus:outline-none focus:ring-2 focus:ring-blue-500 
+            focus:outline-none focus:ring-2 focus:ring-deep-purple-500
             dark:bg-gray-700 dark:border-gray-600 dark:text-white 
-            dark:placeholder-gray-400 dark:focus:ring-blue-400
+            dark:placeholder-gray-400 dark:focus:ring-deep-purple-400
             disabled:bg-gray-100 dark:disabled:bg-gray-800 
             disabled:text-gray-500 dark:disabled:text-gray-400
             text-[0.85rem]"
@@ -159,16 +159,16 @@ export const DeepFocusInput = ({ className = '', onStartSession }: DeepFocusInpu
                 ? 'bg-green-500 text-white' 
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'}`}
           >
-            🟢 Brain-Dead Task
+            Brain-Dead Task
           </button>
           <button tabIndex={3}
             onClick={() => handleDifficultyChange('medium')} 
             className={`flex-1 py-1 px-2 rounded-md font-medium transition-colors
               ${difficulty === 'medium' 
-                ? 'bg-yellow-500 text-white' 
+                ? 'bg-orange-500 text-white' 
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'}`}
           >
-            🟡 High School Math
+            High School Math
           </button>
           <button tabIndex={3}
             onClick={() => handleDifficultyChange('hard')} 
@@ -177,7 +177,7 @@ export const DeepFocusInput = ({ className = '', onStartSession }: DeepFocusInpu
                 ? 'bg-red-500 text-white' 
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'}`}
           >
-            🔴 Deep Thinking
+            Deep Thinking
           </button>
         </div>
       )}

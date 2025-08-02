@@ -55,7 +55,7 @@ function App() {
   
   // Update browser tab title based on session status and remaining time
   useEffect(() => {
-    const DEFAULT_TITLE = "Deep Work: Ultimate Dashboard";
+    const DEFAULT_TITLE = "FLOWSHIP.";
     
     if (isSessionActive && remainingTime > 0) {
       // Calculate minutes and seconds from remaining milliseconds
@@ -64,7 +64,7 @@ function App() {
       const seconds = totalSeconds % 60;
       
       // Format as MM:SS
-      const newTitle = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} - Deep Work`;
+      const newTitle = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} - FLOWSHIP.`;
       console.log(`[App] Updating tab title: ${newTitle} (remainingTime: ${remainingTime}ms)`);
       document.title = newTitle;
     } else {
@@ -308,7 +308,7 @@ function App() {
           <div className="space-y-6 min-w-0">
             {/* Centered Main Title over middle column with Starfield button */}
             <div className="flex justify-center pt-2 pb-4 relative">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">DEEP WORK: ULTIMATE DASHBOARD</h1>
+              <h1 className="text-4xl font-bold tracking-tight" style={{ color: 'white', textShadow: '0 0 1px white', letterSpacing: '-0.05em', WebkitTextStroke: '1px white' }}>FLOWSHIP.</h1>
             </div>
             
             {/* Focus Input and Timer Section */}
@@ -350,11 +350,11 @@ function App() {
 
               {/* Session Progress Section */}
               {isSessionActive && (
-                <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg space-y-3">
+                <div className="mt-6 p-4 bg-purple-50 dark:bg-deep-purple-900 rounded-lg space-y-3">
                   <div className="flex items-center justify-between space-x-4">
                     <div className="text-center">
-                      <span className="text-blue-800 dark:text-blue-200 font-medium block">Current Goal</span>
-                      <span className="text-lg text-blue-900 dark:text-blue-100">{currentGoal}</span>
+                      <span className="text-deep-purple-800 dark:text-purple-200 font-medium block">Current Goal</span>
+                      <span className="text-lg text-deep-purple-900 dark:text-purple-100">{currentGoal}</span>
                     </div>
                     <div className="flex-shrink-0">
                       <DistractionButton 
@@ -365,14 +365,14 @@ function App() {
 
                   <div className="flex justify-around items-center space-x-6">
                     <div className="text-center">
-                      <span className="text-blue-600 dark:text-blue-300 text-sm">Time Remaining</span>
-                      <div className="text-2xl font-bold text-blue-800 dark:text-blue-200">
+                      <span className="text-deep-purple-600 dark:text-purple-300 text-sm">Time Remaining</span>
+                      <div className="text-2xl font-bold text-deep-purple-800 dark:text-purple-200">
                         {msToClock(remainingTime)}
                       </div>
                     </div>
                     <div className="text-center">
-                      <span className="text-blue-600 dark:text-blue-300 text-sm">Distractions</span>
-                      <div className="text-2xl font-bold text-blue-800 dark:text-blue-200">
+                      <span className="text-deep-purple-600 dark:text-purple-300 text-sm">Distractions</span>
+                      <div className="text-2xl font-bold text-deep-purple-800 dark:text-purple-200">
                         {distractionCount}
                       </div>
                     </div>
@@ -394,7 +394,7 @@ function App() {
                   </div>
                   {/* Underlying Progress Bar */}
                   <div 
-                    className="absolute bottom-0 left-0 h-[5px] bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-500 ease-out"
+                    className="absolute bottom-0 left-0 h-[5px] bg-gradient-to-r from-deep-purple-500 to-green-500 transition-all duration-500 ease-out"
                     style={{ 
                       width: `${Math.min(100, (totalFocusTimeMs / (240 * 60 * 1000)) * 100)}%`
                     }}
@@ -425,7 +425,7 @@ function App() {
                 <div className="flex justify-center mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <button
                     onClick={handleClearHistory}
-                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded font-semibold transition-opacity dark:opacity-90 dark:hover:opacity-100 text-xs"
+                    className="bg-deep-purple-600 text-white hover:bg-deep-purple-700 dark:bg-deep-purple-700 dark:hover:bg-deep-purple-800 px-3 py-1 rounded font-semibold transition-opacity dark:opacity-90 dark:hover:opacity-100 text-xs"
                     title="Clear all history and notes"
                   >
                     Clear All History

@@ -85,8 +85,8 @@ export const CameraPlaceholder = ({ isSessionActive = false, onPostureChange = (
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden w-full lg:w-[125%] lg:-mr-[25%]">
       <div className="p-4 pb-2 flex justify-between items-center">
-        <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
-          🎥 Posture Tracker {posture.isActive && (posture.good ? '✅' : '❌')}
+        <h2 className="text-lg text-gray-800 dark:text-white">
+          Posture Tracker {posture.isActive && (posture.good ? 'Good' : 'Bad')}
         </h2>
         <div className="flex space-x-2">
           <select
@@ -144,13 +144,13 @@ export const CameraPlaceholder = ({ isSessionActive = false, onPostureChange = (
             />
             {currentCaption && (
               <div className="absolute bottom-14 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 flex justify-center">
-                <p className="text-white text-xs italic opacity-90 font-medium text-center">
+                <h3 className="text-white text-lg tracking-tight font-bold opacity-90 text-center">
                   {currentCaption}
-                </p>
+                </h3>
               </div>
             )}
             <div className="absolute top-2 right-2 p-2 rounded bg-black/50 text-white text-xs">
-              Posture: {posture.isActive ? (posture.good ? 'Good ✅' : 'Bad ❌') : 'Off'}<br />
+              Posture: {posture.isActive ? (posture.good ? 'Good' : 'Bad') : 'Off'}<br />
               {posture.baselineEye !== null && latestEye.current !== null && 
                 `Eye Pos: ${((latestEye.current - posture.baselineEye) * videoSize.height).toFixed(1)}px`}
             </div>

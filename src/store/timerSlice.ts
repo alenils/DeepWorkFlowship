@@ -361,12 +361,16 @@ export const useTimerStore = create<TimerState>()(
         const warpStore = useWarpStore.getState();
         warpStore.endSessionWarp();
         
-        // Create session data for history
+        // Calculate actual session duration based on elapsed time
+        const actualSessionStartTime = state.sessionStartTime || Date.now() - state.sessionDurationMs;
+        const actualSessionDuration = state.sessionEndTime ? state.sessionDurationMs - state.remainingTime : Date.now() - actualSessionStartTime;
+        
+        // Create session data for history with actual duration
         const sessionData: SessionData = {
           type: SESSION_TYPE.FOCUS,
           id: generateId(),
-          timestamp: Date.now() - state.sessionDurationMs, // Estimate start time from duration
-          duration: state.sessionDurationMs,
+          timestamp: actualSessionStartTime,
+          duration: actualSessionDuration, // Use actual duration instead of planned duration
           goal: state.currentGoal,
           distractions: state.distractionCount,
           posture: Math.round(Math.random() * 30 + 70), // Mock posture data for now

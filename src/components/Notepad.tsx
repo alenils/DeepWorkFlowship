@@ -82,7 +82,7 @@ export const Notepad = () => {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 transform transition-all">
       <div className="flex items-center justify-between mb-2">
-        <h2 className="text-lg font-semibold text-gray-800 dark:text-white">📓 Notepad</h2>
+        <h2 className="text-lg text-gray-800 dark:text-white">Notepad</h2>
       </div>
       
       {/* Notepad inspirational quote header */}
