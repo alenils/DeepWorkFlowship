@@ -70,7 +70,7 @@ export const WARP_ANIMATION = {
   DEFAULT_SPEED: 1.1,      // Default animation speed
   MIN_SPEED_FOR_STREAKS: 1.2,  // Further reduced threshold for easier streaking visibility
   STREAK_INTENSITY: 2.0,   // Significantly increased intensity for streaking effect
-  IDLE_SPEED_FACTOR: 0.05, // Speed factor when no session is active (subtle drift instead of static)
+  IDLE_SPEED_FACTOR: 0.0575, // Speed factor when no session is active (increased by 15% for more visible movement)
   THRUST_SPEED_MULTIPLIER: 8.0, // Increased speed multiplier during thrust effect
   THRUST_FADE_DURATION_MS: 3000, // Extended from 2000ms to 3000ms for a longer initial thrust feel
   MAX_STREAK_LENGTH: 100,  // Significantly increased maximum streak length for dramatic effect

@@ -15,15 +15,14 @@ export const StarfieldControls: React.FC = () => {
     starfieldQuality,
     setWarpMode,
     setSpeedMultiplier,
-    setStarfieldQuality,
-    effectiveSpeed
+    setStarfieldQuality
   } = useWarpStore();
 
   // Get focus booster state
   const { startBooster } = useFocusBoosterStore();
 
-  // Get session state to determine label context
-  const { isSessionActive } = useTimerStore();
+  // Get focus booster state only
+  const { } = useTimerStore();
 
   // Handle warp mode change
   const handleWarpModeChange = (mode: typeof WARP_MODE[keyof typeof WARP_MODE]) => {
@@ -94,37 +93,16 @@ export const StarfieldControls: React.FC = () => {
     setStarfieldQuality(quality);
   };
 
-  // Get descriptive speed label based on current context
+  // Get simplified speed label showing only percentage
   const getSpeedLabel = () => {
     // Show percentage of maximum speed based on multiplier
     const percentValue = Math.round(speedMultiplier * 100);
-    
-    // Base label shows the percentage
-    let baseLabel = `${percentValue}%`;
-    
-    // Add context based on session state and effective speed
-    if (isSessionActive) {
-      // During a session, show what the effective speed actually is
-      const actualSpeed = effectiveSpeed.toFixed(1);
-      
-      if (effectiveSpeed >= 8.0) {
-        return `${baseLabel} (Ultra Hyperspace - ${actualSpeed}x)`;
-      } else if (effectiveSpeed >= 5.0) {
-        return `${baseLabel} (Hyperspace - ${actualSpeed}x)`;
-      } else if (effectiveSpeed >= 3.0) {
-        return `${baseLabel} (Warp - ${actualSpeed}x)`;
-      } else {
-        return `${baseLabel} (${actualSpeed}x)`;
-      }
-    } else {
-      // When not in a session, just show the percentage
-      return `${baseLabel} Speed`;
-    }
+    return `${percentValue}%`;
   };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-4">
-      <h3 className="text-lg text-gray-900 dark:text-white mb-3">Starfield Controls</h3>
+      <h3 className="text-lg text-gray-900 dark:text-white mb-3">Stars Settings</h3>
       
       <div className="space-y-4">
         {/* Warp Mode Selection */}
@@ -165,7 +143,7 @@ export const StarfieldControls: React.FC = () => {
         <div className="space-y-1">
           <div className="flex justify-between">
             <label className="text-sm text-gray-700 dark:text-gray-300">
-              {isSessionActive ? "Warp Speed Limiter" : "Warp Speed"}
+              Speed
             </label>
             <span className="text-sm text-gray-700 dark:text-gray-300">{getSpeedLabel()}</span>
           </div>
@@ -187,7 +165,7 @@ export const StarfieldControls: React.FC = () => {
 
         {/* Starfield Quality Selection */}
         <div className="space-y-1">
-          <label className="text-sm text-gray-700 dark:text-gray-300">Starfield Quality</label>
+          <label className="text-sm text-gray-700 dark:text-gray-300">Quality</label>
           <select
             value={starfieldQuality}
             onChange={handleQualityChange}

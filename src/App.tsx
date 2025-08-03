@@ -455,7 +455,7 @@ function App() {
           <button
             id={ELEMENT_IDS.WARP_DISTRACT}
             onClick={handleWarpDistraction}
-            className="bg-red-700/80 hover:bg-red-600/100 text-white font-semibold text-xs px-3 py-1.5 rounded-md backdrop-blur-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-900/50 opacity-60 hover:opacity-100"
+            className="bg-deep-purple-700/80 hover:bg-deep-purple-600/100 text-white font-semibold text-xs px-3 py-1.5 rounded-md backdrop-blur-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-deep-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900/50 opacity-60 hover:opacity-100"
             title="Log distraction"
           >
             DISTRACTED
@@ -463,7 +463,7 @@ function App() {
           <button
             id={ELEMENT_IDS.EXIT_WARP}
             onClick={handleExitWarp}
-            className="bg-sky-700/80 hover:bg-sky-600/100 text-white font-semibold text-xs px-3 py-1.5 rounded-md backdrop-blur-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-gray-900/50 opacity-60 hover:opacity-100"
+            className="bg-deep-purple-700/80 hover:bg-deep-purple-600/100 text-white font-semibold text-xs px-3 py-1.5 rounded-md backdrop-blur-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-deep-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900/50 opacity-60 hover:opacity-100"
             title="Exit warp"
           >
             EXIT WARP

@@ -73,7 +73,7 @@ export const FocusBooster: React.FC = () => {
             strokeWidth="2"
           />
           
-          {/* Progress circle */}
+          {/* Progress circle - gradually filling with one tick per second */}
           <circle 
             cx="60" 
             cy="60" 
@@ -81,25 +81,34 @@ export const FocusBooster: React.FC = () => {
             fill="none" 
             stroke="rgba(255,255,255,0.8)" 
             strokeWidth="2"
-            strokeDasharray={circumference}
+            strokeDasharray={`${circumference / 30} ${circumference / 30}`}
             strokeDashoffset={strokeDashoffset}
             transform="rotate(-90 60 60)"
-            style={{ transition: 'stroke-dashoffset 0.1s linear' }}
+            style={{ transition: 'stroke-dashoffset 1s steps(1)' }}
           />
         </svg>
         
-        {/* Central dot with subtle glow */}
-        <div className="relative">
-          {/* Glow effect */}
+        {/* Central dot with evenly distributed glow */}
+        <div className="relative flex items-center justify-center">
+          {/* Outer glow effect */}
+          <div 
+            className="absolute rounded-full bg-yellow-300/20"
+            style={{ 
+              width: '24px',
+              height: '24px',
+              filter: 'blur(5px)',
+              boxShadow: '0 0 10px 4px rgba(250, 204, 21, 0.3)'
+            }} 
+          />
+          
+          {/* Inner glow effect */}
           <div 
             className="absolute rounded-full bg-yellow-300/30"
             style={{ 
-              width: '14px',
-              height: '14px',
-              top: '-5px',
-              left: '-5px',
-              filter: 'blur(4px)',
-              boxShadow: '0 0 8px 2px rgba(250, 204, 21, 0.4)'
+              width: '18px',
+              height: '18px',
+              filter: 'blur(3px)',
+              boxShadow: '0 0 6px 2px rgba(250, 204, 21, 0.4)'
             }} 
           />
           
@@ -140,7 +149,7 @@ export const FocusBooster: React.FC = () => {
               whiteSpace: 'nowrap'
             }}
           >
-            FIXATE ON THE STAR
+            FIXATE ON THE DOT FOR 30 SEC, FOR FOCUS BOOST
           </span>
         </div>
         

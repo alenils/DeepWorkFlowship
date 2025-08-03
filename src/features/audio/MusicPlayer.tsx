@@ -116,9 +116,9 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ isSessionActive = fals
       for (let i = 0; i < bufferLength; i++) { 
         const barHeight = (dataArray[i] / 255) * canvas.height; 
         const gradient = ctx.createLinearGradient(0, canvas.height, 0, 0); 
-        gradient.addColorStop(0, '#3B82F6'); 
-        gradient.addColorStop(0.5, '#60A5FA'); 
-        gradient.addColorStop(1, '#93C5FD'); 
+        gradient.addColorStop(0, '#7e22ce'); // deep-purple-700
+        gradient.addColorStop(0.5, '#9333ea'); // purple-600
+        gradient.addColorStop(1, '#a855f7'); // purple-500 
         ctx.fillStyle = gradient; 
         ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight); 
         x += barWidth + 1; 
@@ -188,14 +188,30 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ isSessionActive = fals
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 mt-6">
       <audio ref={audioElementRef} loop={isLoopEnabled} />
       <div className="flex justify-between items-center mb-3">
+        <h2 className="text-lg text-gray-800 dark:text-white">Flow Music</h2>
         <div className="flex items-center space-x-2">
-            <button onClick={toggleShuffle} className={`p-1.5 rounded text-xs ${isShuffleActive ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`} title={isShuffleActive ? "Disable Shuffle" : "Enable Shuffle"}>Shuffle</button>
-        </div>
-        <h2 className="text-lg text-gray-800 dark:text-white mx-2">Flow Booster</h2>
-        <div className="flex items-center space-x-2">
-          <button onClick={togglePlayInSessionLocal} className={`p-1 rounded text-xs ${playInSessionOnly ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`} title="Only play when session is active">Session</button>
-          <button onClick={toggleLoopLocal} className={`p-1 rounded text-xs ${isLoopEnabled ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`} title={isLoopEnabled ? "Disable Loop" : "Enable Loop"}>Loop</button>
-          <button onClick={toggleEqLocal} className={`p-1 rounded text-xs ${isEqEnabled ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600'} transition-colors`} title="Toggle Equalizer">EQ</button>
+          <button onClick={toggleShuffle} className={`p-1.5 rounded ${isShuffleActive ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`} title={isShuffleActive ? "Disable Shuffle" : "Enable Shuffle"}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path fillRule="evenodd" d="M0 3.5A.5.5 0 0 1 .5 3H1c2.202 0 3.827 1.24 4.874 2.418.49.552.865 1.102 1.126 1.532.26-.43.636-.98 1.126-1.532C9.173 4.24 10.798 3 13 3v1c-1.798 0-3.173 1.01-4.126 2.082A9.624 9.624 0 0 0 7.556 8a9.624 9.624 0 0 0 1.317 1.918C9.828 10.99 11.204 12 13 12v1c-2.202 0-3.827-1.24-4.874-2.418A10.595 10.595 0 0 1 7 9.05c-.26.43-.636.98-1.126 1.532C4.827 11.76 3.202 13 1 13H.5a.5.5 0 0 1 0-1H1c1.798 0 3.173-1.01 4.126-2.082A9.624 9.624 0 0 0 6.444 8a9.624 9.624 0 0 0-1.317-1.918C4.172 5.01 2.796 4 1 4H.5a.5.5 0 0 1-.5-.5z"/>
+              <path d="M13 5.466V1.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384l-2.36 1.966a.25.25 0 0 1-.41-.192zm0 9v-3.932a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384l-2.36 1.966a.25.25 0 0 1-.41-.192z"/>
+            </svg>
+          </button>
+          <button onClick={togglePlayInSessionLocal} className={`p-1.5 rounded ${playInSessionOnly ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`} title="Only play when session is active">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M8 3a5 5 0 0 0-5 5v1h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a6 6 0 1 1 12 0v5a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1V8a5 5 0 0 0-5-5z"/>
+            </svg>
+          </button>
+          <button onClick={toggleLoopLocal} className={`p-1.5 rounded ${isLoopEnabled ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`} title={isLoopEnabled ? "Disable Loop" : "Enable Loop"}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z"/>
+              <path fillRule="evenodd" d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"/>
+            </svg>
+          </button>
+          <button onClick={toggleEqLocal} className={`p-1.5 rounded ${isEqEnabled ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600'} transition-colors`} title="Toggle Equalizer">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M8 5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm0 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm-3.5-5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm7 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -221,16 +237,42 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ isSessionActive = fals
       </div>
 
       <div className="flex justify-center space-x-4">
-        <button onClick={prevTrack} className={`w-10 h-10 flex items-center justify-center rounded-full ${songs.length > 1 ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-pointer' : 'bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'} transition-colors`} aria-label="Previous song" disabled={songs.length <= 1 || !currentTrack}>Prev</button>
+        <button 
+          onClick={prevTrack} 
+          className={`w-10 h-10 flex items-center justify-center rounded-full ${songs.length > 1 ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-pointer' : 'bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'} transition-colors`} 
+          aria-label="Previous song" 
+          disabled={songs.length <= 1 || !currentTrack}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M11 12V4a1 1 0 0 0-1.514-.857L5 8l4.486 4.857A1 1 0 0 0 11 12zm-1 0H5.5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1H10v8z"/>
+          </svg>
+        </button>
         <button 
           onClick={playPause}
           className={`w-12 h-12 flex items-center justify-center rounded-full cursor-pointer ${currentTrack ? (isPlaying ? 'bg-gray-300 text-gray-800 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500' : 'bg-gray-300 text-gray-800 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500') : 'bg-gray-400 text-white cursor-not-allowed'} transition-colors`}
           aria-label={isPlaying ? "Pause" : "Play"}
           disabled={!currentTrack}
         >
-          {isPlaying ? "Pause" : "Play"}
+          {isPlaying ? (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z"/>
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+              <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
+            </svg>
+          )}
         </button>
-        <button onClick={nextTrack} className={`w-10 h-10 flex items-center justify-center rounded-full ${songs.length > 1 ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-pointer' : 'bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'} transition-colors`} aria-label="Next song" disabled={songs.length <= 1 || !currentTrack}>Next</button>
+        <button 
+          onClick={nextTrack} 
+          className={`w-10 h-10 flex items-center justify-center rounded-full ${songs.length > 1 ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-pointer' : 'bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'} transition-colors`} 
+          aria-label="Next song" 
+          disabled={songs.length <= 1 || !currentTrack}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M5 12V4a1 1 0 0 1 1.514-.857L11 8l-4.486 4.857A1 1 0 0 1 5 12zm1 0h4.5a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H6v8z"/>
+          </svg>
+        </button>
       </div>
     </div>
   );
