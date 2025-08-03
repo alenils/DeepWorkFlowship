@@ -85,10 +85,7 @@ export const Notepad = () => {
         <h2 className="text-lg text-gray-800 dark:text-white">Notepad</h2>
       </div>
       
-      {/* Notepad inspirational quote header */}
-      <p className="italic opacity-50 text-center pb-2 text-sm text-gray-600 dark:text-gray-400">
-        "Your mind is for having ideas, not holding them." – David Allen
-      </p>
+      {/* Removed quote header for cleaner UI */}
       
       {/* Notepad texture and styling */}
       <div className="bg-amber-50 dark:bg-gray-700 rounded shadow-inner p-4 bg-[url('/images/paper-texture.png')] bg-repeat overflow-visible max-h-[70vh] overflow-y-auto">
@@ -98,7 +95,7 @@ export const Notepad = () => {
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           ref={textareaRef}
-          placeholder="Jot down your thoughts here..."
+          placeholder="Your mind is for having ideas, not holding them. – David Allen"
           className="w-full bg-transparent resize-none outline-none text-gray-800 dark:text-gray-300 
             border-0 placeholder-gray-400 dark:placeholder-gray-500 p-0 leading-relaxed
             bg-[linear-gradient(transparent,transparent_calc(1.5rem-1px),rgba(0,0,0,0.06)_calc(1.5rem),transparent_calc(1.5rem+1px))]

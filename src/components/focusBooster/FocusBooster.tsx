@@ -112,40 +112,37 @@ export const FocusBooster: React.FC = () => {
           />
         </div>
         
-        {/* Initial text - curved around the circle */}
-        <svg 
+        {/* Initial text - single straight line above the star */}
+        <div
           className={`absolute transition-opacity duration-1500 ${
             showInitialText ? 'opacity-100' : 'opacity-0'
           }`}
-          width="240" 
-          height="240" 
-          viewBox="0 0 240 240"
           style={{
-            top: '-60px',
-            left: '-60px'
+            top: '-140px',
+            left: 0,
+            right: 0,
+            width: '100%',
+            textAlign: 'center',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center'
           }}
         >
-          <path
-            id="textPath"
-            d="M120,180 A90,90 0 0,1 120,30"
-            fill="none"
-            stroke="none"
-          />
-          <text
+          <span
             style={{
-              fill: '#ffffff',
+              color: 'white',
               fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-              fontSize: '14px',
+              fontSize: '22px',
               fontWeight: '700',
-              letterSpacing: '0.1em',
-              textShadow: '0 0 1px white'
+              letterSpacing: '-0.05em',
+              textShadow: '0 0 1px white',
+              WebkitTextStroke: '1px white',
+              whiteSpace: 'nowrap'
             }}
           >
-            <textPath href="#textPath" startOffset="50%" textAnchor="middle">
-              FIXATE ON THE STAR
-            </textPath>
-          </text>
-        </svg>
+            FIXATE ON THE STAR
+          </span>
+        </div>
         
         {/* Completion text - Apple-inspired design */}
         <div 

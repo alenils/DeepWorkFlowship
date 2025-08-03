@@ -201,10 +201,10 @@ export const FocusSessionTimer = ({
             <button
               onClick={handlePauseClick}
               className={`
-                px-4 py-2 rounded-lg font-medium text-sm
-                transition-all duration-300 ease-in-out
+                px-3 py-1 rounded font-semibold
                 bg-deep-purple-600 text-white hover:bg-deep-purple-700 dark:bg-deep-purple-700 dark:hover:bg-deep-purple-800
-                ${isCompact ? 'text-sm py-2' : ''}
+                transition-opacity dark:opacity-90 dark:hover:opacity-100
+                ${isCompact ? 'text-sm' : ''}
               `}
               title={pauseMessage}
             >
