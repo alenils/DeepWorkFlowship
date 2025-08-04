@@ -36,10 +36,16 @@ export const SessionSummaryPanel = ({
     }
   }, [isVisible]);
 
-  // Separate effect for handling session data changes
+  // Separate effect for handling initial session data
   useEffect(() => {
     if (isVisible && sessionData) {
-      setComment(sessionData.comment || '');
+      // Only set the initial comment if the comment state is empty
+      // and we have a sessionData.comment
+      if (comment === '' && sessionData.comment) {
+        setComment(sessionData.comment);
+      }
+      
+      // Always update distraction count from session data
       setDistractionCount(sessionData.distractions);
       
       // Check if this session ended the streak
@@ -52,7 +58,7 @@ export const SessionSummaryPanel = ({
         setStreakEnded(false);
       }
     }
-  }, [isVisible, sessionData, streakCount, onStreakEnded]);
+  }, [isVisible, sessionData?.distractions, streakCount, onStreakEnded]);
 
   const handleCommentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setComment(e.target.value);
