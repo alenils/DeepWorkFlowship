@@ -168,13 +168,8 @@ function App() {
           
           // Cycle through warp modes - now handled by warpStore
           const { setWarpMode } = useWarpStore.getState();
-          if (warpMode === WARP_MODE.NONE) {
-            setWarpMode(WARP_MODE.BACKGROUND);
-          } else if (warpMode === WARP_MODE.BACKGROUND) {
-            setWarpMode(WARP_MODE.FULL);
-          } else {
-            setWarpMode(WARP_MODE.NONE);
-          }
+          // Toggle only between BACKGROUND and FULL modes when pressing 'w'
+          setWarpMode(warpMode === WARP_MODE.BACKGROUND ? WARP_MODE.FULL : WARP_MODE.BACKGROUND);
           break;
           
         default:

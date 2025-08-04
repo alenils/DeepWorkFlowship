@@ -321,7 +321,14 @@ export const useTimerStore = create<TimerState>()(
           // Play sound - moved to component for now
           // if (SFX && SFX.start) playSfx(SFX.start);
           
-          set({ isPaused: false });
+          // Calculate new end time based on current time plus remaining time
+          const newEndTime = Date.now() + state.remainingTime;
+          
+          set({ 
+            isPaused: false,
+            sessionEndTime: newEndTime,
+            isRunning: true // Ensure timer is running when resuming
+          });
         }
       },
       
