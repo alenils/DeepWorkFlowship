@@ -3,6 +3,7 @@ import { FocusSessionTimer } from './components/FocusSessionTimer'
 import { DeepFocusInput } from './components/DeepFocusInput'
 import { SessionSummaryPanel } from './components/SessionSummaryPanel'
 import { SessionHistory } from './components/SessionHistory'
+import { useFocusBoosterStore } from './store/focusBoosterSlice'
 import { DistractionButton } from './components/DistractionButton'
 import { DarkModeToggle } from './components/DarkModeToggle'
 import { TimerProgressBar } from './components/TimerProgressBar'
@@ -351,7 +352,36 @@ function App() {
                       <span className="text-deep-purple-800 dark:text-purple-200 font-medium block">Current Goal</span>
                       <span className="text-lg text-deep-purple-900 dark:text-purple-100">{currentGoal}</span>
                     </div>
-                    <div className="flex-shrink-0">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => useFocusBoosterStore.getState().startBooster()}
+                        className="
+                          w-10 h-10 rounded-full border-2 border-yellow-400 text-yellow-400 
+                          flex items-center justify-center 
+                          transition-all duration-300 ease-in-out 
+                          hover:bg-yellow-400/20 hover:scale-105
+                          focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-gray-900/50
+                          focus:bg-yellow-400/20
+                        "
+                        title="Activate Focus Booster"
+                      >
+                        <svg 
+                          xmlns="http://www.w3.org/2000/svg" 
+                          width="20" 
+                          height="20" 
+                          viewBox="0 0 24 24" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          strokeWidth="2" 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round"
+                          className="text-yellow-400"
+                        >
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <line x1="12" y1="8" x2="12" y2="12"></line>
+                          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                      </button>
                       <DistractionButton 
                         className={CSS_CLASSES.WARP_CONTROL_BUTTON}
                       />
@@ -455,6 +485,7 @@ function App() {
           >
             DISTRACTED
           </button>
+          
           <button
             id={ELEMENT_IDS.EXIT_WARP}
             onClick={handleExitWarp}

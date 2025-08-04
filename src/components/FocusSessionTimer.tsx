@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useTimerStore } from '../store/timerSlice';
-import { useFocusBoosterStore } from '../store/focusBoosterSlice';
 
 interface FocusSessionTimerProps {
   isCompact?: boolean;
@@ -79,9 +78,6 @@ export const FocusSessionTimer = ({
     resumeTimer,
     endSession
   } = useTimerStore();
-  
-  // Get Focus Booster actions
-  const { startBooster } = useFocusBoosterStore();
   
   const [startClickCount, setStartClickCount] = useState(0);
   const [pauseMessage, setPauseMessage] = useState(PAUSE_MESSAGES[0]);
@@ -228,20 +224,7 @@ export const FocusSessionTimer = ({
               Stop
             </button>
             
-            <div className="relative ml-2">
-              <button
-                onClick={() => startBooster()}
-                className="
-                  w-8 h-8 rounded-full flex items-center justify-center
-                  bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold
-                  transition-colors absolute -top-10 right-0
-                  border-2 border-gray-900
-                "
-                title="Activate Focus Booster"
-              >
-                X
-              </button>
-            </div>
+
           </>
         )}
       </div>
