@@ -5,8 +5,6 @@ import {
   STARFIELD_QUALITY_LABELS,
   STAR_COUNTS_BY_QUALITY
 } from '../../constants';
-import { useTimerStore } from '../../store/timerSlice';
-import { useFocusBoosterStore } from '../../store/focusBoosterSlice';
 
 export const StarfieldControls: React.FC = () => {
   const {
@@ -18,20 +16,11 @@ export const StarfieldControls: React.FC = () => {
     setStarfieldQuality
   } = useWarpStore();
 
-  // Get focus booster state
-  const { startBooster } = useFocusBoosterStore();
 
-  // Get focus booster state only
-  const { } = useTimerStore();
 
   // Handle warp mode change
   const handleWarpModeChange = (mode: typeof WARP_MODE[keyof typeof WARP_MODE]) => {
-    if (mode === WARP_MODE.FULL) {
-      // Start the focus booster when entering full warp mode
-      startBooster();
-    } else {
-      setWarpMode(mode);
-    }
+    setWarpMode(mode);
   };
 
   // Handle speed multiplier change (0.1 to 1.0)
