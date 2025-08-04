@@ -1,17 +1,69 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useFocusBoosterStore } from '../../store/focusBoosterSlice';
 import { FOCUS_BOOSTER } from '../../constants';
 import { useAudio } from '../../features/audio/AudioProvider';
 
 export const FocusBooster: React.FC = () => {
-  const { status, progress } = useFocusBoosterStore();
+  const { status } = useFocusBoosterStore();
   const { exitBooster } = useFocusBoosterStore();
   const { playSfx } = useAudio();
   
-  // State for text visibility
+  // UI state
   const [showInitialText, setShowInitialText] = useState(false);
   const [showCompletionText, setShowCompletionText] = useState(false);
   
+  // Animation state
+  const [progressOffset, setProgressOffset] = useState(0);
+  const animationFrameId = useRef<number>();
+  const startTime = useRef<number>();
+  
+  // Circle properties
+  const radius = 60;
+  const circumference = 2 * Math.PI * radius;
+  
+  // Animation effect for circular progress
+  useEffect(() => {
+    if (status !== 'active') {
+      // Reset animation when not active
+      setProgressOffset(circumference);
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+      }
+      return;
+    }
+    
+    // Initialize animation
+    setProgressOffset(circumference);
+    startTime.current = Date.now();
+    
+    const animate = () => {
+      if (!startTime.current) return;
+      
+      const now = Date.now();
+      const elapsed = now - startTime.current;
+      const progress = Math.min(elapsed / 30000, 1); // 30 seconds total
+      
+      // Calculate new offset (circumference * (1 - progress))
+      const offset = circumference * (1 - progress);
+      setProgressOffset(offset);
+      
+      // Continue animation if not complete
+      if (progress < 1) {
+        animationFrameId.current = requestAnimationFrame(animate);
+      }
+    };
+    
+    // Start the animation
+    animationFrameId.current = requestAnimationFrame(animate);
+    
+    // Cleanup function
+    return () => {
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+      }
+    };
+  }, [status, circumference]);
+
   // Play sounds based on status changes
   useEffect(() => {
     if (status === 'active') {
@@ -49,10 +101,8 @@ export const FocusBooster: React.FC = () => {
     return null;
   }
   
-  // Calculate the stroke-dasharray and stroke-dashoffset for the progress circle
-  const radius = 50;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference * (1 - progress);
+  // Calculate the stroke-dasharray for the progress circle
+  const strokeDasharray = `${circumference} ${circumference}`;
   
   return (
     <div className="fixed inset-0 z-[10001] flex items-center justify-center pointer-events-auto">
@@ -62,29 +112,32 @@ export const FocusBooster: React.FC = () => {
       {/* Central content */}
       <div className="relative flex flex-col items-center justify-center">
         {/* Progress circle */}
-        <svg width="120" height="120" className="absolute">
-          {/* Background circle */}
+        <svg width="150" height="150" viewBox="0 0 150 150" className="absolute">
+          {/* Background track circle */}
           <circle 
-            cx="60" 
-            cy="60" 
+            cx="75" 
+            cy="75" 
             r={radius} 
             fill="none" 
-            stroke="rgba(255,255,255,0.2)" 
+            stroke="rgba(255, 255, 255, 0.2)" 
             strokeWidth="2"
           />
           
-          {/* Progress circle - gradually filling with one tick per second */}
+          {/* Progress circle */}
           <circle 
-            cx="60" 
-            cy="60" 
+            cx="75" 
+            cy="75" 
             r={radius} 
             fill="none" 
-            stroke="rgba(255,255,255,0.8)" 
-            strokeWidth="2"
-            strokeDasharray={`${circumference / 30} ${circumference / 30}`}
-            strokeDashoffset={strokeDashoffset}
-            transform="rotate(-90 60 60)"
-            style={{ transition: 'stroke-dashoffset 1s steps(1)' }}
+            stroke="#FBBF24" // Amber-400 color
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeDasharray={strokeDasharray}
+            strokeDashoffset={progressOffset}
+            transform="rotate(-90 75 75)" // Start from top (12 o'clock)
+            style={{ 
+              transition: 'stroke-dashoffset 0.1s linear' 
+            }}
           />
         </svg>
         
