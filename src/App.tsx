@@ -197,10 +197,10 @@ function App() {
     }
   };
   
-  // Handle exit warp
+  // Handle exit warp - return to background mode instead of turning off completely
   const handleExitWarp = () => {
     const { setWarpMode } = useWarpStore.getState();
-    setWarpMode(WARP_MODE.NONE);
+    setWarpMode(WARP_MODE.BACKGROUND);
   };
   
   // Handle distraction button click
