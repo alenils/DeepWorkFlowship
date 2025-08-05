@@ -93,7 +93,8 @@ function App() {
   } = useHistoryStore();
   
   // Get warp state from store
-  const { warpMode, isThrusting } = useWarpStore();
+  const warpMode = useWarpStore((state) => state.warpMode);
+  const isThrusting = useWarpStore((state) => state.isThrusting);
   
   // Toast state
   const [toast, setToast] = useState({ show: false, message: '' });
@@ -474,8 +475,8 @@ function App() {
         </div>
       </main>
 
-      {/* Full Warp Controls (Positioned absolutely, will be above the canvas when z-index is high) */}
-      {(warpMode === WARP_MODE.BACKGROUND || warpMode === WARP_MODE.FULL) && (
+      {/* Floating Action Buttons - Only visible in FULL warp mode */}
+      {warpMode === WARP_MODE.FULL && (
         <div id={ELEMENT_IDS.WARP_CONTROLS} className="absolute bottom-4 right-4 z-[10000] flex gap-3 items-center">
           <button
             id={ELEMENT_IDS.WARP_DISTRACT}
