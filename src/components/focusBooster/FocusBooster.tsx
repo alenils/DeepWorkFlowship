@@ -1,10 +1,10 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useFocusBoosterStore } from '../../store/focusBoosterSlice';
 import { FOCUS_BOOSTER } from '../../constants';
 import { useAudio } from '../../features/audio/AudioProvider';
 
 export const FocusBooster: React.FC = () => {
-  const { status } = useFocusBoosterStore();
+  const { status: boosterStatus, startTime: boosterStartTime } = useFocusBoosterStore();
   const { exitBooster } = useFocusBoosterStore();
   const { playSfx } = useAudio();
   
@@ -14,8 +14,9 @@ export const FocusBooster: React.FC = () => {
   
   // Animation state
   const [progressOffset, setProgressOffset] = useState(0);
-  const animationFrameId = useRef<number>();
-  const startTime = useRef<number>();
+  
+  // Calculate boosterEndTime from startTime
+  const boosterEndTime = boosterStartTime ? boosterStartTime + 30000 : null;
   
   // Circle properties
   const radius = 60;
@@ -23,50 +24,39 @@ export const FocusBooster: React.FC = () => {
   
   // Animation effect for circular progress
   useEffect(() => {
-    if (status !== 'active') {
-      // Reset animation when not active
+    // If the booster is not active, ensure the progress circle is reset.
+    if (boosterStatus !== 'active' || !boosterEndTime) {
       setProgressOffset(circumference);
-      if (animationFrameId.current) {
-        cancelAnimationFrame(animationFrameId.current);
-      }
       return;
     }
-    
-    // Initialize animation
-    setProgressOffset(circumference);
-    startTime.current = Date.now();
-    
-    const animate = () => {
-      if (!startTime.current) return;
-      
+
+    // Set up an interval that fires every second.
+    const timerId = setInterval(() => {
+      // Calculate progress based on the absolute end time. This is ACCURATE.
       const now = Date.now();
-      const elapsed = now - startTime.current;
-      const progress = Math.min(elapsed / 30000, 1); // 30 seconds total
-      
-      // Calculate new offset (circumference * (1 - progress))
-      const offset = circumference * (1 - progress);
+      const startTime = boosterEndTime - 30000; // The timestamp when it started
+      const elapsedTime = now - startTime;
+      const progressPercentage = Math.min(elapsedTime / 30000, 1);
+
+      // Calculate the new SVG offset based on the accurate progress
+      const offset = circumference * (1 - progressPercentage);
       setProgressOffset(offset);
-      
-      // Continue animation if not complete
-      if (progress < 1) {
-        animationFrameId.current = requestAnimationFrame(animate);
-      }
-    };
-    
-    // Start the animation
-    animationFrameId.current = requestAnimationFrame(animate);
-    
-    // Cleanup function
+
+      // When progress is complete, we don't need to do anything here,
+      // as the main boosterSlice will handle the status change.
+    }, 1000); // Tick every 1 second.
+
+    // CRITICAL: Cleanup function to clear the interval when the component
+    // unmounts or the effect re-runs (e.g., when the booster is exited).
     return () => {
-      if (animationFrameId.current) {
-        cancelAnimationFrame(animationFrameId.current);
-      }
+      clearInterval(timerId);
     };
-  }, [status, circumference]);
+    
+  }, [boosterStatus, boosterEndTime, circumference]);
 
   // Play sounds based on status changes
   useEffect(() => {
-    if (status === 'active') {
+    if (boosterStatus === 'active') {
       // Play start sound when booster becomes active
       playSfx(FOCUS_BOOSTER.SFX.START);
       
@@ -83,7 +73,7 @@ export const FocusBooster: React.FC = () => {
       // Play ambient sound (would be better with looping capability)
       // For now, we'll just play it once
       playSfx(FOCUS_BOOSTER.SFX.AMBIENT);
-    } else if (status === 'finishing') {
+    } else if (boosterStatus === 'finishing') {
       // Play completion sound
       playSfx(FOCUS_BOOSTER.SFX.COMPLETE);
       
@@ -94,10 +84,10 @@ export const FocusBooster: React.FC = () => {
       setShowInitialText(false);
       setShowCompletionText(false);
     }
-  }, [status, playSfx]);
+  }, [boosterStatus, playSfx]);
   
   // If status is idle, don't render anything
-  if (status === 'idle') {
+  if (boosterStatus === 'idle') {
     return null;
   }
   
