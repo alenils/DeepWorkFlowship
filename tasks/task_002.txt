@@ -1,0 +1,49 @@
+# Task ID: 2
+# Title: Global State Management Setup
+# Status: done
+# Dependencies: 1
+# Priority: high
+# Description: Establish a robust global state management foundation using Zustand.
+# Details:
+Create /src/store/index.ts for Zustand initialization. Add appSlice.ts for core settings (performanceMode, sfxVolume, musicVolume, pwaInstallPromptState). Migrate critical shared state from App.tsx to Zustand slices. Use Zustand v4.4.0+ for best compatibility and features.
+
+# Test Strategy:
+Test by migrating one piece of state (e.g., timer state) and verifying components can access and update it via Zustand.
+
+# Subtasks:
+## 1. Zustand Setup in /src/store [done]
+### Dependencies: None
+### Description: Install Zustand and initialize the global store directory structure in /src/store.
+### Details:
+Add Zustand as a dependency, create the /src/store directory, and ensure the project is ready for new store files.
+
+## 2. Creating appSlice.ts [done]
+### Dependencies: 2.1
+### Description: Create the appSlice.ts file to define the main Zustand store slice for shared app state.
+### Details:
+Implement the initial structure of appSlice.ts using Zustand's create function, setting up the initial state and actions.
+
+## 3. Migrating Each Shared State Property [done]
+### Dependencies: 2.2
+### Description: Move each shared state property from React's local state or context into the Zustand store.
+### Details:
+For each property, define its state and update logic in appSlice.ts, ensuring parity with previous behavior.
+
+## 4. Refactoring App.tsx [done]
+### Dependencies: 2.3
+### Description: Update App.tsx to use Zustand for accessing and updating global state instead of previous state management.
+### Details:
+Replace useState/useContext hooks with Zustand hooks, and ensure all state logic in App.tsx references the new store.
+
+## 5. Updating Dependent Components [done]
+### Dependencies: 2.4
+### Description: Refactor all components that depend on shared state to use Zustand hooks for state access and updates.
+### Details:
+Identify all components using the migrated state, update their imports and logic to use the Zustand store, and remove obsolete state management code.
+
+## 6. Testing State Access and Updates [done]
+### Dependencies: 2.5
+### Description: Test the application to verify that all components correctly access and update the global state via Zustand.
+### Details:
+Perform manual and automated tests to ensure state changes propagate as expected and no regressions are introduced.
+

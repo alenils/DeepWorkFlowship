@@ -1,0 +1,11 @@
+# Task ID: 9
+# Title: Audio Management Refactor
+# Status: pending
+# Dependencies: 2
+# Priority: medium
+# Description: Refactor audio state management to align with global state strategy.
+# Details:
+Review AudioProvider.tsx and MusicPlayer.tsx. Move current track, volume, shuffle, and session-only play state to Zustand (musicSlice.ts or appSlice). Simplify internal state management and HTMLAudioElement pooling.
+
+# Test Strategy:
+Test audio playback, volume, and shuffle controls. Verify state is accessible across the app via Zustand.

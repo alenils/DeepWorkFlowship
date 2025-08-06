@@ -1,0 +1,11 @@
+# Task ID: 7
+# Title: Constants Definition
+# Status: done
+# Dependencies: 1
+# Priority: medium
+# Description: Centralize magic strings and numerical thresholds for improved maintainability.
+# Details:
+Create src/constants.ts. Move all magic strings (localStorage keys, event names, labels) and significant numerical thresholds from components into this file.
+
+# Test Strategy:
+Check that all components and utils import constants from constants.ts and that no magic strings remain in logic.

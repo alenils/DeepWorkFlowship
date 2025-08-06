@@ -1,0 +1,311 @@
+{
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Repository Cleanup and Structure",
+      "description": "Remove duplicate project folders and ensure a clean, single project root to maintain clarity and reduce confusion.",
+      "details": "Delete nested folders like DEEPWORKPOSTUREAI/ and reference-repo/ from the main project. Ensure all imports and references are updated to reflect the new structure. Use git commands to clean up history if needed.",
+      "testStrategy": "Verify by cloning the repository in a fresh environment and confirming all imports and scripts work as expected.",
+      "priority": "high",
+      "dependencies": [],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Identify Duplicate and Nested Folders",
+          "description": "Scan the repository to locate duplicate and nested folders that may be redundant or unnecessary.",
+          "dependencies": [],
+          "details": "Use file system analysis tools or scripts to generate a list of duplicate and nested folders. Document findings for review.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Delete Unnecessary Folders",
+          "description": "Remove folders identified as duplicates or unnecessary from the repository.",
+          "dependencies": [
+            1
+          ],
+          "details": "Carefully delete the folders, ensuring no critical files are lost. Commit the changes with clear messages.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Update Imports and References",
+          "description": "Update all code imports and references to reflect the new folder structure after deletions.",
+          "dependencies": [
+            2
+          ],
+          "details": "Search and replace old paths in code, configuration files, and documentation. Run tests to confirm updates.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Clean Git History",
+          "description": "Remove traces of deleted folders and files from the git history to reduce repository size and clutter.",
+          "dependencies": [
+            3
+          ],
+          "details": "Use tools like BFG Repo-Cleaner or git-filter-repo to rewrite history. Run 'git gc' and ensure backups are made before proceeding.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Verify in a Fresh Environment",
+          "description": "Clone the cleaned repository into a new environment and verify that everything works as expected.",
+          "dependencies": [
+            4
+          ],
+          "details": "Perform a fresh clone, run all tests, and check for missing files or broken references. Confirm repository integrity.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Global State Management Setup",
+      "description": "Establish a robust global state management foundation using Zustand.",
+      "details": "Create /src/store/index.ts for Zustand initialization. Add appSlice.ts for core settings (performanceMode, sfxVolume, musicVolume, pwaInstallPromptState). Migrate critical shared state from App.tsx to Zustand slices. Use Zustand v4.4.0+ for best compatibility and features.",
+      "testStrategy": "Test by migrating one piece of state (e.g., timer state) and verifying components can access and update it via Zustand.",
+      "priority": "high",
+      "dependencies": [
+        1
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Zustand Setup in /src/store",
+          "description": "Install Zustand and initialize the global store directory structure in /src/store.",
+          "dependencies": [],
+          "details": "Add Zustand as a dependency, create the /src/store directory, and ensure the project is ready for new store files.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Creating appSlice.ts",
+          "description": "Create the appSlice.ts file to define the main Zustand store slice for shared app state.",
+          "dependencies": [
+            1
+          ],
+          "details": "Implement the initial structure of appSlice.ts using Zustand's create function, setting up the initial state and actions.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Migrating Each Shared State Property",
+          "description": "Move each shared state property from React's local state or context into the Zustand store.",
+          "dependencies": [
+            2
+          ],
+          "details": "For each property, define its state and update logic in appSlice.ts, ensuring parity with previous behavior.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Refactoring App.tsx",
+          "description": "Update App.tsx to use Zustand for accessing and updating global state instead of previous state management.",
+          "dependencies": [
+            3
+          ],
+          "details": "Replace useState/useContext hooks with Zustand hooks, and ensure all state logic in App.tsx references the new store.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Updating Dependent Components",
+          "description": "Refactor all components that depend on shared state to use Zustand hooks for state access and updates.",
+          "dependencies": [
+            4
+          ],
+          "details": "Identify all components using the migrated state, update their imports and logic to use the Zustand store, and remove obsolete state management code.",
+          "status": "pending"
+        },
+        {
+          "id": 6,
+          "title": "Testing State Access and Updates",
+          "description": "Test the application to verify that all components correctly access and update the global state via Zustand.",
+          "dependencies": [
+            5
+          ],
+          "details": "Perform manual and automated tests to ensure state changes propagate as expected and no regressions are introduced.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "PWA Initial Configuration",
+      "description": "Configure Progressive Web App (PWA) support for offline capability and optimized asset caching.",
+      "details": "Add vite-plugin-pwa (v0.17.0+) to vite.config.ts. Configure manifest.json with name, icons, and start_url. Implement basic service worker caching, excluding large MP3s and ML models from precache using workbox.globIgnores.",
+      "testStrategy": "Build and serve the app, verify PWA install prompt appears and offline mode works. Check that excluded assets are not precached.",
+      "priority": "high",
+      "dependencies": [
+        1
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 4,
+      "title": "E2E Test Baseline",
+      "description": "Implement a basic end-to-end test to safeguard core user flows during refactoring.",
+      "details": "Create a Playwright test (v1.42.0+) that loads the app, starts and stops the timer, and verifies a summary placeholder appears. Place test in /tests/e2e/.",
+      "testStrategy": "Run the test after each major refactor to ensure core functionality remains intact.",
+      "priority": "high",
+      "dependencies": [
+        1
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 5,
+      "title": "Posture Detection Logic Consolidation",
+      "description": "Refactor posture detection logic to centralize camera, MediaPipe, and pose data in PostureContext.",
+      "details": "Review usePosture.ts, useStablePosture.ts, and poseDetector.ts. Move camera control, MediaPipe initialization, and raw pose data to PostureContext. Refactor hooks to consume context, merging or clarifying roles as needed. Use MediaPipe Tasks Vision v0.10.0+.",
+      "testStrategy": "Test by running posture detection in the app and verifying all hooks and components receive data from PostureContext.",
+      "priority": "medium",
+      "dependencies": [
+        1
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 6,
+      "title": "App.tsx Refactoring",
+      "description": "Break down App.tsx into smaller, reusable components to reduce complexity.",
+      "details": "Extract layout logic into MainLayout.tsx and SidePanels.tsx. Move Warp Mode logic into WarpStarfieldController.tsx, controlled by props/context. Use Zustand for shared state where appropriate.",
+      "testStrategy": "Verify UI renders correctly and all extracted components function as expected. Run E2E test to ensure no regression.",
+      "priority": "medium",
+      "dependencies": [
+        2
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 7,
+      "title": "Constants Definition",
+      "description": "Centralize magic strings and numerical thresholds for improved maintainability.",
+      "details": "Create src/constants.ts. Move all magic strings (localStorage keys, event names, labels) and significant numerical thresholds from components into this file.",
+      "testStrategy": "Check that all components and utils import constants from constants.ts and that no magic strings remain in logic.",
+      "priority": "medium",
+      "dependencies": [
+        1
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 8,
+      "title": "Type Safety for Helpers/Utils",
+      "description": "Ensure all utility files are fully typed for better developer experience and error prevention.",
+      "details": "Review lib/poseDetector.ts, utils/sounds.ts (sfxManager.ts), utils/time.ts. Add explicit TypeScript types for parameters, return values, and exports. Use .d.ts only if absolutely necessary.",
+      "testStrategy": "Run TypeScript compiler and verify no type errors. Check autocompletion in IDE.",
+      "priority": "medium",
+      "dependencies": [
+        1
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 9,
+      "title": "Audio Management Refactor",
+      "description": "Refactor audio state management to align with global state strategy.",
+      "details": "Review AudioProvider.tsx and MusicPlayer.tsx. Move current track, volume, shuffle, and session-only play state to Zustand (musicSlice.ts or appSlice). Simplify internal state management and HTMLAudioElement pooling.",
+      "testStrategy": "Test audio playback, volume, and shuffle controls. Verify state is accessible across the app via Zustand.",
+      "priority": "medium",
+      "dependencies": [
+        2
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 10,
+      "title": "Enhanced Error Handling",
+      "description": "Improve user-facing error feedback for critical features.",
+      "details": "Review catch blocks in Providers, Contexts, and async operations. Implement user-facing feedback (toasts, UI messages) or robust fallbacks. Use react-hot-toast v2.0.0+ for toasts.",
+      "testStrategy": "Simulate errors and verify feedback is visible and actionable to users.",
+      "priority": "medium",
+      "dependencies": [
+        1
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 11,
+      "title": "Linting and Formatting Setup",
+      "description": "Enforce consistent code style and quality with Prettier and ESLint.",
+      "details": "Integrate Prettier (v3.2.0+) with ESLint (v8.56.0+) using eslint-config-prettier. Add npm scripts for lint:fix and format. Optionally add Husky (v9.0.0+) and lint-staged (v15.2.0+) for pre-commit hooks.",
+      "testStrategy": "Run lint:fix and format scripts. Verify code style is consistent and no linting errors remain.",
+      "priority": "low",
+      "dependencies": [
+        1
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 12,
+      "title": "Security Linting",
+      "description": "Proactively identify and address security vulnerabilities.",
+      "details": "Add npm audit --production to CI. Integrate eslint-plugin-security (v1.7.0+) and address warnings. Configure CI to run security checks on every push/PR.",
+      "testStrategy": "Run npm audit and eslint-plugin-security. Verify no critical vulnerabilities are reported.",
+      "priority": "low",
+      "dependencies": [
+        1
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 13,
+      "title": "Unit/Integration Test Expansion",
+      "description": "Increase test coverage for critical components and utilities.",
+      "details": "Write Vitest (v1.3.0+) unit/integration tests for refactored components, hooks, Zustand slices, and utils. Mock import.meta.glob for AudioProvider.test.tsx.",
+      "testStrategy": "Run tests and verify coverage for critical paths. Ensure all mocks work as expected.",
+      "priority": "medium",
+      "dependencies": [
+        4,
+        8
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 14,
+      "title": "CI Pipeline Setup",
+      "description": "Automate code quality and build checks with GitHub Actions.",
+      "details": "Implement GitHub Actions workflow to run linters, all tests (unit, integration, E2E), and production build on pushes/PRs. Use actions/checkout@v4 and actions/setup-node@v4.",
+      "testStrategy": "Push a test commit and verify all checks pass in GitHub Actions.",
+      "priority": "low",
+      "dependencies": [
+        4,
+        11,
+        12,
+        13
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 15,
+      "title": "README and Documentation Enhancement",
+      "description": "Expand project documentation for onboarding and clarity.",
+      "details": "Update README.md with detailed setup instructions, architecture overview (libraries, state management, PWA), test/lint usage, and Task Master workflow guide.",
+      "testStrategy": "Review README.md for completeness and accuracy. Verify new contributors can set up and run the project.",
+      "priority": "low",
+      "dependencies": [
+        1,
+        3,
+        11
+      ],
+      "status": "pending",
+      "subtasks": []
+    }
+  ]
+}

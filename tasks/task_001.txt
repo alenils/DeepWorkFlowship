@@ -1,0 +1,43 @@
+# Task ID: 1
+# Title: Repository Cleanup and Structure
+# Status: done
+# Dependencies: None
+# Priority: high
+# Description: Remove duplicate project folders and ensure a clean, single project root to maintain clarity and reduce confusion.
+# Details:
+Delete nested folders like DEEPWORKPOSTUREAI/ and reference-repo/ from the main project. Ensure all imports and references are updated to reflect the new structure. Use git commands to clean up history if needed.
+
+# Test Strategy:
+Verify by cloning the repository in a fresh environment and confirming all imports and scripts work as expected.
+
+# Subtasks:
+## 1. Identify Duplicate and Nested Folders [done]
+### Dependencies: None
+### Description: Scan the repository to locate duplicate and nested folders that may be redundant or unnecessary.
+### Details:
+Use file system analysis tools or scripts to generate a list of duplicate and nested folders. Document findings for review.
+
+## 2. Delete Unnecessary Folders [done]
+### Dependencies: 1.1
+### Description: Remove folders identified as duplicates or unnecessary from the repository.
+### Details:
+Carefully delete the folders, ensuring no critical files are lost. Commit the changes with clear messages.
+
+## 3. Update Imports and References [done]
+### Dependencies: 1.2
+### Description: Update all code imports and references to reflect the new folder structure after deletions.
+### Details:
+Search and replace old paths in code, configuration files, and documentation. Run tests to confirm updates.
+
+## 4. Clean Git History [done]
+### Dependencies: 1.3
+### Description: Remove traces of deleted folders and files from the git history to reduce repository size and clutter.
+### Details:
+Use tools like BFG Repo-Cleaner or git-filter-repo to rewrite history. Run 'git gc' and ensure backups are made before proceeding.
+
+## 5. Verify in a Fresh Environment [done]
+### Dependencies: 1.4
+### Description: Clone the cleaned repository into a new environment and verify that everything works as expected.
+### Details:
+Perform a fresh clone, run all tests, and check for missing files or broken references. Confirm repository integrity.
+

@@ -1,0 +1,11 @@
+# Task ID: 3
+# Title: PWA Initial Configuration
+# Status: pending
+# Dependencies: 1
+# Priority: high
+# Description: Configure Progressive Web App (PWA) support for offline capability and optimized asset caching.
+# Details:
+Add vite-plugin-pwa (v0.17.0+) to vite.config.ts. Configure manifest.json with name, icons, and start_url. Implement basic service worker caching, excluding large MP3s and ML models from precache using workbox.globIgnores.
+
+# Test Strategy:
+Build and serve the app, verify PWA install prompt appears and offline mode works. Check that excluded assets are not precached.

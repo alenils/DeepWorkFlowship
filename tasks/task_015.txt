@@ -1,0 +1,11 @@
+# Task ID: 15
+# Title: README and Documentation Enhancement
+# Status: pending
+# Dependencies: 1, 3, 11
+# Priority: low
+# Description: Expand project documentation for onboarding and clarity.
+# Details:
+Update README.md with detailed setup instructions, architecture overview (libraries, state management, PWA), test/lint usage, and Task Master workflow guide.
+
+# Test Strategy:
+Review README.md for completeness and accuracy. Verify new contributors can set up and run the project.

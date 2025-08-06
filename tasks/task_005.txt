@@ -1,0 +1,49 @@
+# Task ID: 5
+# Title: Posture Detection Logic Consolidation
+# Status: pending
+# Dependencies: 1
+# Priority: medium
+# Description: Refactor posture detection logic to centralize camera, MediaPipe, and pose data in PostureContext.
+# Details:
+Review usePosture.ts, useStablePosture.ts, and poseDetector.ts. Move camera control, MediaPipe initialization, and raw pose data to PostureContext. Refactor hooks to consume context, merging or clarifying roles as needed. Use MediaPipe Tasks Vision v0.10.0+.
+
+# Test Strategy:
+Test by running posture detection in the app and verifying all hooks and components receive data from PostureContext.
+
+# Subtasks:
+## 1. Review Current Hooks and Logic [pending]
+### Dependencies: None
+### Description: Analyze existing posture detection hooks and logic to understand data flow and dependencies
+### Details:
+Examine the current implementation of posture detection hooks, identify how camera and MediaPipe logic is currently structured, document the data flow between components, and identify areas where logic is duplicated or could be centralized
+
+## 2. Design PostureContext Architecture [pending]
+### Dependencies: 5.1
+### Description: Create a comprehensive design for the PostureContext component
+### Details:
+Define the PostureContext interface, determine what state and methods should be exposed, plan how components will consume the context, and create diagrams showing the new architecture compared to the current implementation
+
+## 3. Move Camera and MediaPipe Logic to Context [pending]
+### Dependencies: 5.2
+### Description: Refactor camera initialization and MediaPipe processing into the PostureContext
+### Details:
+Extract camera setup code from existing hooks, migrate MediaPipe initialization and processing logic to the context provider, ensure proper resource cleanup, and implement error handling for camera and processing failures
+
+## 4. Refactor Hooks to Use Context [pending]
+### Dependencies: 5.3
+### Description: Update existing hooks to consume data from PostureContext instead of managing their own state
+### Details:
+Modify each hook to use the useContext hook to access PostureContext, remove duplicated logic, update hook interfaces to maintain backward compatibility where possible, and document any breaking changes
+
+## 5. Merge and Clarify Hook Roles [pending]
+### Dependencies: 5.4
+### Description: Consolidate overlapping hooks and clearly define the responsibility of each remaining hook
+### Details:
+Identify hooks with similar functionality that can be merged, refactor to create clearly defined hook responsibilities, update documentation to reflect new hook purposes, and deprecate hooks that are no longer needed
+
+## 6. Test Data Flow and Performance [pending]
+### Dependencies: 5.5
+### Description: Verify the refactored implementation works correctly and performs well
+### Details:
+Create test cases for all posture detection scenarios, measure and compare performance before and after refactoring, test with various devices and browsers to ensure compatibility, and fix any issues discovered during testing
+

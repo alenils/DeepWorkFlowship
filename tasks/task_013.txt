@@ -1,0 +1,11 @@
+# Task ID: 13
+# Title: Unit/Integration Test Expansion
+# Status: pending
+# Dependencies: 4, 8
+# Priority: medium
+# Description: Increase test coverage for critical components and utilities.
+# Details:
+Write Vitest (v1.3.0+) unit/integration tests for refactored components, hooks, Zustand slices, and utils. Mock import.meta.glob for AudioProvider.test.tsx.
+
+# Test Strategy:
+Run tests and verify coverage for critical paths. Ensure all mocks work as expected.

@@ -1,0 +1,11 @@
+# Task ID: 8
+# Title: Type Safety for Helpers/Utils
+# Status: pending
+# Dependencies: 1
+# Priority: medium
+# Description: Ensure all utility files are fully typed for better developer experience and error prevention.
+# Details:
+Review lib/poseDetector.ts, utils/sounds.ts (sfxManager.ts), utils/time.ts. Add explicit TypeScript types for parameters, return values, and exports. Use .d.ts only if absolutely necessary.
+
+# Test Strategy:
+Run TypeScript compiler and verify no type errors. Check autocompletion in IDE.

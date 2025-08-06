@@ -1,0 +1,11 @@
+# Task ID: 4
+# Title: E2E Test Baseline
+# Status: pending
+# Dependencies: 1
+# Priority: high
+# Description: Implement a basic end-to-end test to safeguard core user flows during refactoring.
+# Details:
+Create a Playwright test (v1.42.0+) that loads the app, starts and stops the timer, and verifies a summary placeholder appears. Place test in /tests/e2e/.
+
+# Test Strategy:
+Run the test after each major refactor to ensure core functionality remains intact.

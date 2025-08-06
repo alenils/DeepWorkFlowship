@@ -1,0 +1,11 @@
+# Task ID: 11
+# Title: Linting and Formatting Setup
+# Status: pending
+# Dependencies: 1
+# Priority: low
+# Description: Enforce consistent code style and quality with Prettier and ESLint.
+# Details:
+Integrate Prettier (v3.2.0+) with ESLint (v8.56.0+) using eslint-config-prettier. Add npm scripts for lint:fix and format. Optionally add Husky (v9.0.0+) and lint-staged (v15.2.0+) for pre-commit hooks.
+
+# Test Strategy:
+Run lint:fix and format scripts. Verify code style is consistent and no linting errors remain.

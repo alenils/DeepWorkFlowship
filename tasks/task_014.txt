@@ -1,0 +1,11 @@
+# Task ID: 14
+# Title: CI Pipeline Setup
+# Status: pending
+# Dependencies: 4, 11, 12, 13
+# Priority: low
+# Description: Automate code quality and build checks with GitHub Actions.
+# Details:
+Implement GitHub Actions workflow to run linters, all tests (unit, integration, E2E), and production build on pushes/PRs. Use actions/checkout@v4 and actions/setup-node@v4.
+
+# Test Strategy:
+Push a test commit and verify all checks pass in GitHub Actions.

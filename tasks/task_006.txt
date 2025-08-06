@@ -1,0 +1,11 @@
+# Task ID: 6
+# Title: App.tsx Refactoring
+# Status: pending
+# Dependencies: 2, 4, 7
+# Priority: medium
+# Description: Break down App.tsx into smaller, reusable components to reduce complexity.
+# Details:
+Extract layout logic into MainLayout.tsx and SidePanels.tsx. Move Warp Mode logic into WarpStarfieldController.tsx, controlled by props/context. Use Zustand for shared state where appropriate.
+
+# Test Strategy:
+Verify UI renders correctly and all extracted components function as expected. Run E2E test to ensure no regression.

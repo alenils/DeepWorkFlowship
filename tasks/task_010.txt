@@ -1,0 +1,11 @@
+# Task ID: 10
+# Title: Enhanced Error Handling
+# Status: pending
+# Dependencies: 1
+# Priority: medium
+# Description: Improve user-facing error feedback for critical features.
+# Details:
+Review catch blocks in Providers, Contexts, and async operations. Implement user-facing feedback (toasts, UI messages) or robust fallbacks. Use react-hot-toast v2.0.0+ for toasts.
+
+# Test Strategy:
+Simulate errors and verify feedback is visible and actionable to users.

@@ -50,9 +50,6 @@ node_modules/
 .env
 .vscode
 # OS specific
-# Task files
-tasks.json
-tasks/ 
 .cursor/mcp.json
 
 
@@ -71,3 +68,7 @@ models/
 
 # Ignore reference repos or submodules
 reference-repo/
+
+# Task files
+# tasks.json
+# tasks/ 

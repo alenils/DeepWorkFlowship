@@ -1,0 +1,11 @@
+# Task ID: 12
+# Title: Security Linting
+# Status: pending
+# Dependencies: 1
+# Priority: low
+# Description: Proactively identify and address security vulnerabilities.
+# Details:
+Add npm audit --production to CI. Integrate eslint-plugin-security (v1.7.0+) and address warnings. Configure CI to run security checks on every push/PR.
+
+# Test Strategy:
+Run npm audit and eslint-plugin-security. Verify no critical vulnerabilities are reported.
