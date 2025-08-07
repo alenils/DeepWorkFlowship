@@ -112,5 +112,4 @@ While the MVP focuses on delivering a core, polished experience, future iteratio
 	• User Adoption of Immersive Theme: While a differentiator, the strong theme might not appeal to all potential users. The core productivity tools must be solid regardless.
 
 This PRD should provide a clear vision for the DeepWork Spacestation MVP. Let me know your thoughts!
-
-Från <https://aistudio.google.com/prompts/13Z30I3YDdRgXTjPzEWrw82jfyhvNCgic> 
+ 
