@@ -4,6 +4,13 @@ import { NormalizedLandmark } from '@mediapipe/tasks-vision';
 import { STORAGE_KEYS } from '../constants';
 import { isGoodPosture } from '@/utils/postureDetect';
 
+// Shallow comparator to avoid unnecessary postureStatus writes
+function shallowStatusEqual(a?: { isGood: boolean; message: string } | null, b?: { isGood: boolean; message: string } | null) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return a.isGood === b.isGood && a.message === b.message;
+}
+
 // Define the baseline metrics structure (imported from PostureContext)
 export interface BaselineMetrics {
   noseY: number;
@@ -123,7 +130,13 @@ export const usePostureStore = create<PostureState>()(
       
       setPostureStatus: (status) => {
         console.log('[postureSlice] Action: setPostureStatus called with status:', status);
-        set({ postureStatus: status });
+        const prev = get().postureStatus;
+        if (!shallowStatusEqual(prev, status)) {
+          set({ postureStatus: status });
+          if (import.meta.env.DEV) console.log('[postureSlice] postureStatus changed (manual set)');
+        } else {
+          if (import.meta.env.DEV) console.log('[postureSlice] postureStatus unchanged (no set)');
+        }
       },
       
       setSensitivityPercentage: (percentage) => {
@@ -152,10 +165,15 @@ export const usePostureStore = create<PostureState>()(
           'sensitivity:', state.sensitivityPercentage);
         
         const status = isGoodPosture(landmarks, state.baselineMetrics, state.sensitivityPercentage);
-        
         console.log('[postureSlice] isGoodPosture returned:', JSON.stringify(status));
-        
-        set({ postureStatus: status });
+        // Guarded set — only update if changed
+        const prev = get().postureStatus;
+        if (!shallowStatusEqual(prev, status)) {
+          set({ postureStatus: status });
+          if (import.meta.env.DEV) console.log('[postureSlice] postureStatus changed:', status);
+        } else {
+          if (import.meta.env.DEV) console.log('[postureSlice] postureStatus unchanged (no set)');
+        }
       },
       
       // Complex actions

@@ -34,20 +34,22 @@ const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
   const landmarksRef = useRef<NormalizedLandmark[] | null>(null);
   const baselineRef = useRef<BaselineMetrics | null>(null);
 
-  // Initialize refs and subscribe to store updates (single listener)
+  // Initialize refs and subscribe to store updates (single listener without selector middleware)
   useEffect(() => {
     // Seed initial values
     const init = usePostureStore.getState();
     baselineRef.current = init.baselineMetrics ?? null;
     landmarksRef.current = init.rawLandmarks ?? null;
 
-    const unsub = usePostureStore.subscribe((state: ReturnType<typeof usePostureStore.getState>, prev: ReturnType<typeof usePostureStore.getState>) => {
+    let prev = init;
+    const unsub = usePostureStore.subscribe((state) => {
       if (state.baselineMetrics !== prev.baselineMetrics) {
         baselineRef.current = state.baselineMetrics ?? null;
       }
       if (state.rawLandmarks !== prev.rawLandmarks) {
         landmarksRef.current = state.rawLandmarks ?? null;
       }
+      prev = state;
     });
     return unsub;
   }, []);
@@ -150,17 +152,15 @@ const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
 };
 
 export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPostureChange }) => {
-  const {
-    videoRef,
-    detectedLandmarks,
-    postureStatus,
-    isCalibrated,
-    handleCalibration,
-    isLoadingDetector,
-    cameraError,
-    isCalibrating,
-    countdown
-  } = usePosture();
+  const { videoRef, handleCalibration } = usePosture();
+
+  // Select only slow-changing UI fields individually (avoids equality typing issues)
+  const isCalibrated = usePostureStore((s) => s.isCalibrated);
+  const cameraError = usePostureStore((s) => s.cameraError);
+  const postureStatus = usePostureStore((s) => s.postureStatus);
+  const isLoadingDetector = usePostureStore((s) => s.isLoadingDetector);
+  const isCalibrating = usePostureStore((s) => s.isCalibrating);
+  const countdown = usePostureStore((s) => s.countdown);
 
   useEffect(() => {
     if (isSessionActive && onPostureChange) {
@@ -181,7 +181,7 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
         <div className="flex space-x-2">
           <button 
             onClick={handleCalibration} 
-            disabled={!detectedLandmarks || detectedLandmarks.length === 0 || isLoadingDetector || !!cameraError || isCalibrating} 
+            disabled={isLoadingDetector || !!cameraError || isCalibrating} 
             className="bg-deep-purple-600 text-white hover:bg-deep-purple-700 dark:bg-deep-purple-700 dark:hover:bg-deep-purple-800 px-3 py-1 rounded font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isCalibrating ? `Calibrating (${countdown ?? ''}...)` : "Calibrate"} 
@@ -228,7 +228,7 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
           />
         )}
         
-        { !isLoadingDetector && !cameraError && detectedLandmarks && detectedLandmarks.length > 0 && (
+        { !isLoadingDetector && !cameraError && (
           <div className="absolute top-2 right-2 p-1 px-2 rounded bg-black/60 text-white text-xs font-medium z-10">
             {isCalibrating && countdown !== null ? 
               <span>Calibrating... {countdown}</span> : 
