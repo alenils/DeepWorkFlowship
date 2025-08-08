@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { useWarpStore } from '../../store/warpSlice';
 import { useTimerStore } from '../../store/timerSlice';
 import {
@@ -24,7 +24,7 @@ interface Star {
   prevY?: number;
 }
 
-export const StarfieldCanvas: React.FC = () => {
+export const StarfieldCanvas: React.FC = memo(() => {
   // Get state from warp store
   const {
     warpMode,
@@ -511,4 +511,4 @@ export const StarfieldCanvas: React.FC = () => {
       data-quality={starfieldQuality}
     />
   );
-}; 
+});
