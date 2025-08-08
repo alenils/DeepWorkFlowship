@@ -9,7 +9,8 @@ import {
   STAR_COUNTS_BY_QUALITY,
   STAR_SPEED_FACTORS_BY_QUALITY,
   STAR_DRAW_INTERVAL_BY_QUALITY,
-  STARFIELD_QUALITY
+  STARFIELD_QUALITY,
+  STARFIELD_THRESHOLDS
 } from '../../constants';
 
 // Define star interface for type safety
@@ -23,6 +24,9 @@ interface Star {
   prevX?: number;
   prevY?: number;
 }
+
+// Temporary debug flag to visualize speed and gating. Set to false to disable.
+const DEBUG_STARFIELD = true;
 
 export const StarfieldCanvas: React.FC = memo(() => {
   const isDev = import.meta.env.DEV;
@@ -44,6 +48,8 @@ export const StarfieldCanvas: React.FC = memo(() => {
   const animationFrameIdRef = useRef<number | null>(null);
   const lastDrawTimeRef = useRef<number>(0);
   const lastSpeedUpdateRef = useRef<number>(0);
+  // Keep latest effectiveSpeed available to rAF without React re-render
+  const effectiveSpeedRef = useRef<number>(effectiveSpeed);
 
   // Local state for canvas dimensions
   const [dimensions, setDimensions] = useState({
@@ -140,22 +146,27 @@ export const StarfieldCanvas: React.FC = memo(() => {
 
     // Calculate speed based on quality and current state
     const baseSpeedFactor = STAR_SPEED_FACTORS_BY_QUALITY[starfieldQuality];
+    const eff = effectiveSpeedRef.current ?? effectiveSpeed;
     
     // Use effectiveSpeed from the store which handles:
     // - Idle speed when no session is active (subtle drift with IDLE_SPEED_FACTOR)
     // - Thrust speed during thrust effect
     // - Smooth transition after thrust
-    const speedMultiplier = Math.min(
-      effectiveSpeed * baseSpeedFactor,
+    const renderSpeed = Math.min(
+      eff * baseSpeedFactor,
       WARP_ANIMATION.MAX_EFFECTIVE_SPEED
     );
 
     // Check if we are in idle mode (not static anymore, but very slow drift)
     const isIdleMode = !isSessionActive && warpMode === WARP_MODE.BACKGROUND;
     
-    // Determine if we're in hyperspace mode based on our speed threshold
-    const isHyperspace = speedMultiplier >= WARP_ANIMATION.HYPERSPACE_THRESHOLD;
-    const isUltraSpeed = speedMultiplier >= WARP_ANIMATION.HYPERSPACE_THRESHOLD * 1.5;
+    // Determine modes using effectiveSpeed against normalized thresholds
+    const isWarp = eff >= STARFIELD_THRESHOLDS.WARP;
+    const isHyperspace = eff >= STARFIELD_THRESHOLDS.HYPERSPACE;
+    const isUltraSpeed = eff >= STARFIELD_THRESHOLDS.HYPERSPACE * 1.5;
+
+    // Visual tuning factors derived from gating
+    const stretchFactor = isHyperspace ? 2.0 : isWarp ? 1.4 : 1.0;
 
     // Update and draw stars
     const centerX = canvas.width / 2;
@@ -168,15 +179,15 @@ export const StarfieldCanvas: React.FC = memo(() => {
         star.prevX = star.x * (WARP_ANIMATION.MAX_DEPTH / (star.z || 1)) + centerX;
         star.prevY = star.y * (WARP_ANIMATION.MAX_DEPTH / (star.z || 1)) + centerY;
         
-        // Move star closer to viewer with the idle speed factor (very subtle)
-        star.z -= 0.25 * speedMultiplier; // Further reduced for idle mode to be extra subtle
+        // Move star closer to viewer with the idle speed factor (make idle a bit more noticeable)
+        star.z -= 0.6 * renderSpeed;
       } else {
         // For moving stars, store previous position for streaking
         star.prevX = star.x * (WARP_ANIMATION.MAX_DEPTH / (star.z || 1)) + centerX;
         star.prevY = star.y * (WARP_ANIMATION.MAX_DEPTH / (star.z || 1)) + centerY;
 
-        // Move star closer to viewer (faster with speedFactor)
-        star.z -= 1 * speedMultiplier;
+        // Move star closer to viewer (much faster with renderSpeed for strong hyperspace)
+        star.z -= 2.5 * renderSpeed;
       }
 
       // Reset star when it gets too close
@@ -206,23 +217,23 @@ export const StarfieldCanvas: React.FC = memo(() => {
         let shouldStreak;
         if (isIdleMode) {
           // In idle mode, only show subtle streaks occasionally for stars that are closer
-          shouldStreak = star.z < WARP_ANIMATION.MAX_DEPTH * 0.3 && speedMultiplier > 0;
+          shouldStreak = star.z < WARP_ANIMATION.MAX_DEPTH * 0.3 && renderSpeed > 0;
         } else {
           // Normal streak logic for active sessions
-          shouldStreak = speedMultiplier >= WARP_ANIMATION.MIN_SPEED_FOR_STREAKS;
+          shouldStreak = renderSpeed >= WARP_ANIMATION.MIN_SPEED_FOR_STREAKS;
         }
         
         if (shouldStreak && star.prevX !== undefined && star.prevY !== undefined) {
           // Calculate streak length based on speed and star's z-position using enhanced formula
           // Speed ratio is proportional to how much over the min streak speed we are
-          const speedRatio = Math.max(0, (speedMultiplier - WARP_ANIMATION.MIN_SPEED_FOR_STREAKS) / WARP_ANIMATION.MIN_SPEED_FOR_STREAKS);
+          const speedRatio = Math.max(0, (renderSpeed - WARP_ANIMATION.MIN_SPEED_FOR_STREAKS) / WARP_ANIMATION.MIN_SPEED_FOR_STREAKS);
           
           // Enhanced streak length calculation:
           // - Base length + additional length proportional to speed
           // - Use new constants for more control and more dramatic results at high speeds
           const depthFactor = Math.pow(1 - star.z / WARP_ANIMATION.MAX_DEPTH, 1.8); // Enhanced depth factor
-          const streakLength = WARP_ANIMATION.STREAK_BASE_LENGTH + 
-            (speedRatio * WARP_ANIMATION.STREAK_LENGTH_FACTOR * depthFactor);
+          const streakLength = (WARP_ANIMATION.STREAK_BASE_LENGTH + 
+            (speedRatio * WARP_ANIMATION.STREAK_LENGTH_FACTOR * depthFactor)) * stretchFactor;
           
           // Cap at max streak length - increased for more dramatic effect at high speeds
           const maxLength = Math.min(WARP_ANIMATION.MAX_STREAK_LENGTH, streakLength);
@@ -256,7 +267,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
             } else if (isHyperspace) {
               // Blue-white for hyperspace effect
               streakColor = 'rgba(235, 245, 255,';
-            } else if (speedMultiplier > WARP_ANIMATION.MIN_SPEED_FOR_STREAKS * 2) {
+            } else if (renderSpeed > WARP_ANIMATION.MIN_SPEED_FOR_STREAKS * 2) {
               // Blueish for medium-high speeds
               streakColor = 'rgba(225, 240, 255,';
             } else {
@@ -286,10 +297,10 @@ export const StarfieldCanvas: React.FC = memo(() => {
             } else if (isHyperspace) {
               // Very thin lines in hyperspace for a sleek look
               lineWidthFactor = 0.4;
-            } else if (speedMultiplier > 5) {
+            } else if (renderSpeed > 5) {
               // Thinner at high speeds
               lineWidthFactor = 0.6;
-            } else if (speedMultiplier > 3) {
+            } else if (renderSpeed > 3) {
               // Medium thickness at medium speeds
               lineWidthFactor = 0.8;
             } else {
@@ -313,7 +324,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
         // 3. OR it's not streaking
         // This creates a cleaner, streak-dominated look at high speeds
         const shouldDrawPoint = isIdleMode || (!isUltraSpeed && (!isHyperspace || !shouldStreak));
-        
+      
         if (shouldDrawPoint) {
           ctx.beginPath();
           ctx.arc(starX, starY, size, 0, Math.PI * 2);
@@ -334,6 +345,20 @@ export const StarfieldCanvas: React.FC = memo(() => {
         }
       }
     });
+
+    // Toggle hyperspace CSS attribute for optional shake effects
+    try {
+      document.body.dataset.hyperspace = isHyperspace ? 'true' : 'false';
+    } catch {}
+
+    // Debug HUD
+    if (DEBUG_STARFIELD) {
+      ctx.save();
+      ctx.font = '12px monospace';
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillText(`speed: ${eff.toFixed(2)}  warp: ${isWarp}  hyper: ${isHyperspace}`, 8, 16);
+      ctx.restore();
+    }
 
     // Request next frame
     animationFrameIdRef.current = requestAnimationFrame(animateStars);
@@ -421,6 +446,22 @@ export const StarfieldCanvas: React.FC = memo(() => {
       // Clean up DOM effects
       applyWarpModeEffects(WARP_MODE.NONE);
     };
+  }, []);
+
+  // Keep effectiveSpeedRef in sync with the warp store without causing React re-renders
+  useEffect(() => {
+    try {
+      effectiveSpeedRef.current = useWarpStore.getState().effectiveSpeed;
+    } catch {}
+    const unsub = useWarpStore.subscribe((state) => {
+      if (state.effectiveSpeed !== effectiveSpeedRef.current) {
+        effectiveSpeedRef.current = state.effectiveSpeed;
+        if (isDev) {
+          console.log('[Starfield] effectiveSpeed updated ->', state.effectiveSpeed);
+        }
+      }
+    });
+    return unsub;
   }, []);
 
   // Handle changes to warp mode
@@ -519,7 +560,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
   // Override specific properties for FULL mode
   if (warpMode === WARP_MODE.FULL) {
     canvasStyle.zIndex = 9999;
-    canvasStyle.pointerEvents = 'auto';
+    canvasStyle.pointerEvents = 'none';
   }
 
   return (

@@ -5,6 +5,13 @@ import { POSE_LANDMARKS } from "@/utils/postureDetect";
 import PostureControls from './PostureControls';
 import { BaselineMetrics, usePostureStore } from "@/store/postureSlice";
 
+/**
+ * PostureView.tsx
+ *
+ * Responsibilities:
+ * - UI/layout and slow-changing posture UI state only (calibration, status chip, errors, controls)
+ * - Does NOT render fast-changing pose data; that is delegated to CanvasOverlay using refs + rAF
+ */
 // Connection lines commented out as per request
 /*
 const POSE_CONNECTIONS: [number, number][] = [
@@ -23,6 +30,13 @@ interface CanvasOverlayProps {
     isCalibrated: boolean;
 }
 
+/**
+ * CanvasOverlay
+ * High-frequency draw loop that paints pose landmarks using:
+ * - Zustand subscribe -> refs for fast updates without React renders
+ * - requestAnimationFrame for smooth drawing
+ * Cleans up rAF and subscriptions on unmount.
+ */
 const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
   videoElement,
   isGoodPosture,
@@ -33,6 +47,9 @@ const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
   // Refs for fast-changing data
   const landmarksRef = useRef<NormalizedLandmark[] | null>(null);
   const baselineRef = useRef<BaselineMetrics | null>(null);
+
+  // Dev-only lightweight frame counter
+  const DEBUG_CANVAS = import.meta.env.DEV && false;
 
   // Initialize refs and subscribe to store updates (single listener without selector middleware)
   useEffect(() => {
@@ -65,16 +82,27 @@ const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
 
     let rafId: number | null = null;
 
+    // Cache last applied measurements to avoid redundant DOM writes
+    let prevW = -1, prevH = -1;
+    let prevClientW = -1, prevClientH = -1;
+    let prevLeft = -1, prevTop = -1;
+
     const resizeToVideo = () => {
       // Mirror canvas to video element dimensions & position
       const targetW = video.videoWidth || video.clientWidth || 640;
       const targetH = video.videoHeight || video.clientHeight || 480;
-      canvas.width = targetW;
-      canvas.height = targetH;
-      canvas.style.width = `${video.clientWidth}px`;
-      canvas.style.height = `${video.clientHeight}px`;
-      canvas.style.left = `${video.offsetLeft}px`;
-      canvas.style.top = `${video.offsetTop}px`;
+      if (targetW !== prevW) { canvas.width = targetW; prevW = targetW; }
+      if (targetH !== prevH) { canvas.height = targetH; prevH = targetH; }
+
+      const cw = video.clientWidth;
+      const ch = video.clientHeight;
+      if (cw !== prevClientW) { canvas.style.width = `${cw}px`; prevClientW = cw; }
+      if (ch !== prevClientH) { canvas.style.height = `${ch}px`; prevClientH = ch; }
+
+      const l = video.offsetLeft;
+      const t = video.offsetTop;
+      if (l !== prevLeft) { canvas.style.left = `${l}px`; prevLeft = l; }
+      if (t !== prevTop) { canvas.style.top = `${t}px`; prevTop = t; }
     };
 
     const draw = () => {
@@ -131,6 +159,7 @@ const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
         ctx.restore();
       }
 
+      if (DEBUG_CANVAS) console.count("CanvasOverlay draw frame");
       rafId = requestAnimationFrame(draw);
     };
 

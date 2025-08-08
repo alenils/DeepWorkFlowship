@@ -73,14 +73,21 @@ export const WARP_ANIMATION = {
   IDLE_SPEED_FACTOR: 0.0575, // Speed factor when no session is active (increased by 15% for more visible movement)
   THRUST_SPEED_MULTIPLIER: 8.0, // Increased speed multiplier during thrust effect
   THRUST_FADE_DURATION_MS: 3000, // Extended from 2000ms to 3000ms for a longer initial thrust feel
-  MAX_STREAK_LENGTH: 100,  // Significantly increased maximum streak length for dramatic effect
+  MAX_STREAK_LENGTH: 300,  // Increased further for dramatic hyperspace lines
   MAX_EFFECTIVE_SPEED: 25.0, // Increased from 20.0 to 25.0 to allow for higher maximum speeds
   THRUST_EFFECT_SPEED: 25.0, // Dramatically increased speed for thrust effect
   DEFAULT_SESSION_SPEED: 8.0, // Default speed during an active session (high warp speed)
   DECELERATION_DURATION_MS: 2000, // Duration of smooth deceleration when a session ends
   STREAK_BASE_LENGTH: 18,  // Increased base length for star streaks even at minimum streaking speed
-  STREAK_LENGTH_FACTOR: 35, // Increased multiplier for calculating streak length based on speed
+  STREAK_LENGTH_FACTOR: 80, // Stronger multiplier for longer streaks at high speed
   HYPERSPACE_THRESHOLD: 6.0 // Reduced threshold for hyperspace-like effects
+} as const;
+
+// Normalized thresholds used by starfield for gating modes.
+// Reuse existing values to avoid duplication/mismatch.
+export const STARFIELD_THRESHOLDS = {
+  HYPERSPACE: WARP_ANIMATION.HYPERSPACE_THRESHOLD,
+  WARP: 3.0,
 } as const;
 
 // ===== STARFIELD QUALITY SETTINGS =====
