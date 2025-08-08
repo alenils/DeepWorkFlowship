@@ -9,28 +9,32 @@ import { registerSW } from 'virtual:pwa-register'
 // Register service worker for PWA functionality
 const updateSW = registerSW({
   onNeedRefresh() {
-    // This can be extended to show a UI prompt to the user
     if (confirm('New version available. Reload to update?')) {
       updateSW()
     }
   },
-  onOfflineReady() {
-    console.log('App ready for offline use')
-  },
-  onRegistered(registration) {
-    console.log('Service worker registered:', registration)
-  },
+  onOfflineReady() {},
   onRegisterError(error) {
     console.error('Service worker registration failed:', error)
   }
 })
 
+const isDev = import.meta.env.DEV
+
+const Root = (
+  <PostureProvider>
+    <AudioProvider>
+      <App />
+    </AudioProvider>
+  </PostureProvider>
+)
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <PostureProvider>
-      <AudioProvider>
-        <App />
-      </AudioProvider>
-    </PostureProvider>
-  </React.StrictMode>,
-) 
+  isDev ? (
+    // Development: render without StrictMode to avoid double mount
+    Root
+  ) : (
+    // Production: keep StrictMode for safety
+    <React.StrictMode>{Root}</React.StrictMode>
+  )
+)

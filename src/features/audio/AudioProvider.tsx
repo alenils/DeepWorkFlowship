@@ -1,20 +1,24 @@
-/* ===== DEBUG GLOB ===== */
-const debugMusic = import.meta.glob('../../assets/music/**/*.mp3', {
-  eager: true,
-  query: '?url',
-  import: 'default'
-});
+/* ===== DEBUG GLOB (dev only) ===== */
+const __DEV__ = import.meta.env.DEV;
+if (__DEV__) {
+  const debugMusic = import.meta.glob('../../assets/music/**/*.mp3', {
+    eager: true,
+    query: '?url',
+    import: 'default'
+  });
 
-const debugSfx = import.meta.glob('../../assets/sfx/*.mp3', {
-  eager: true,
-  query: '?url',
-  import: 'default'
-});
+  const debugSfx = import.meta.glob('../../assets/sfx/*.mp3', {
+    eager: true,
+    query: '?url',
+    import: 'default'
+  });
 
-// Output the keys (just the paths — no URL noise)
-console.log('[DEBUG] music keys', Object.keys(debugMusic));
-console.log('[DEBUG] sfx   keys', Object.keys(debugSfx));
-/* ====================== */
+  // Output the keys (just the paths — no URL noise)
+  console.log('[DEBUG] music keys', Object.keys(debugMusic));
+  console.log('[DEBUG] sfx   keys', Object.keys(debugSfx));
+}
+/* ================================= */
+
 
 // Define initialSfxMap at the module level as suggested
 const initialSfxMap: Map<string, string> = new Map();
@@ -28,7 +32,7 @@ export interface Song {
   album: AlbumId; // To identify which album it belongs to
 }
 
-export type AlbumId = 'album1' | 'album2';
+export type AlbumId = 'album1' | 'album2' | 'album3';
 
 interface AudioContextType {
   // Music state & controls
@@ -62,6 +66,7 @@ const albumTracksGlob = import.meta.glob('../../assets/music/**/*.mp3', { eager:
 const allLoadedTracks: Record<AlbumId, Song[]> = {
   album1: [],
   album2: [],
+  album3: [],
 };
 
 const trackListForProvider: Song[] = []; // Flat list for initial provider state if needed, or derive from allLoadedTracks
@@ -69,18 +74,15 @@ const trackListForProvider: Song[] = []; // Flat list for initial provider state
 Object.entries(albumTracksGlob).forEach(([path, url]) => {
   const name = decodeURIComponent(path.substring(path.lastIndexOf('/') + 1).replace('.mp3', ''));
   
-  // Robust album detection using regex (Suggestion ❶)
-  const folderMatch = path.match(/music\/([^/]+)\//i); // Matches text between /music/ and the next slash
-  const folderName = folderMatch?.[1]?.toLowerCase();
-  
-  let album: AlbumId = 'album1'; // Default to album1
-  if (folderName === 'album2') {
-    album = 'album2';
-  }
-  // All other folder names (or if no match, e.g. files directly in /music/) will default to album1
-  // Or, you could add more specific checks if needed: else if (folderName === 'album1') album = 'album1';
+  // Robust album detection using regex: captures folder after assets/music/
+  const folderMatch = path.match(/assets\/music\/([^/]+)\//i);
+  const possible = (folderMatch?.[1] ?? 'album1').toLowerCase();
+  const isKnown = possible === 'album1' || possible === 'album2' || possible === 'album3';
+  const album = (isKnown ? possible : 'album1') as AlbumId;
 
-  console.log(`[AudioProvider] Processing track: ${path}, Raw Folder: ${folderMatch?.[1]}, Determined Album: ${album}`);
+  if (__DEV__) {
+    console.log(`[AudioProvider] Processing track: ${path}, Raw Folder: ${folderMatch?.[1]}, Determined Album: ${album}`);
+  }
   const song: Song = { url, name, album };
   allLoadedTracks[album].push(song);
   trackListForProvider.push(song); // Add to the flat list
@@ -89,8 +91,11 @@ Object.entries(albumTracksGlob).forEach(([path, url]) => {
 // Sort tracks within each album
 allLoadedTracks.album1.sort((a, b) => a.name.localeCompare(b.name));
 allLoadedTracks.album2.sort((a, b) => a.name.localeCompare(b.name));
+allLoadedTracks.album3.sort((a, b) => a.name.localeCompare(b.name));
 
-console.log("AudioProvider: All music tracks loaded:", allLoadedTracks);
+if (__DEV__) {
+  console.log('AudioProvider: All music tracks loaded:', allLoadedTracks);
+}
 if (trackListForProvider.length === 0) {
   console.warn("AudioProvider: trackListForProvider is empty. No music tracks were loaded. Check glob paths and /public/music folder structure.");
 }
@@ -127,7 +132,7 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const file = path.split('/').pop()!;
       sfxMapRef.current.set(file, url as string);
     });
-    console.log('[AudioProvider] sfxMapRef.current populated:', sfxMapRef.current);
+    if (__DEV__) console.log('[AudioProvider] sfxMapRef.current populated:', sfxMapRef.current);
   }
 
   const currentTrack = currentTracklist[currentTrackIndex] || null;
@@ -167,17 +172,17 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   // Effect 1: Update tracklist and RESET index when selectedAlbum changes
   useEffect(() => {
-    console.log(`[AudioProvider useEffect Album] Album changed to: ${selectedAlbum}`);
+    if (__DEV__) console.log(`[AudioProvider useEffect Album] Album changed to: ${selectedAlbum}`);
     const baseTracklist = allLoadedTracks[selectedAlbum] || [];
     const newTracklist = isShuffleActive ? shuffleArray(baseTracklist) : baseTracklist;
-    console.log(`[AudioProvider useEffect Album] Setting new tracklist for ${selectedAlbum}:`, newTracklist.map(t => t.name));
+    if (__DEV__) console.log(`[AudioProvider useEffect Album] Setting new tracklist for ${selectedAlbum}:`, newTracklist.map(t => t.name));
     setCurrentTracklist(newTracklist);
     setCurrentTrackIndex(0); // Reset index only on album change
   }, [selectedAlbum]); // Only depends on selectedAlbum
 
   // Effect 2: Re-shuffle the list when isShuffleActive changes, WITHOUT resetting index
   useEffect(() => {
-    console.log(`[AudioProvider useEffect Shuffle] Shuffle toggled: ${isShuffleActive}`);
+    if (__DEV__) console.log(`[AudioProvider useEffect Shuffle] Shuffle toggled: ${isShuffleActive}`);
     // Get the currently loaded tracks (which should be for the correct selectedAlbum due to Effect 1)
     const currentAlbumTracks = allLoadedTracks[selectedAlbum] || []; 
     const newTracklist = isShuffleActive ? shuffleArray(currentAlbumTracks) : currentAlbumTracks;
@@ -191,11 +196,11 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       }
     }
     
-    console.log(`[AudioProvider useEffect Shuffle] Updating tracklist (shuffled: ${isShuffleActive}). Current track index will be: ${newIndex}`, newTracklist.map(t=>t.name));
+    if (__DEV__) console.log(`[AudioProvider useEffect Shuffle] Updating tracklist (shuffled: ${isShuffleActive}). Current track index will be: ${newIndex}`, newTracklist.map(t=>t.name));
     setCurrentTracklist(newTracklist); 
     setCurrentTrackIndex(newIndex); // Set index to current track's new position, or 0
 
-  }, [isShuffleActive, selectedAlbum, currentTrack]); // Rerun if shuffle state changes (or album changes, to get correct base list)
+  }, [isShuffleActive, selectedAlbum, currentTrack]);
     // Including currentTrack might cause loops if not careful, but needed to find its new index.
     // Let's refine dependency if needed, but selectedAlbum is necessary to get the right base list.
     // Re-evaluating dependency array: maybe just depend on isShuffleActive and selectedAlbum?
@@ -268,7 +273,7 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         // Fallback if current track wasn't found in list (shouldn't happen often)
         // Play the first track of the current list
         nextSong = currentTracklist[0];
-        console.warn("[AudioProvider] nextTrack: Current track not found in tracklist, falling back to first track.");
+        if (__DEV__) console.warn("[AudioProvider] nextTrack: Current track not found in tracklist, falling back to first track.");
       }
     }
 
@@ -278,16 +283,16 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         selectTrack(nextSongIndex); // selectTrack sets the currentTrackIndex
       } else {
         // This case should ideally not happen if nextSong comes from currentTracklist
-        console.warn("[AudioProvider] nextTrack: Could not find the determined next song in the tracklist. This is unexpected.");
+        if (__DEV__) console.warn("[AudioProvider] nextTrack: Could not find the determined next song in the tracklist. This is unexpected.");
         if (currentTracklist.length > 0) selectTrack(0); // Fallback to first track of current list
       }
     } else if (currentTracklist.length > 0) {
         // Fallback if no next song could be determined (e.g. empty list after filter and no fallback selected)
-        console.warn("[AudioProvider] nextTrack: No next song could be determined, playing first track of current list as fallback.");
+        if (__DEV__) console.warn("[AudioProvider] nextTrack: No next song could be determined, playing first track of current list as fallback.");
         selectTrack(0);
     } else {
       // If currentTracklist is empty and we somehow got here (e.g. it became empty after currentTrack was set)
-      console.warn("[AudioProvider] nextTrack: Tracklist is empty, cannot determine next track.");
+      if (__DEV__) console.warn("[AudioProvider] nextTrack: Tracklist is empty, cannot determine next track.");
       // Optionally, set currentTrack to null or handle appropriately
       // For now, do nothing, which might leave the player stopped with no track.
     }
@@ -302,7 +307,7 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // New playSfx function as suggested
   const playSfx: AudioContextType['playSfx'] = (name) => {
     const map = sfxMapRef.current;
-    console.log('[AudioProvider playSfx] Attempting to play:', name, 'Available SFX in mapRef:', [...map.keys()]);
+    if (__DEV__) console.log('[AudioProvider playSfx] Attempting to play:', name, 'Available SFX in mapRef:', [...map.keys()]);
     const url = map.get(name);
     if (!url) {
       console.warn(`[AudioProvider playSfx] SFX "${name}" missing from sfxMapRef.current. Map size: ${map.size}`);

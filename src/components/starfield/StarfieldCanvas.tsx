@@ -25,6 +25,7 @@ interface Star {
 }
 
 export const StarfieldCanvas: React.FC = memo(() => {
+  const isDev = import.meta.env.DEV;
   // Get state from warp store
   const {
     warpMode,
@@ -374,12 +375,19 @@ export const StarfieldCanvas: React.FC = memo(() => {
     // This ensures all UI elements retain full opacity when in background mode
   };
 
-  // Debug console log to verify the component is rendering with the correct mode
-  console.log(`Rendering StarfieldCanvas with mode: ${warpMode}, quality: ${starfieldQuality}, isSessionActive: ${isSessionActive}`);
+  // Optional debug: render info (avoid logging in render by default)
+  if (false && isDev) {
+    console.log(
+      `Rendering StarfieldCanvas with mode: ${warpMode}, quality: ${starfieldQuality}, isSessionActive: ${isSessionActive}`
+    );
+  }
 
   // Setup and cleanup effects
   useEffect(() => {
-    console.log('StarfieldCanvas initialization, warpMode:', warpMode, 'quality:', starfieldQuality);
+    if (isDev) {
+      // One-time init log
+      console.log('StarfieldCanvas init. mode:', warpMode, 'quality:', starfieldQuality);
+    }
     
     // Initialize stars
     initStars();
@@ -390,10 +398,14 @@ export const StarfieldCanvas: React.FC = memo(() => {
     // Make sure canvas is properly sized on initialization
     handleResize();
     
-    // Start animation if warp mode is active
+    // Start animation if warp mode is active (guard to avoid duplicate loops)
     if (warpMode !== WARP_MODE.NONE && starfieldQuality !== STARFIELD_QUALITY.OFF) {
-      console.log('Starting animation');
-      animationFrameIdRef.current = requestAnimationFrame(animateStars);
+      if (animationFrameIdRef.current != null) {
+        // Loop already running
+      } else {
+        if (isDev) console.log('Starting animation');
+        animationFrameIdRef.current = requestAnimationFrame(animateStars);
+      }
     }
     
     return () => {
@@ -421,7 +433,9 @@ export const StarfieldCanvas: React.FC = memo(() => {
     
     // Start or stop animation based on warp mode
     if (warpMode !== WARP_MODE.NONE && starfieldQuality !== STARFIELD_QUALITY.OFF) {
-      if (!animationFrameIdRef.current) {
+      if (animationFrameIdRef.current != null) {
+        // already running
+      } else {
         animationFrameIdRef.current = requestAnimationFrame(animateStars);
       }
     } else {
@@ -442,7 +456,9 @@ export const StarfieldCanvas: React.FC = memo(() => {
     
     // Start or stop animation based on quality
     if (starfieldQuality !== STARFIELD_QUALITY.OFF && warpMode !== WARP_MODE.NONE) {
-      if (!animationFrameIdRef.current) {
+      if (animationFrameIdRef.current != null) {
+        // already running
+      } else {
         animationFrameIdRef.current = requestAnimationFrame(animateStars);
       }
     } else {
@@ -458,16 +474,24 @@ export const StarfieldCanvas: React.FC = memo(() => {
     // Immediately update the effective speed based on session state
     updateEffectiveSpeed(isSessionActive);
     
-    // Cancel any existing animation frame to avoid multiple loops
-    if (animationFrameIdRef.current) {
-      cancelAnimationFrame(animationFrameIdRef.current);
-      animationFrameIdRef.current = null;
-    }
-    
-    // Start animation if it should be running
+    // Start animation if it should be running (guarded)
     if (warpMode !== WARP_MODE.NONE && starfieldQuality !== STARFIELD_QUALITY.OFF) {
-      console.log('Starting animation due to session state change:', isSessionActive, 'or effectiveSpeed change:', effectiveSpeed);
-      animationFrameIdRef.current = requestAnimationFrame(animateStars);
+      if (animationFrameIdRef.current == null) {
+        if (isDev) {
+          console.log(
+            'Starting animation due to session/effectiveSpeed change:',
+            isSessionActive,
+            effectiveSpeed
+          );
+        }
+        animationFrameIdRef.current = requestAnimationFrame(animateStars);
+      }
+    } else {
+      // Cancel any existing animation frame
+      if (animationFrameIdRef.current != null) {
+        cancelAnimationFrame(animationFrameIdRef.current);
+        animationFrameIdRef.current = null;
+      }
     }
   }, [isSessionActive, effectiveSpeed, warpMode, starfieldQuality, isThrusting, dimensions]);
 
@@ -476,8 +500,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
     return null;
   }
 
-  // Debug console log to verify the component is rendering with the correct mode
-  console.log(`Rendering StarfieldCanvas with mode: ${warpMode}, quality: ${starfieldQuality}`);
+  // Avoid render-time logs to reduce noise
 
   // Determine canvas styling based on warp mode
   const canvasStyle: React.CSSProperties = {
