@@ -3,7 +3,7 @@ import { NormalizedLandmark } from "@mediapipe/tasks-vision";
 import { usePosture } from "@/context/PostureContext";
 import { POSE_LANDMARKS } from "@/utils/postureDetect";
 import PostureControls from './PostureControls';
-import { BaselineMetrics } from "@/store/postureSlice";
+import { BaselineMetrics, usePostureStore } from "@/store/postureSlice";
 
 // Connection lines commented out as per request
 /*
@@ -19,21 +19,40 @@ export interface PostureViewProps {
 
 interface CanvasOverlayProps { 
     videoElement: HTMLVideoElement | null;
-    landmarks?: NormalizedLandmark[];
-    baselineMetrics: BaselineMetrics | null | undefined;
     isGoodPosture: boolean;
     isCalibrated: boolean;
 }
 
 const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
   videoElement,
-  landmarks,
-  baselineMetrics,
   isGoodPosture,
   isCalibrated,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // Refs for fast-changing data
+  const landmarksRef = useRef<NormalizedLandmark[] | null>(null);
+  const baselineRef = useRef<BaselineMetrics | null>(null);
+
+  // Initialize refs and subscribe to store updates (single listener)
+  useEffect(() => {
+    // Seed initial values
+    const init = usePostureStore.getState();
+    baselineRef.current = init.baselineMetrics ?? null;
+    landmarksRef.current = init.rawLandmarks ?? null;
+
+    const unsub = usePostureStore.subscribe((state: ReturnType<typeof usePostureStore.getState>, prev: ReturnType<typeof usePostureStore.getState>) => {
+      if (state.baselineMetrics !== prev.baselineMetrics) {
+        baselineRef.current = state.baselineMetrics ?? null;
+      }
+      if (state.rawLandmarks !== prev.rawLandmarks) {
+        landmarksRef.current = state.rawLandmarks ?? null;
+      }
+    });
+    return unsub;
+  }, []);
+
+  // rAF drawing loop using refs
   useEffect(() => {
     const canvas = canvasRef.current;
     const video = videoElement;
@@ -42,67 +61,80 @@ const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    if (video.videoWidth > 0 && video.videoHeight > 0) {
-        // Use clientWidth/Height for displayed size if available and non-zero, otherwise fall back to videoWidth/Height
-        const displayWidth = video.clientWidth > 0 ? video.clientWidth : video.videoWidth;
-        const displayHeight = video.clientHeight > 0 ? video.clientHeight : video.videoHeight;
-        
-        canvas.width = displayWidth;
-        canvas.height = displayHeight;
-        console.log(`CanvasOverlay: video naturalW=${video.videoWidth}, naturalH=${video.videoHeight}, clientW=${video.clientWidth}, clientH=${video.clientHeight}. Set canvas size to w=${canvas.width}, h=${canvas.height}`);
-    } else {
-        // Video dimensions not ready
-        return;
-    }
+    let rafId: number | null = null;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const resizeToVideo = () => {
+      // Mirror canvas to video element dimensions & position
+      const targetW = video.videoWidth || video.clientWidth || 640;
+      const targetH = video.videoHeight || video.clientHeight || 480;
+      canvas.width = targetW;
+      canvas.height = targetH;
+      canvas.style.width = `${video.clientWidth}px`;
+      canvas.style.height = `${video.clientHeight}px`;
+      canvas.style.left = `${video.offsetLeft}px`;
+      canvas.style.top = `${video.offsetTop}px`;
+    };
 
-    // Draw horizontal bar (using baselineMetrics)
-    if (isCalibrated && baselineMetrics && typeof baselineMetrics.noseY === 'number') {
-      const baselineNoseCanvasY = baselineMetrics.noseY * canvas.height;
-      const barHeight = 10; 
-      const barColor = isGoodPosture ? "rgba(0, 255, 0, 0.5)" : "rgba(255, 0, 0, 0.5)";
-      ctx.fillStyle = barColor;
-      ctx.fillRect(0, baselineNoseCanvasY - barHeight / 2, canvas.width, barHeight);
-    } else {
-      if (isCalibrated) {
-        console.log("CANVAS: Bar not drawn. isCalibrated=true, but baselineMetrics missing or invalid.", baselineMetrics);
+    const draw = () => {
+      resizeToVideo();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw horizontal baseline bar using stored baseline
+      const bm = baselineRef.current;
+      if (isCalibrated && bm && typeof bm.noseY === 'number') {
+        const baselineNoseCanvasY = bm.noseY * canvas.height;
+        const barHeight = 10;
+        const barColor = isGoodPosture ? "rgba(0, 255, 0, 0.5)" : "rgba(255, 0, 0, 0.5)";
+        ctx.fillStyle = barColor;
+        ctx.fillRect(0, baselineNoseCanvasY - barHeight / 2, canvas.width, barHeight);
       }
-    }
 
-    // Draw KEY landmark dots (Nose, Eyes, Ears, Shoulders)
-    if (landmarks && landmarks.length > 0) {
-      ctx.save();
-      const keyLandmarks = [
-        POSE_LANDMARKS.NOSE,          // 0
-        POSE_LANDMARKS.LEFT_EYE,        // 2
-        POSE_LANDMARKS.RIGHT_EYE,       // 5
-        POSE_LANDMARKS.LEFT_EAR,        // 7
-        POSE_LANDMARKS.RIGHT_EAR,       // 8
-        POSE_LANDMARKS.LEFT_SHOULDER,   // 11
-        POSE_LANDMARKS.RIGHT_SHOULDER,  // 12
-      ];
+      // Draw KEY landmark dots (keep visuals exactly as before)
+      const landmarks = landmarksRef.current;
+      if (landmarks && landmarks.length > 0) {
+        ctx.save();
+        const keyLandmarks = [
+          POSE_LANDMARKS.NOSE,
+          POSE_LANDMARKS.LEFT_EYE,
+          POSE_LANDMARKS.RIGHT_EYE,
+          POSE_LANDMARKS.LEFT_EAR,
+          POSE_LANDMARKS.RIGHT_EAR,
+          POSE_LANDMARKS.LEFT_SHOULDER,
+          POSE_LANDMARKS.RIGHT_SHOULDER,
+        ];
 
-      landmarks.forEach((landmark, index) => {
-        if (keyLandmarks.includes(index) && landmark && landmark.visibility && landmark.visibility > 0.5 && typeof landmark.x === 'number' && typeof landmark.y === 'number') {
-          ctx.beginPath();
-          ctx.arc(
-             (1 - landmark.x) * canvas.width, // Mirrored X
-             landmark.y * canvas.height, 
-             5, // Increased dot size for visibility
-             0, 2 * Math.PI
-          ); 
-          ctx.fillStyle = isGoodPosture ? "rgba(144, 238, 144, 0.8)" : "rgba(255, 182, 193, 0.8)"; // Slightly opaque lightgreen/pink
-          ctx.fill();
-        }
-      });
-      ctx.restore(); 
-    }
-    
-    // Keep the console log for dimensions active
-    console.log(`CanvasOverlay: video naturalW=${video?.videoWidth}, naturalH=${video?.videoHeight}, clientW=${video?.clientWidth}, clientH=${video?.clientHeight}. Set canvas size to w=${canvas.width}, h=${canvas.height}`);
+        landmarks.forEach((landmark, index) => {
+          if (
+            keyLandmarks.includes(index) &&
+            landmark &&
+            landmark.visibility &&
+            landmark.visibility > 0.5 &&
+            typeof landmark.x === 'number' &&
+            typeof landmark.y === 'number'
+          ) {
+            ctx.beginPath();
+            ctx.arc(
+              (1 - landmark.x) * canvas.width, // Mirror X exactly as before
+              landmark.y * canvas.height,
+              5,
+              0,
+              Math.PI * 2
+            );
+            ctx.fillStyle = isGoodPosture
+              ? "rgba(144, 238, 144, 0.8)"
+              : "rgba(255, 182, 193, 0.8)";
+            ctx.fill();
+          }
+        });
+        ctx.restore();
+      }
 
-  }, [videoElement, landmarks, baselineMetrics, isGoodPosture, isCalibrated]);
+      rafId = requestAnimationFrame(draw);
+    };
+
+    rafId = requestAnimationFrame(draw);
+    return () => { if (rafId) cancelAnimationFrame(rafId); };
+  }, [videoElement, isCalibrated, isGoodPosture]);
 
   return (
     <canvas
@@ -121,7 +153,6 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
   const {
     videoRef,
     detectedLandmarks,
-    baselineMetrics,
     postureStatus,
     isCalibrated,
     handleCalibration,
@@ -138,7 +169,8 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
   }, [postureStatus.isGood, isSessionActive, onPostureChange]);
 
   // Add UI Debug Log for Status
-  console.log("UI RENDER: PostureView received postureStatus:", postureStatus); 
+  console.count("PostureView render");
+  // console.log("UI RENDER: PostureView received postureStatus:", postureStatus); 
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden max-w-[640px] mx-auto">
@@ -188,11 +220,9 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
           className=""
         />
         
-        {videoRef.current && detectedLandmarks && detectedLandmarks.length > 0 && !cameraError && (
+        {videoRef.current && !cameraError && (
           <CanvasOverlay
             videoElement={videoRef.current}
-            landmarks={detectedLandmarks}
-            baselineMetrics={baselineMetrics}
             isGoodPosture={postureStatus.isGood}
             isCalibrated={isCalibrated}
           />
