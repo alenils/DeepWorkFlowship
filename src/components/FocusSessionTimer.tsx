@@ -192,7 +192,7 @@ export const FocusSessionTimer = ({
             className="w-28 h-10 rounded-full bg-deep-purple-600 text-white font-semibold hover:bg-deep-purple-700 dark:bg-deep-purple-700 dark:hover:bg-deep-purple-800 transition-colors"
             title={`Streak sessions: ${streakCount}`}
           >
-            JUST DO IT
+            LAUNCH
           </button>
         )}
 
