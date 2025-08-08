@@ -190,6 +190,7 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
   const isLoadingDetector = usePostureStore((s) => s.isLoadingDetector);
   const isCalibrating = usePostureStore((s) => s.isCalibrating);
   const countdown = usePostureStore((s) => s.countdown);
+  const isDetecting = usePostureStore((s) => s.isDetecting);
 
   useEffect(() => {
     if (isSessionActive && onPostureChange) {
@@ -249,7 +250,7 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
           className=""
         />
         
-        {videoRef.current && !cameraError && (
+        {videoRef.current && !cameraError && isDetecting && (
           <CanvasOverlay
             videoElement={videoRef.current}
             isGoodPosture={postureStatus.isGood}

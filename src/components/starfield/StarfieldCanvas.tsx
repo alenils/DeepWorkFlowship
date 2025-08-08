@@ -25,8 +25,8 @@ interface Star {
   prevY?: number;
 }
 
-// Temporary debug flag to visualize speed and gating. Set to false to disable.
-const DEBUG_STARFIELD = true;
+// Temporary debug flag to visualize speed and gating. Disabled for production.
+const DEBUG_STARFIELD = false;
 
 export const StarfieldCanvas: React.FC = memo(() => {
   const isDev = import.meta.env.DEV;
