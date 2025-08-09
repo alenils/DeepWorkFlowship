@@ -1,0 +1,44 @@
+:root{
+  --bg-deep-space:#0B0F19;
+  --panel-a:#1E293B;
+  --panel-b:rgba(30,41,59,0.70);
+  --primary-violet:#8B5CF6;
+  --ion-teal:#10B981;
+  --border-subtle:rgba(139,135,255,0.15);
+  --glow-overlay:rgba(139,135,255,0.03);
+  --text-glow:rgba(255,255,255,0.8);
+}
+html,body,#root{height:100%}
+body{
+  color:#E5E7EB;
+  background:
+    radial-gradient(1200px 800px at 10% 10%, #0e1424 0%, transparent 60%),
+    radial-gradient(1400px 900px at 90% 90%, #0b0f19 0%, transparent 60%),
+    var(--bg-deep-space);
+}
+.panel-glass{
+  background:linear-gradient(135deg,var(--panel-a) 0%, var(--panel-b) 100%);
+  border:1px solid var(--border-subtle);
+  backdrop-filter:blur(12px) saturate(150%);
+  border-radius:12px;
+  box-shadow:inset 0 0 0 1px rgba(139,135,255,0.10);
+}
+.btn-violet{
+  background:linear-gradient(45deg,#8B5CF6,#3B82F6);
+  border-radius:9999px;
+  transition:transform .2s ease, box-shadow .2s ease;
+  box-shadow:0 2px 8px rgba(139,135,255,.20), inset 0 1px 0 rgba(255,255,255,.10);
+}
+.btn-violet:hover{
+  transform:translateY(-1px);
+  box-shadow:0 4px 12px rgba(139,135,255,.30), inset 0 1px 0 rgba(255,255,255,.15);
+}
+.progress-shine{
+  position:relative; overflow:hidden; border-radius:4px; box-shadow:inset 0 1px 2px rgba(0,0,0,.2);
+}
+.progress-shine::before{
+  content:''; position:absolute; inset:0; left:-100%;
+  background:linear-gradient(90deg,transparent, rgba(255,255,255,.10) 50%, transparent);
+  animation:shine 3s infinite;
+}
+@keyframes shine{0%{left:-100%}50%,100%{left:100%}}

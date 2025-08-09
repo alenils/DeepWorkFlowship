@@ -1,3 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+@import './styles/theme.css';
+body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,7 +8,7 @@
 /* Konsekvent typografi för hela appen */
 @layer base {
   h1, h2, h3, h4, h5, h6 {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     letter-spacing: -0.05em;
     font-weight: 700;
   }
@@ -33,8 +36,7 @@
     margin: 0;
     padding: 0;
     overflow-x: hidden; /* Prevent horizontal scrollbar */
-    background-color: black; /* Critical for dark theme consistency */
-    color: white; /* Default text color for dark theme */
+    font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   }
 
   /* Root container styles */
