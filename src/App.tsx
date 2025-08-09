@@ -280,8 +280,8 @@ function App() {
 
   return (
     // 1. New outermost container. Sets the true background color and stacking context. Applies shake effect.
-    <div className={`relative isolate min-h-screen w-full h-full bg-gray-900 dark:bg-black ${isThrusting ? 'thrust-shake' : ''}`} 
-         style={{ minHeight: '100vh' }}>
+    <div className={`debug-ui relative isolate min-h-screen w-full h-full bg-gray-900 dark:bg-black ${isThrusting ? 'thrust-shake' : ''}`} 
+          style={{ minHeight: '100vh' }}>
       
       {/* 2. Starfield Canvas is rendered first. It will sit at z-index: 0 by default. */}
       {(warpMode === WARP_MODE.BACKGROUND || warpMode === WARP_MODE.FULL) && <StarfieldCanvas />}

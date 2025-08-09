@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useTimerStore } from '../store/timerSlice';
 
 interface FocusSessionTimerProps {
@@ -83,6 +83,7 @@ export const FocusSessionTimer = ({
   const [pauseMessage, setPauseMessage] = useState(PAUSE_MESSAGES[0]);
   const [stopMessage, setStopMessage] = useState(STOP_MESSAGES[0]);
   const [streakCount, setStreakCount] = useState(0);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const storedStreakCount = localStorage.getItem('totalStreakSessions');
@@ -117,6 +118,44 @@ export const FocusSessionTimer = ({
       clearInterval(intervalId);
     };
   }, [streakCount]);
+
+  // Debug: print computed styles of the panel-glass wrapper
+  useEffect(() => {
+    if (wrapperRef.current) {
+      const cs = getComputedStyle(wrapperRef.current);
+      const borderColor = cs.getPropertyValue('border-color') || cs.getPropertyValue('border-top-color');
+      const borderWidth = cs.getPropertyValue('border-width') || cs.getPropertyValue('border-top-width');
+      const background = cs.getPropertyValue('background');
+      const backdropFilter = cs.getPropertyValue('backdrop-filter') || cs.getPropertyValue('-webkit-backdrop-filter');
+      console.log('[panel-glass computed]', {
+        borderColor: borderColor?.trim(),
+        borderWidth: borderWidth?.trim(),
+        background: background?.trim(),
+        backdropFilter: backdropFilter?.trim(),
+      });
+    }
+  }, []);
+
+  // Debug: log computed styles again on viewport resize for breakpoint verification
+  useEffect(() => {
+    const logComputed = () => {
+      if (!wrapperRef.current) return;
+      const cs = getComputedStyle(wrapperRef.current);
+      const borderColor = cs.getPropertyValue('border-color') || cs.getPropertyValue('border-top-color');
+      const borderWidth = cs.getPropertyValue('border-width') || cs.getPropertyValue('border-top-width');
+      const background = cs.getPropertyValue('background');
+      const backdropFilter = cs.getPropertyValue('backdrop-filter') || cs.getPropertyValue('-webkit-backdrop-filter');
+      console.log('[panel-glass computed resize]', {
+        width: window.innerWidth,
+        borderColor: borderColor?.trim(),
+        borderWidth: borderWidth?.trim(),
+        background: background?.trim(),
+        backdropFilter: backdropFilter?.trim(),
+      });
+    };
+    window.addEventListener('resize', logComputed);
+    return () => window.removeEventListener('resize', logComputed);
+  }, []);
 
   const handleStart = () => {
     if (isSessionActive) return;
@@ -154,82 +193,84 @@ export const FocusSessionTimer = ({
 
   return (
     <div className={`flex ${isCompact ? 'flex-row items-center space-x-4' : 'flex-col items-center space-y-4 p-4'} relative`}>
-      <div
-        data-ui="timer"
-        className={`flex items-center gap-2 ${isCompact ? '' : ''} z-10 rounded-xl ring-1 ring-purple-400/30 dark:ring-purple-300/25 ring-offset-0`}
-      >
-        <input
-          tabIndex={2}
-          id="minutesInput"
-          type="text"
-          value={isInfinite ? '∞' : minutes}
-          onChange={(e) => handleMinutesChange(e.target.value)}
-          onKeyPress={(e) => {
-            if (e.key === 'Enter' && !isSessionActive && (isInfinite || minutes)) {
-              handleStart();
-            }
-          }}
-          className={`
-            goalInput
-            w-[60px] text-center
-            px-3 py-2 border rounded-lg
-            focus:outline-none focus:ring-2 focus:ring-deep-purple-500
-            dark:bg-gray-700 dark:border-gray-600 dark:text-white
-            dark:focus:ring-deep-purple-400
-            text-[0.85rem]
-            ${isSessionActive ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed' : ''}
-          `}
-          placeholder="25"
-          disabled={isSessionActive}
-          title={`Streak sessions: ${streakCount}`}
-        />
-        <span className="text-gray-600 dark:text-gray-400">min</span>
-      </div>
-      
-      <div className="flex space-x-2 mt-2 md:mt-0">
-        {!isSessionActive && (
-          <button
-            tabIndex={4}
-            onClick={handleStart}
-            disabled={!isInfinite && !minutes}
-            className="w-28 h-10 rounded-full bg-deep-purple-600 text-white font-semibold hover:bg-deep-purple-700 dark:bg-deep-purple-700 dark:hover:bg-deep-purple-800 transition-colors"
+      <div ref={wrapperRef} className="panel-glass flex items-center gap-2 z-10 px-2 py-1">
+        <div
+          data-ui="timer"
+          className={`flex items-center gap-2 ${isCompact ? '' : ''}`}
+        >
+          <input
+            tabIndex={2}
+            id="minutesInput"
+            type="text"
+            value={isInfinite ? '∞' : minutes}
+            onChange={(e) => handleMinutesChange(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter' && !isSessionActive && (isInfinite || minutes)) {
+                handleStart();
+              }
+            }}
+            className={`
+              goalInput
+              w-[60px] text-center
+              px-3 py-2 border rounded-lg
+              focus:outline-none focus:ring-2 focus:ring-deep-purple-500
+              dark:bg-gray-700 dark:border-gray-600 dark:text-white
+              dark:focus:ring-deep-purple-400
+              text-[0.85rem]
+              ${isSessionActive ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed' : ''}
+            `}
+            placeholder="25"
+            disabled={isSessionActive}
             title={`Streak sessions: ${streakCount}`}
-          >
-            LAUNCH
-          </button>
-        )}
+          />
+          <span className="text-gray-600 dark:text-gray-400">min</span>
+        </div>
 
-        {isSessionActive && (
-          <>
+        <div className="flex space-x-2">
+          {!isSessionActive && (
             <button
-              onClick={handlePauseClick}
-              className={`
-                px-3 py-1 rounded font-semibold
-                bg-deep-purple-600 text-white hover:bg-deep-purple-700 dark:bg-deep-purple-700 dark:hover:bg-deep-purple-800
-                transition-opacity dark:opacity-90 dark:hover:opacity-100
-                ${isCompact ? 'text-sm' : ''}
-              `}
-              title={pauseMessage}
+              tabIndex={4}
+              onClick={handleStart}
+              disabled={!isInfinite && !minutes}
+              className="w-28 h-10 rounded-full bg-deep-purple-600 text-white font-semibold hover:bg-deep-purple-700 dark:bg-deep-purple-700 dark:hover:bg-deep-purple-800 transition-colors"
+              title={`Streak sessions: ${streakCount}`}
             >
-              {isPaused ? 'Resume' : 'Pause'}
+              LAUNCH
             </button>
+          )}
 
-            <button
-              onClick={handleStop}
-              className={`
-                px-3 py-1 rounded font-semibold 
-                bg-deep-purple-600 text-white hover:bg-deep-purple-700 dark:bg-deep-purple-700 dark:hover:bg-deep-purple-800
-                transition-opacity dark:opacity-90 dark:hover:opacity-100
-                ${isCompact ? 'text-sm' : ''}
-              `}
-              title={stopMessage}
-            >
-              Stop
-            </button>
-            
+          {isSessionActive && (
+            <>
+              <button
+                onClick={handlePauseClick}
+                className={`
+                  px-3 py-1 rounded font-semibold
+                  bg-deep-purple-600 text-white hover:bg-deep-purple-700 dark:bg-deep-purple-700 dark:hover:bg-deep-purple-800
+                  transition-opacity dark:opacity-90 dark:hover:opacity-100
+                  ${isCompact ? 'text-sm' : ''}
+                `}
+                title={pauseMessage}
+              >
+                {isPaused ? 'Resume' : 'Pause'}
+              </button>
 
-          </>
-        )}
+              <button
+                onClick={handleStop}
+                className={`
+                  px-3 py-1 rounded font-semibold 
+                  bg-deep-purple-600 text-white hover:bg-deep-purple-700 dark:bg-deep-purple-700 dark:hover:bg-deep-purple-800
+                  transition-opacity dark:opacity-90 dark:hover:opacity-100
+                  ${isCompact ? 'text-sm' : ''}
+                `}
+                title={stopMessage}
+              >
+                Stop
+              </button>
+              
+
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

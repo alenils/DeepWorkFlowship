@@ -17,6 +17,10 @@
     --accent-cyan: #06b6d4;
     --accent-blue: #3b82f6;
     --accent-red: #ef4444;
+    /* Flowship tokens */
+    --border-subtle: rgba(139,135,255,0.15);
+    --panel-a: #1E293B;
+    --panel-b: rgba(30,41,59,0.70);
   }
   
   /* Base styles for HTML, body and root - ensure black background */
@@ -62,6 +66,20 @@
       dark:placeholder-gray-400 dark:focus:ring-blue-400
       disabled:bg-gray-100 dark:disabled:bg-gray-800 
       disabled:text-gray-500 dark:disabled:text-gray-400;
+  }
+
+  /* Reusable panel glass treatment per style guide */
+  .panel-glass {
+    background: linear-gradient(135deg, var(--panel-a) 0%, var(--panel-b) 100%);
+    border: 1px solid var(--border-subtle);
+    backdrop-filter: blur(12px) saturate(150%);
+    border-radius: 12px; /* rounded-xl */
+    box-shadow: inset 0 0 0 1px rgba(139,135,255,0.10);
+  }
+
+  /* Temporary debug outline for verification */
+  .debug-ui .panel-glass {
+    outline: 2px solid #8B5CF6 !important; /* violet */
   }
 }
 
