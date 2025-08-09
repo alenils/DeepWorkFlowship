@@ -73,14 +73,6 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       disabled:text-gray-500 dark:disabled:text-gray-400;
   }
 
-  /* Reusable panel glass treatment per style guide */
-  .panel-glass {
-    background: linear-gradient(135deg, var(--panel-a) 0%, var(--panel-b) 100%);
-    border: 1px solid var(--border-subtle);
-    backdrop-filter: blur(12px) saturate(150%);
-    border-radius: 12px; /* rounded-xl */
-    box-shadow: inset 0 0 0 1px rgba(139,135,255,0.10);
-  }
 
   /* Neon glow variant for timer controls (keeps glass bg, removes border) */
   .panel-glass--neon {

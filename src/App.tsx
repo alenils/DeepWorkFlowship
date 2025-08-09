@@ -415,7 +415,7 @@ function App() {
                   </div>
                   {/* Underlying Progress Bar */}
                   <div 
-                    className="absolute bottom-0 left-0 h-[5px] bg-gradient-to-r from-deep-purple-500 to-green-500 transition-all duration-500 ease-out"
+                    className="progress-shine absolute bottom-0 left-0 h-[5px] bg-gradient-to-r from-deep-purple-500 to-green-500 transition-all duration-500 ease-out"
                     style={{ 
                       width: `${Math.min(100, (totalFocusTimeMs / (240 * 60 * 1000)) * 100)}%`
                     }}
@@ -428,7 +428,7 @@ function App() {
                   </div>
                   {/* Underlying Progress Bar */}
                   <div 
-                    className="absolute bottom-0 left-0 h-[5px] bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500 ease-out"
+                    className="progress-shine absolute bottom-0 left-0 h-[5px] bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500 ease-out"
                     style={{ 
                       width: `${Math.min(100, (totalBreakTimeMs / (240 * 60 * 1000)) * 100)}%`
                     }}
