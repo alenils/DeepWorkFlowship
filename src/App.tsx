@@ -293,7 +293,7 @@ function App() {
         {warpMode !== WARP_MODE.FULL && <DarkModeToggle />}
 
         {/* Grid Container */}
-        <div className="grid gap-6 grid-cols-1 md:grid-cols-[clamp(240px,26vw,300px)_minmax(0,1fr)_clamp(220px,24vw,280px)] lg:grid-cols-[345px_minmax(575px,1fr)_300px] flex-grow">
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-[clamp(240px,26vw,300px)_minmax(0,1fr)_clamp(220px,24vw,280px)] lg:grid-cols-[345px_minmax(575px,1fr)_300px] items-start flex-grow">
           {/* Left Column: The components inside here MUST have their own opaque backgrounds. */}
           <aside className="flex flex-col gap-6">
             <ActionsList />

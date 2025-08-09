@@ -127,11 +127,14 @@ export const FocusSessionTimer = ({
       const borderWidth = cs.getPropertyValue('border-width') || cs.getPropertyValue('border-top-width');
       const background = cs.getPropertyValue('background');
       const backdropFilter = cs.getPropertyValue('backdrop-filter') || cs.getPropertyValue('-webkit-backdrop-filter');
+      const boxShadow = cs.getPropertyValue('box-shadow');
       console.log('[panel-glass computed]', {
+        width: window.innerWidth,
         borderColor: borderColor?.trim(),
         borderWidth: borderWidth?.trim(),
         background: background?.trim(),
         backdropFilter: backdropFilter?.trim(),
+        boxShadow: boxShadow?.trim(),
       });
     }
   }, []);
@@ -145,12 +148,14 @@ export const FocusSessionTimer = ({
       const borderWidth = cs.getPropertyValue('border-width') || cs.getPropertyValue('border-top-width');
       const background = cs.getPropertyValue('background');
       const backdropFilter = cs.getPropertyValue('backdrop-filter') || cs.getPropertyValue('-webkit-backdrop-filter');
+      const boxShadow = cs.getPropertyValue('box-shadow');
       console.log('[panel-glass computed resize]', {
         width: window.innerWidth,
         borderColor: borderColor?.trim(),
         borderWidth: borderWidth?.trim(),
         background: background?.trim(),
         backdropFilter: backdropFilter?.trim(),
+        boxShadow: boxShadow?.trim(),
       });
     };
     window.addEventListener('resize', logComputed);
@@ -193,7 +198,7 @@ export const FocusSessionTimer = ({
 
   return (
     <div className={`flex ${isCompact ? 'flex-row items-center space-x-4' : 'flex-col items-center space-y-4 p-4'} relative`}>
-      <div ref={wrapperRef} className="panel-glass flex items-center gap-2 z-10 px-2 py-1">
+      <div ref={wrapperRef} className="panel-glass panel-glass--neon flex items-center gap-2 z-10 px-2 py-1 overflow-visible">
         <div
           data-ui="timer"
           className={`flex items-center gap-2 ${isCompact ? '' : ''}`}
