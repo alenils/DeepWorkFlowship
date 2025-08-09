@@ -154,7 +154,10 @@ export const FocusSessionTimer = ({
 
   return (
     <div className={`flex ${isCompact ? 'flex-row items-center space-x-4' : 'flex-col items-center space-y-4 p-4'} relative`}>
-      <div className={`flex items-center gap-2 ${isCompact ? '' : ''} z-10`}>
+      <div
+        data-ui="timer"
+        className={`flex items-center gap-2 ${isCompact ? '' : ''} z-10 rounded-xl ring-1 ring-purple-400/30 dark:ring-purple-300/25 ring-offset-0`}
+      >
         <input
           tabIndex={2}
           id="minutesInput"

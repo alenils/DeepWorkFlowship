@@ -5,6 +5,10 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   darkMode: 'class',
+  safelist: [
+    'ring-purple-400/30', 'dark:ring-purple-300/25',
+    'ring-purple-400/40', 'dark:ring-purple-300/30'
+  ],
   theme: {
     extend: {
       colors: {

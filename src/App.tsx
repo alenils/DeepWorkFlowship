@@ -293,7 +293,7 @@ function App() {
         {warpMode !== WARP_MODE.FULL && <DarkModeToggle />}
 
         {/* Grid Container */}
-        <div className="grid gap-6 grid-cols-1 lg:grid-cols-[345px_minmax(575px,1fr)_300px] flex-grow">
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-[clamp(240px,26vw,300px)_minmax(0,1fr)_clamp(220px,24vw,280px)] lg:grid-cols-[345px_minmax(575px,1fr)_300px] flex-grow">
           {/* Left Column: The components inside here MUST have their own opaque backgrounds. */}
           <aside className="flex flex-col gap-6">
             <ActionsList />
@@ -326,7 +326,7 @@ function App() {
                 </div>
               )}
               
-              <div className="flex flex-col md:flex-row items-start md:items-baseline space-y-4 md:space-y-0 md:space-x-4 mb-6">
+              <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6 mb-6">
                 {/* Goal Input */} 
                 <div className="flex-grow w-full md:w-auto">
                   <DeepFocusInput 
