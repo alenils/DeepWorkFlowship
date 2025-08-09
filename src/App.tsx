@@ -271,11 +271,12 @@ function App() {
     }, 0);
   }, [history]);
   
-  // Get glow class based on total streak sessions
-  const getGlowClass = () => {
-    if (totalStreakSessions >= 5) return 'shadow-lg';
-    if (totalStreakSessions >= 3) return 'shadow-md';
-    return 'shadow-sm';
+  // Get hero glow intensity class based on total streak sessions
+  const getHeroGlowClass = () => {
+    if (totalStreakSessions >= 3) return 'glow-hero glow-hero--s3';
+    if (totalStreakSessions === 2) return 'glow-hero glow-hero--s2';
+    if (totalStreakSessions === 1) return 'glow-hero glow-hero--s1';
+    return 'glow-hero';
   };
 
   return (
@@ -292,11 +293,6 @@ function App() {
         {/* DarkModeToggle (if it should be on top of starfield but not in full warp) */}
         {warpMode !== WARP_MODE.FULL && <DarkModeToggle />}
 
-        {/* Brand Title */}
-        <div className="flex justify-center pb-4 relative">
-          <h1 className="text-4xl font-bold tracking-tight" style={{ color: 'white', textShadow: '0 0 1px white', letterSpacing: '-0.05em', WebkitTextStroke: '1px white' }}>FLOWSHIP.</h1>
-        </div>
-
         {/* Grid Container */}
         <div className="grid gap-6 grid-cols-1 md:grid-cols-[clamp(240px,26vw,300px)_minmax(0,1fr)_clamp(220px,24vw,280px)] lg:grid-cols-[345px_minmax(575px,1fr)_300px] items-start flex-grow">
           {/* Left Column: The components inside here MUST have their own opaque backgrounds. */}
@@ -308,9 +304,13 @@ function App() {
           
           {/* Middle Column: The components inside here MUST have their own opaque backgrounds. */}
           <div className="space-y-6 min-w-0">
+            {/* Title centered over timer within middle column */}
+            <div className="flex justify-center pb-2 relative">
+              <h1 className="text-4xl font-bold tracking-tight" style={{ color: 'white', textShadow: '0 0 1px white', letterSpacing: '-0.05em', WebkitTextStroke: '1px white' }}>FLOWSHIP.</h1>
+            </div>
             {/* Center Column Content */}
             {/* Focus Input and Timer Section */}
-            <div className="panel-glass glow-hero rounded-2xl p-6 relative overflow-visible">
+            <div className={`panel-glass ${getHeroGlowClass()} rounded-2xl p-6 relative overflow-visible`}>
               {/* Streak badge */}
               {totalStreakSessions > 0 && (
                 <div 

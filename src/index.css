@@ -103,6 +103,31 @@
       0 0 64px rgba(139, 135, 255, 0.22);        /* diffused halo */
   }
 
+  /* Streak intensity variants (override base glow) */
+  .glow-hero--s1 {
+    box-shadow:
+      0 0 0 1px rgba(139, 135, 255, 0.24) inset,
+      0 10px 28px rgba(0, 0, 0, 0.50),
+      0 0 36px rgba(139, 135, 255, 0.38),
+      0 0 76px rgba(139, 135, 255, 0.28);
+  }
+
+  .glow-hero--s2 {
+    box-shadow:
+      0 0 0 1px rgba(139, 135, 255, 0.28) inset,
+      0 12px 32px rgba(0, 0, 0, 0.52),
+      0 0 44px rgba(139, 135, 255, 0.44),
+      0 0 96px rgba(139, 135, 255, 0.32);
+  }
+
+  .glow-hero--s3 {
+    box-shadow:
+      0 0 0 1px rgba(139, 135, 255, 0.34) inset,
+      0 14px 38px rgba(0, 0, 0, 0.55),
+      0 0 56px rgba(139, 135, 255, 0.52),
+      0 0 120px rgba(139, 135, 255, 0.38);
+  }
+
   /* Temporary debug outline for verification */
   .debug-ui .panel-glass {
     outline: 2px solid #8B5CF6 !important; /* violet */
