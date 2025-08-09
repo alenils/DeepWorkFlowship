@@ -280,7 +280,7 @@ function App() {
 
   return (
     // 1. New outermost container. Sets the true background color and stacking context. Applies shake effect.
-    <div className={`debug-ui relative isolate min-h-screen w-full h-full bg-gray-900 dark:bg-black ${isThrusting ? 'thrust-shake' : ''}`} 
+    <div className={`relative isolate min-h-screen w-full h-full bg-gray-900 dark:bg-black ${isThrusting ? 'thrust-shake' : ''}`} 
           style={{ minHeight: '100vh' }}>
       
       {/* 2. Starfield Canvas is rendered first. It will sit at z-index: 0 by default. */}
@@ -291,6 +291,11 @@ function App() {
         
         {/* DarkModeToggle (if it should be on top of starfield but not in full warp) */}
         {warpMode !== WARP_MODE.FULL && <DarkModeToggle />}
+
+        {/* Brand Title */}
+        <div className="flex justify-center pb-4 relative">
+          <h1 className="text-4xl font-bold tracking-tight" style={{ color: 'white', textShadow: '0 0 1px white', letterSpacing: '-0.05em', WebkitTextStroke: '1px white' }}>FLOWSHIP.</h1>
+        </div>
 
         {/* Grid Container */}
         <div className="grid gap-6 grid-cols-1 md:grid-cols-[clamp(240px,26vw,300px)_minmax(0,1fr)_clamp(220px,24vw,280px)] lg:grid-cols-[345px_minmax(575px,1fr)_300px] items-start flex-grow">
@@ -303,19 +308,9 @@ function App() {
           
           {/* Middle Column: The components inside here MUST have their own opaque backgrounds. */}
           <div className="space-y-6 min-w-0">
-            {/* Centered Main Title over middle column with Starfield button */}
-            <div className="flex justify-center pt-2 pb-4 relative">
-              <h1 className="text-4xl font-bold tracking-tight" style={{ color: 'white', textShadow: '0 0 1px white', letterSpacing: '-0.05em', WebkitTextStroke: '1px white' }}>FLOWSHIP.</h1>
-            </div>
-            
+            {/* Center Column Content */}
             {/* Focus Input and Timer Section */}
-            <div className={`bg-white dark:bg-gray-800 rounded-lg p-6 relative
-              ${totalStreakSessions > 0 ? 
-                (isSessionActive 
-                  ? `shadow-[color:var(--accent-cyan)] dark:shadow-[color:var(--accent-cyan)] ${getGlowClass()}` 
-                  : `shadow-[color:var(--accent-green)] dark:shadow-[color:var(--accent-green)] ${getGlowClass()}`) 
-                : 'shadow-lg'}`}
-            >
+            <div className="panel-glass glow-hero rounded-2xl p-6 relative overflow-visible">
               {/* Streak badge */}
               {totalStreakSessions > 0 && (
                 <div 

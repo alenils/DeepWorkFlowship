@@ -91,6 +91,18 @@
       0 0 56px rgba(var(--primary-purple-rgb), 0.25);
   }
 
+  /* HERO glow for the whole timer module */
+  .glow-hero {
+    /* same radius as our cards */
+    border-radius: 16px; /* rounded-2xl equivalent */
+    /* multi-layer neon purple per style guide */
+    box-shadow:
+      0 0 0 1px rgba(139, 135, 255, 0.20) inset, /* subtle edge */
+      0 8px 24px rgba(0, 0, 0, 0.45),            /* depth */
+      0 0 28px rgba(139, 135, 255, 0.30),
+      0 0 64px rgba(139, 135, 255, 0.22);        /* diffused halo */
+  }
+
   /* Temporary debug outline for verification */
   .debug-ui .panel-glass {
     outline: 2px solid #8B5CF6 !important; /* violet */
