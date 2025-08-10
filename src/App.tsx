@@ -103,6 +103,7 @@ function App() {
   const [postureStatus, setPostureStatus] = useState<boolean>(true);
   const [badPostureStartTime, setBadPostureStartTime] = useState<number | null>(null);
   const badPostureTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const heroPanelRef = useRef<HTMLDivElement | null>(null);
   
   // Set up dark mode
   useEffect(() => {
@@ -279,6 +280,40 @@ function App() {
     return 'glow-hero';
   };
 
+  // Debug: log hero panel computed styles on mount and resize
+  useEffect(() => {
+    const logHeroPanelStyles = () => {
+      const node = heroPanelRef.current;
+      if (!node) return;
+      const cs = window.getComputedStyle(node);
+      const vw = window.innerWidth;
+      const backdrop = (cs as any).backdropFilter || (cs as any).webkitBackdropFilter || '';
+      console.log('[HERO_PANEL]', {
+        viewport: vw,
+        className: node.className,
+        boxShadow: cs.boxShadow,
+        border: cs.border,
+        background: cs.background,
+        backdropFilter: backdrop,
+      });
+    };
+
+    // initial log
+    logHeroPanelStyles();
+
+    // debounced resize logging
+    let resizeTimer: number | undefined;
+    const onResize = () => {
+      if (resizeTimer) window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => logHeroPanelStyles(), 150);
+    };
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      if (resizeTimer) window.clearTimeout(resizeTimer);
+    };
+  }, [totalStreakSessions]);
+
   return (
     // 1. New outermost container. Sets the true background color and stacking context. Applies shake effect.
     <div className={`relative isolate min-h-screen w-full h-full bg-gray-900 dark:bg-black ${isThrusting ? 'thrust-shake' : ''}`} 
@@ -296,21 +331,21 @@ function App() {
         {/* Grid Container */}
         <div className="grid gap-6 grid-cols-1 md:grid-cols-[clamp(240px,26vw,300px)_minmax(0,1fr)_clamp(220px,24vw,280px)] lg:grid-cols-[345px_minmax(575px,1fr)_300px] items-start flex-grow">
           {/* Left Column: The components inside here MUST have their own opaque backgrounds. */}
-          <aside className="flex flex-col gap-6">
+          <aside className="self-start flex flex-col gap-6">
             <ActionsList />
             <Notepad />
             <StarfieldControls />
           </aside>
           
           {/* Middle Column: The components inside here MUST have their own opaque backgrounds. */}
-          <div className="space-y-6 min-w-0">
+          <div className="self-start space-y-6 min-w-0">
             {/* Title centered over timer within middle column */}
             <div className="flex justify-center pb-2 relative">
               <h1 className="text-4xl font-bold tracking-tight" style={{ color: 'white', textShadow: '0 0 1px white', letterSpacing: '-0.05em', WebkitTextStroke: '1px white' }}>FLOWSHIP.</h1>
             </div>
             {/* Center Column Content */}
             {/* Focus Input and Timer Section */}
-            <div className={`panel-glass ${getHeroGlowClass()} rounded-2xl p-6 relative overflow-visible`}>
+            <div ref={heroPanelRef} className={`panel-glass ${getHeroGlowClass()} rounded-2xl p-6 relative overflow-visible`}>
               {/* Streak badge */}
               {totalStreakSessions > 0 && (
                 <div 
@@ -457,7 +492,7 @@ function App() {
           </div>
           
           {/* Right Column: The components inside here MUST have their own opaque backgrounds. */}
-          <aside className="space-y-6">
+          <aside className="self-start space-y-6">
             <div className="mb-4">
               <PostureView 
                 onPostureChange={setPostureStatus}
