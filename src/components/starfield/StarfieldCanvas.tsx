@@ -8,10 +8,14 @@ import {
   ELEMENT_IDS,
   STAR_COUNTS_BY_QUALITY,
   STAR_SPEED_FACTORS_BY_QUALITY,
-  STAR_DRAW_INTERVAL_BY_QUALITY,
   STARFIELD_QUALITY,
   STARFIELD_THRESHOLDS
 } from '../../constants';
+
+// Small utilities for speed smoothing and mode control
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+type StarfieldMode = 'idle' | 'active';
+const EPS = 0.001;
 
 // Define star interface for type safety
 interface Star {
@@ -29,6 +33,8 @@ interface Star {
 const DEBUG_STARFIELD = false;
 
 export const StarfieldCanvas: React.FC = memo(() => {
+  // Emergency minimal renderer toggle (set true to force fallback drawing)
+  const EMERGENCY_FALLBACK = false;
   const isDev = import.meta.env.DEV;
   // Get state from warp store
   const {
@@ -36,7 +42,8 @@ export const StarfieldCanvas: React.FC = memo(() => {
     starfieldQuality,
     effectiveSpeed,
     isThrusting,
-    updateEffectiveSpeed
+    speedMultiplier,
+    setEffectiveSpeed
   } = useWarpStore();
 
   // Get session state from timer store
@@ -46,10 +53,23 @@ export const StarfieldCanvas: React.FC = memo(() => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const starsRef = useRef<Star[]>([]);
   const animationFrameIdRef = useRef<number | null>(null);
-  const lastDrawTimeRef = useRef<number>(0);
-  const lastSpeedUpdateRef = useRef<number>(0);
+  const lastTsRef = useRef<number>(0);
   // Keep latest effectiveSpeed available to rAF without React re-render
   const effectiveSpeedRef = useRef<number>(effectiveSpeed);
+  // Fallback renderer refs/state (self-contained and removable)
+  const fbCtxRef = useRef<CanvasRenderingContext2D | null>(null);
+  const fbRafRef = useRef<number | null>(null);
+  const fbStarsRef = useRef<Array<{ x: number; y: number; size: number; speed: number }>>([]);
+  const fbSizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
+  const fbDprRef = useRef<number>(1);
+  
+  // Finite state + smoothing references
+  const currentSpeedRef = useRef<number>(effectiveSpeed);
+  const targetSpeedRef = useRef<number>(WARP_ANIMATION.IDLE_SPEED_FACTOR);
+  const modeRef = useRef<StarfieldMode>('idle');
+  // Throttled store sync
+  const lastStoreSyncRef = useRef<number>(0);
+  const prevSyncedSpeedRef = useRef<number>(effectiveSpeed);
 
   // Local state for canvas dimensions
   const [dimensions, setDimensions] = useState({
@@ -107,33 +127,118 @@ export const StarfieldCanvas: React.FC = memo(() => {
     }
   };
 
+  // Emergency fallback: simple white dots falling animation
+  useEffect(() => {
+    if (!EMERGENCY_FALLBACK) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const setupSize = () => {
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      fbDprRef.current = dpr;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      fbSizeRef.current = { w, h };
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      fbCtxRef.current = ctx;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr); // draw in CSS pixels
+    };
+
+    const seedStars = (w: number, h: number) => {
+      const stars: Array<{ x: number; y: number; size: number; speed: number }> = [];
+      for (let i = 0; i < 200; i++) {
+        stars.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          size: Math.random() * 1.4 + 0.6,
+          speed: Math.random() * 0.8 + 0.4,
+        });
+      }
+      fbStarsRef.current = stars;
+    };
+
+    setupSize();
+    seedStars(fbSizeRef.current.w, fbSizeRef.current.h);
+
+    const animate = () => {
+      const ctx = fbCtxRef.current;
+      const { w, h } = fbSizeRef.current;
+      if (!ctx) {
+        fbRafRef.current = requestAnimationFrame(animate);
+        return;
+      }
+      ctx.fillStyle = 'black';
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.fillStyle = 'white';
+      const stars = fbStarsRef.current;
+      for (let i = 0; i < stars.length; i++) {
+        const s = stars[i];
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+        ctx.fill();
+        s.y += s.speed;
+        if (s.y > h) s.y = 0; // wrap to top
+      }
+      fbRafRef.current = requestAnimationFrame(animate);
+    };
+
+    const onResize = () => {
+      setupSize();
+      // keep stars; size-only change is fine
+    };
+
+    window.addEventListener('resize', onResize);
+    fbRafRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (fbRafRef.current) {
+        cancelAnimationFrame(fbRafRef.current);
+        fbRafRef.current = null;
+      }
+      window.removeEventListener('resize', onResize);
+    };
+  }, []);
+
   // Animation function
   const animateStars = (timestamp: number) => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current) {
+      return;
+    }
 
-    // Check if we should draw this frame based on quality setting
-    const drawInterval = STAR_DRAW_INTERVAL_BY_QUALITY[starfieldQuality];
-    if (drawInterval === 0) {
-      // Quality is OFF, don't animate
-      if (animationFrameIdRef.current) {
-        cancelAnimationFrame(animationFrameIdRef.current);
-        animationFrameIdRef.current = null;
+    // Compute dt in seconds (clamped) and store last timestamp
+    const last = lastTsRef.current || timestamp;
+    const dt = Math.min(0.05, Math.max(0, (timestamp - last) / 1000));
+    lastTsRef.current = timestamp;
+
+    // Smoothly ease local effectiveSpeed toward target each frame (cubic ease, framerate-independent)
+    {
+      const cur = currentSpeedRef.current;
+      const tgt = targetSpeedRef.current;
+      const k = 12; // ~12Hz easing
+      const t = Math.min(1, dt * k);
+      const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
+      const next = lerp(cur, tgt, eased);
+      const snapped =
+        Math.abs(next - tgt) < EPS ? tgt :
+        Math.abs(next) < EPS ? 0 : next;
+      currentSpeedRef.current = snapped;
+      effectiveSpeedRef.current = snapped;
+      // Throttle store sync to avoid re-render storms
+      const shouldSync =
+        (timestamp - lastStoreSyncRef.current > 120) &&
+        Math.abs(prevSyncedSpeedRef.current - snapped) > 0.02;
+      if (shouldSync) {
+        try { setEffectiveSpeed(snapped); } catch {}
+        prevSyncedSpeedRef.current = snapped;
+        lastStoreSyncRef.current = timestamp;
       }
-      return;
-    }
-
-    // Only draw if enough time has passed since last draw
-    if (timestamp - lastDrawTimeRef.current < drawInterval) {
-      animationFrameIdRef.current = requestAnimationFrame(animateStars);
-      return;
-    }
-
-    lastDrawTimeRef.current = timestamp;
-
-    // Update effective speed based on session state (every 500ms)
-    if (timestamp - lastSpeedUpdateRef.current > 500) {
-      updateEffectiveSpeed(isSessionActive);
-      lastSpeedUpdateRef.current = timestamp;
     }
 
     const canvas = canvasRef.current;
@@ -180,14 +285,14 @@ export const StarfieldCanvas: React.FC = memo(() => {
         star.prevY = star.y * (WARP_ANIMATION.MAX_DEPTH / (star.z || 1)) + centerY;
         
         // Move star closer to viewer with the idle speed factor (make idle a bit more noticeable)
-        star.z -= 0.6 * renderSpeed;
+        star.z -= 0.6 * renderSpeed * (dt * 60);
       } else {
         // For moving stars, store previous position for streaking
         star.prevX = star.x * (WARP_ANIMATION.MAX_DEPTH / (star.z || 1)) + centerX;
         star.prevY = star.y * (WARP_ANIMATION.MAX_DEPTH / (star.z || 1)) + centerY;
 
         // Move star closer to viewer (much faster with renderSpeed for strong hyperspace)
-        star.z -= 2.5 * renderSpeed;
+        star.z -= 2.5 * renderSpeed * (dt * 60);
       }
 
       // Reset star when it gets too close
@@ -409,6 +514,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
 
   // Setup and cleanup effects
   useEffect(() => {
+    if (EMERGENCY_FALLBACK) return;
     if (isDev) {
       // One-time init log
       console.log('StarfieldCanvas init. mode:', warpMode, 'quality:', starfieldQuality);
@@ -448,24 +554,11 @@ export const StarfieldCanvas: React.FC = memo(() => {
     };
   }, []);
 
-  // Keep effectiveSpeedRef in sync with the warp store without causing React re-renders
-  useEffect(() => {
-    try {
-      effectiveSpeedRef.current = useWarpStore.getState().effectiveSpeed;
-    } catch {}
-    const unsub = useWarpStore.subscribe((state) => {
-      if (state.effectiveSpeed !== effectiveSpeedRef.current) {
-        effectiveSpeedRef.current = state.effectiveSpeed;
-        if (isDev) {
-          console.log('[Starfield] effectiveSpeed updated ->', state.effectiveSpeed);
-        }
-      }
-    });
-    return unsub;
-  }, []);
+  // We intentionally avoid subscribing to store effectiveSpeed to prevent feedback loops.
 
   // Handle changes to warp mode
   useEffect(() => {
+    if (EMERGENCY_FALLBACK) return;
     // Reinitialize stars with new mode
     initStars();
     
@@ -486,12 +579,28 @@ export const StarfieldCanvas: React.FC = memo(() => {
       }
     }
     
-    // Update effective speed based on new mode
-    updateEffectiveSpeed(isSessionActive);
   }, [warpMode]);
+
+  // React to session/warp preference changes to set target speed
+  useEffect(() => {
+    if (EMERGENCY_FALLBACK) return;
+    const nextMode: StarfieldMode =
+      isSessionActive && warpMode !== WARP_MODE.NONE ? 'active' : 'idle';
+    if (modeRef.current !== nextMode) {
+      modeRef.current = nextMode;
+    }
+    let target: number = WARP_ANIMATION.IDLE_SPEED_FACTOR;
+    if (isThrusting) {
+      target = WARP_ANIMATION.THRUST_EFFECT_SPEED;
+    } else if (nextMode === 'active') {
+      target = WARP_ANIMATION.DEFAULT_SESSION_SPEED * (speedMultiplier ?? 1.0);
+    }
+    targetSpeedRef.current = target;
+  }, [isSessionActive, warpMode, speedMultiplier, isThrusting]);
 
   // Handle changes to starfield quality
   useEffect(() => {
+    if (EMERGENCY_FALLBACK) return;
     // Re-initialize stars with new quality
     initStars();
     
@@ -512,9 +621,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
   
   // Handle changes to session state or effective speed
   useEffect(() => {
-    // Immediately update the effective speed based on session state
-    updateEffectiveSpeed(isSessionActive);
-    
+    if (EMERGENCY_FALLBACK) return;
     // Start animation if it should be running (guarded)
     if (warpMode !== WARP_MODE.NONE && starfieldQuality !== STARFIELD_QUALITY.OFF) {
       if (animationFrameIdRef.current == null) {
@@ -534,35 +641,39 @@ export const StarfieldCanvas: React.FC = memo(() => {
         animationFrameIdRef.current = null;
       }
     }
-  }, [isSessionActive, effectiveSpeed, warpMode, starfieldQuality, isThrusting, dimensions]);
+  }, [isSessionActive, warpMode, starfieldQuality, isThrusting, dimensions]);
 
-  // Skip rendering if warp mode is none or quality is off
+  // Render: fallback canvas or original one
+  if (EMERGENCY_FALLBACK) {
+    return (
+      <canvas
+        ref={canvasRef}
+        className="starfield-canvas fixed inset-0 pointer-events-none"
+        style={{ backgroundColor: 'black', zIndex: 1 }}
+      />
+    );
+  }
+
+  // Original rendering path (kept intact, not used during fallback)
   if (warpMode === WARP_MODE.NONE || starfieldQuality === STARFIELD_QUALITY.OFF) {
     return null;
   }
 
-  // Avoid render-time logs to reduce noise
-
-  // Determine canvas styling based on warp mode
   const canvasStyle: React.CSSProperties = {
     position: 'fixed',
     top: 0,
     left: 0,
     width: '100vw',
     height: '100vh',
-    zIndex: 1, // Lower than the main content's z-index
+    zIndex: 1,
     pointerEvents: 'none',
-    opacity: 1, // Use full opacity to ensure visibility
-    backgroundColor: 'black', // Ensure black background
-    transition: 'opacity 0.3s ease-in-out', // Smooth opacity transitions
+    opacity: 1,
+    backgroundColor: 'black',
+    transition: 'opacity 0.3s ease-in-out',
   };
-
-  // Override specific properties for FULL mode
   if (warpMode === WARP_MODE.FULL) {
     canvasStyle.zIndex = 9999;
-    canvasStyle.pointerEvents = 'none';
   }
-
   return (
     <canvas
       ref={canvasRef}

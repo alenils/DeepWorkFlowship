@@ -314,22 +314,22 @@ function App() {
     };
   }, [totalStreakSessions]);
 
-  return (
-    // 1. New outermost container. Sets the true background color and stacking context. Applies shake effect.
-    <div className={`relative isolate min-h-screen w-full h-full bg-gray-900 dark:bg-black ${isThrusting ? 'thrust-shake' : ''}`} 
-          style={{ minHeight: '100vh' }}>
+return (
+// 1. New outermost container. Sets the true background color and stacking context. Applies shake effect.
+<div className={`relative isolate min-h-screen w-full h-full bg-gray-900 dark:bg-black ${isThrusting ? 'thrust-shake' : ''}`} 
+      style={{ minHeight: '100vh' }}>
       
-      {/* 2. Starfield Canvas is rendered first. It will sit at z-index: 0 by default. */}
-      {(warpMode === WARP_MODE.BACKGROUND || warpMode === WARP_MODE.FULL) && <StarfieldCanvas />}
+      {/* 2. Starfield Canvas is rendered first and always mounted. It sits behind the UI. */}
+      <StarfieldCanvas />
 
       {/* 3. Main UI Content Wrapper. It must have a HIGHER z-index and a TRANSPARENT background. */}
-      <main className="relative z-10 max-w-6xl mx-auto p-6 min-h-screen flex flex-col bg-transparent">
+      <main className="relative z-10 mx-auto max-w-[1360px] p-6 min-h-screen flex flex-col bg-transparent">
         
         {/* DarkModeToggle (if it should be on top of starfield but not in full warp) */}
         {warpMode !== WARP_MODE.FULL && <DarkModeToggle />}
 
         {/* Grid Container */}
-        <div className="grid gap-6 grid-cols-1 md:grid-cols-[clamp(240px,26vw,300px)_minmax(0,1fr)_clamp(220px,24vw,280px)] lg:grid-cols-[345px_minmax(575px,1fr)_300px] items-start flex-grow">
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-[clamp(300px,26vw,320px)_minmax(0,1fr)_clamp(300px,26vw,320px)] lg:grid-cols-[320px_minmax(640px,1fr)_320px] items-start flex-grow">
           {/* Left Column: The components inside here MUST have their own opaque backgrounds. */}
           <aside className="self-start flex flex-col gap-6">
             <ActionsList />
