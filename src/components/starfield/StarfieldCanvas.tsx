@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, memo, useCallback } from 'react';
 import { useTimerStore } from '../../store/timerSlice';
+import { useWarpStore } from '../../store/warpSlice';
+import { WARP_MODE } from '../../constants';
 
 // ============================================================================
 // TUNABLE CONSTANTS - Adjust these for different visual effects
@@ -9,7 +11,7 @@ import { useTimerStore } from '../../store/timerSlice';
 const LAYERS = 4;                                    // Number of depth layers
 const STARS_PER_LAYER = [30, 50, 75, 100];          // Stars per layer (front to back)
 const LAYER_SPEED = [0.8, 0.6, 0.4, 0.2];           // Parallax speed multipliers
-const LAYER_STREAK = [3.0, 2.5, 2.0, 1.5];          // Streak length multipliers in warp
+const LAYER_STREAK = [3.75, 3.125, 2.5, 1.875];     // Streak length multipliers in warp (+25%)
 
 // Visual parameters
 const COLOR_PALETTE = [
@@ -24,8 +26,8 @@ const IDLE_DRIFT_RADIUS = 30;                       // Max drift radius in pixel
 
 // Speed and transition
 const IDLE_SPEED = 0.0;                             // Speed when idle
-const WARP_SPEED = 20.0;                            // Max speed in warp mode
-const SPEED_SMOOTHING = 0.02;                       // Speed transition smoothing (0-1)
+const WARP_SPEED = 25.0;                            // Max speed in warp mode (+25% faster)
+const SPEED_SMOOTHING = 0.025;                      // Speed transition smoothing (0-1)
 
 // Performance
 const MAX_DPR = 2;                                   // Max device pixel ratio for quality
@@ -47,10 +49,14 @@ interface Star {
 export const StarfieldCanvas: React.FC = memo(() => {
   // Get session state from timer store
   const { isSessionActive } = useTimerStore();
+  
+  // Get warp mode from warp store
+  const { warpMode } = useWarpStore();
 
   // Canvas and animation refs
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animIdRef = useRef<number | undefined>(undefined);
+  const isAnimatingRef = useRef(false);  // Track if animation is running
   
   // Mode and speed state
   const modeRef = useRef<'idle' | 'warp'>('idle');
@@ -64,7 +70,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
   // Initialize stars with layers and properties
   const initStars = useCallback(() => {
     const w = window.innerWidth;
-    const h = window.innerHeight;
+    const h = Math.max(window.innerHeight, document.documentElement.scrollHeight);
     
     const makeStar = (): Star => ({
       x: Math.random() * w,
@@ -90,7 +96,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
     
     const dpr = Math.min(MAX_DPR, window.devicePixelRatio || 1);
     const w = window.innerWidth;
-    const h = window.innerHeight;
+    const h = Math.max(window.innerHeight, document.documentElement.scrollHeight);
     
     canvas.width = Math.floor(w * dpr);
     canvas.height = Math.floor(h * dpr);
@@ -115,9 +121,11 @@ export const StarfieldCanvas: React.FC = memo(() => {
     if (!ctx) return;
     
     const w = window.innerWidth;
-    const h = window.innerHeight;
+    const h = Math.max(window.innerHeight, document.documentElement.scrollHeight);
+    const viewportH = window.innerHeight;
+    const scrollY = window.scrollY;
     const centerX = w / 2;
-    const centerY = h / 2;
+    const centerY = viewportH / 2 + scrollY;  // Adjust center based on scroll
     
     // Clear canvas
     ctx.clearRect(0, 0, w, h);
@@ -157,22 +165,24 @@ export const StarfieldCanvas: React.FC = memo(() => {
         
         // Update star position
         if (speedRef.current > 0) {
-          // Warp mode: move stars toward viewer
+          // Warp mode: move stars toward viewer with perspective
           const dx = star.x - centerX;
           const dy = star.y - centerY;
           const distance = Math.sqrt(dx * dx + dy * dy);
           
           if (distance > 0) {
-            const moveX = (dx / distance) * speedRef.current * layerSpeed;
-            const moveY = (dy / distance) * speedRef.current * layerSpeed;
+            // Add perspective factor to reduce center burst effect
+            const perspectiveFactor = 1 + (distance / (w * 0.5));
+            const moveX = (dx / distance) * speedRef.current * layerSpeed * perspectiveFactor;
+            const moveY = (dy / distance) * speedRef.current * layerSpeed * perspectiveFactor;
             star.x += moveX;
             star.y += moveY;
           }
           
-          // Wrap stars that go off screen
+          // Wrap stars that go off screen - spawn in a wider area to reduce center clustering
           if (star.x < -50 || star.x > w + 50 || star.y < -50 || star.y > h + 50) {
             const angle = Math.random() * Math.PI * 2;
-            const radius = Math.random() * 50;
+            const radius = Math.random() * Math.min(w, viewportH) * 0.3;  // Wider spawn radius
             star.x = centerX + Math.cos(angle) * radius;
             star.y = centerY + Math.sin(angle) * radius;
             star.baseX = star.x;
@@ -195,11 +205,12 @@ export const StarfieldCanvas: React.FC = memo(() => {
         ctx.fillStyle = COLOR_PALETTE[star.colorIndex];
         
         if (speedRef.current > 1) {
-          // Draw streak in warp mode
+          // Draw streak in warp mode with improved forward motion
           const dx = star.x - centerX;
           const dy = star.y - centerY;
           const distance = Math.sqrt(dx * dx + dy * dy);
-          const streakLength = speedRef.current * layerStreak * 2;
+          const perspectiveFactor = 1 + (distance / (w * 0.5));
+          const streakLength = speedRef.current * layerStreak * 2.5 * perspectiveFactor;
           
           if (distance > 0) {
             const streakX = -(dx / distance) * streakLength;
@@ -213,7 +224,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
             gradient.addColorStop(1, 'transparent');
             
             ctx.strokeStyle = gradient;
-            ctx.lineWidth = star.size;
+            ctx.lineWidth = star.size * 1.15;  // +15% thickness
             ctx.lineCap = 'round';
             ctx.beginPath();
             ctx.moveTo(star.x, star.y);
@@ -231,66 +242,104 @@ export const StarfieldCanvas: React.FC = memo(() => {
       }
     }
     
-    // Continue animation
-    animIdRef.current = requestAnimationFrame(animate);
+    // Continue animation if still active
+    if (isAnimatingRef.current) {
+      animIdRef.current = requestAnimationFrame(animate);
+    }
   }, []);
 
-  // Handle keyboard input for warp toggle
+  // React to warp mode changes from store
   useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === 'w' || e.key === 'W') {
-        modeRef.current = modeRef.current === 'idle' ? 'warp' : 'idle';
-        targetSpeedRef.current = modeRef.current === 'warp' ? WARP_SPEED : IDLE_SPEED;
+    // Determine if canvas should be visible
+    const isVisible = warpMode !== WARP_MODE.NONE;
+    
+    if (isVisible) {
+      // Only start animation if not already running
+      if (!isAnimatingRef.current) {
+        isAnimatingRef.current = true;
+        animIdRef.current = requestAnimationFrame(animate);
       }
-    };
-
-    window.addEventListener('keypress', handleKeyPress);
-    return () => window.removeEventListener('keypress', handleKeyPress);
-  }, []);
+    }
+  }, [warpMode, animate]);
 
   // React to session state changes
   useEffect(() => {
-    // Set mode based on session state
-    const newMode = isSessionActive ? 'warp' : 'idle';
-    if (modeRef.current !== newMode) {
-      modeRef.current = newMode;
-      targetSpeedRef.current = newMode === 'warp' ? WARP_SPEED : IDLE_SPEED;
+    // Only change speed if warp mode is active
+    if (warpMode !== WARP_MODE.NONE) {
+      const newMode = isSessionActive ? 'warp' : 'idle';
+      if (modeRef.current !== newMode) {
+        modeRef.current = newMode;
+        targetSpeedRef.current = newMode === 'warp' ? WARP_SPEED : IDLE_SPEED;
+      }
     }
-  }, [isSessionActive]);
+  }, [isSessionActive, warpMode]);
 
   // Setup and cleanup effects
   useEffect(() => {
     // Initialize stars
     initStars();
     
-    // Set up resize handler
-    window.addEventListener('resize', handleResize);
+    // Set up resize handler and scroll observer
+    const handleResizeAndScroll = () => {
+      handleResize();
+    };
+    
+    window.addEventListener('resize', handleResizeAndScroll);
+    window.addEventListener('scroll', handleResizeAndScroll);
+    
+    // Watch for document height changes
+    const resizeObserver = new ResizeObserver(() => {
+      handleResizeAndScroll();
+    });
+    resizeObserver.observe(document.body);
     
     // Initial canvas setup
     handleResize();
     
-    // Start animation
-    animIdRef.current = requestAnimationFrame(animate);
+    // Start animation if warp mode is active
+    if (warpMode !== WARP_MODE.NONE) {
+      isAnimatingRef.current = true;
+      animIdRef.current = requestAnimationFrame(animate);
+    }
     
     return () => {
-      // Clean up animation
+      // Stop animation
+      isAnimatingRef.current = false;
       if (animIdRef.current) {
         cancelAnimationFrame(animIdRef.current);
       }
       
-      // Remove resize listener
-      window.removeEventListener('resize', handleResize);
+      // Remove listeners
+      window.removeEventListener('resize', handleResizeAndScroll);
+      window.removeEventListener('scroll', handleResizeAndScroll);
+      resizeObserver.disconnect();
     };
-  }, [initStars, handleResize, animate]);
+  }, [initStars, handleResize, animate, warpMode]);
 
+  // Determine canvas visibility and z-index based on warp mode
+  const canvasStyle = React.useMemo(() => {
+    if (warpMode === WARP_MODE.NONE) {
+      return { display: 'none' };
+    }
+    
+    const isFullMode = warpMode === WARP_MODE.FULL;
+    return {
+      position: 'fixed' as const,
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      backgroundColor: 'black',
+      zIndex: isFullMode ? 9999 : 1,
+      pointerEvents: 'none' as const
+    };
+  }, [warpMode]);
+  
   return (
     <canvas
       ref={canvasRef}
-      className="starfield-canvas fixed inset-0 pointer-events-none"
-      style={{ 
-        backgroundColor: 'black', 
-        zIndex: 1 
-      }}
+      className="starfield-canvas"
+      style={canvasStyle}
     />
   );
 });
