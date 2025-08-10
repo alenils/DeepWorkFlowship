@@ -301,6 +301,21 @@ export const StarfieldCanvas: React.FC = memo(() => {
       ctx.arc(screenX, screenY, screenRadius, 0, Math.PI * 2);
       ctx.fill();
       
+      // Draw central void during work sessions (slightly offset to right for alignment)
+      if (isSessionActive && speedRef.current > 0.5) {
+        const voidRadius = 40 + speedRef.current * 2;
+        const voidCenterX = centerX + 8; // Shift 8px to the right for better alignment
+        const voidGradient = ctx.createRadialGradient(voidCenterX, centerY, 0, voidCenterX, centerY, voidRadius);
+        voidGradient.addColorStop(0, 'rgba(0, 0, 0, 1)');
+        voidGradient.addColorStop(0.7, 'rgba(0, 0, 0, 0.8)');
+        voidGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        
+        ctx.fillStyle = voidGradient;
+        ctx.beginPath();
+        ctx.arc(voidCenterX, centerY, voidRadius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
       // Add crater effects
       ctx.fillStyle = 'rgba(105, 105, 105, 0.2)';
       for (let i = 0; i < 3; i++) {

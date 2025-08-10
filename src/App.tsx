@@ -365,15 +365,36 @@ return (
                     onStartSession={playStartSound}
                   />
                 </div>
-                {/* Timer Controls */}
-                <div className="flex-shrink-0"> 
-                  <FocusSessionTimer
-                    onSessionStart={playStartSound}
-                    onPause={playPauseSound}
-                    onResume={playStartSound}
-                    onTimerEnd={playDoneSound}
-                    isCompact={true}
-                  />
+                {/* Timer Controls with Focus Booster */}
+                <div className="flex items-center gap-3">
+                  <div className="flex-shrink-0"> 
+                    <FocusSessionTimer
+                      onSessionStart={playStartSound}
+                      onPause={playPauseSound}
+                      onResume={playStartSound}
+                      onTimerEnd={playDoneSound}
+                      isCompact={true}
+                    />
+                  </div>
+                  {/* Focus Booster Button */}
+                  <button
+                    onClick={() => useFocusBoosterStore.getState().startBooster()}
+                    className="
+                      group relative w-11 h-11 rounded-xl
+                      bg-gradient-to-r from-yellow-500/10 to-orange-500/10
+                      border border-yellow-500/30
+                      flex items-center justify-center 
+                      transition-all duration-300 ease-out
+                      hover:border-yellow-400/60 hover:shadow-lg hover:shadow-yellow-500/20
+                      hover:bg-gradient-to-r hover:from-yellow-500/20 hover:to-orange-500/20
+                      focus:outline-none focus:ring-2 focus:ring-yellow-400/50
+                    "
+                    title="Activate Focus Booster"
+                  >
+                    <span className="text-yellow-400 text-lg font-bold group-hover:scale-110 transition-transform">
+                      ⚡
+                    </span>
+                  </button>
                 </div>
               </div>
 
@@ -385,40 +406,9 @@ return (
                       <span className="text-deep-purple-800 dark:text-purple-200 font-medium block">Current Goal</span>
                       <span className="text-lg text-deep-purple-900 dark:text-purple-100">{currentGoal}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => useFocusBoosterStore.getState().startBooster()}
-                        className="
-                          w-10 h-10 rounded-full border-2 border-yellow-400 text-yellow-400 
-                          flex items-center justify-center 
-                          transition-all duration-300 ease-in-out 
-                          hover:bg-yellow-400/20 hover:scale-105
-                          focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-gray-900/50
-                          focus:bg-yellow-400/20
-                        "
-                        title="Activate Focus Booster"
-                      >
-                        <svg 
-                          xmlns="http://www.w3.org/2000/svg" 
-                          width="20" 
-                          height="20" 
-                          viewBox="0 0 24 24" 
-                          fill="none" 
-                          stroke="currentColor" 
-                          strokeWidth="2" 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round"
-                          className="text-yellow-400"
-                        >
-                          <circle cx="12" cy="12" r="10"></circle>
-                          <line x1="12" y1="8" x2="12" y2="12"></line>
-                          <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                        </svg>
-                      </button>
-                      <DistractionButton 
-                        className={CSS_CLASSES.WARP_CONTROL_BUTTON}
-                      />
-                    </div>
+                    <DistractionButton 
+                      className={CSS_CLASSES.WARP_CONTROL_BUTTON}
+                    />
                   </div>
 
                   <div className="flex justify-around items-center space-x-6">
