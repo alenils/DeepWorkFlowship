@@ -1,7 +1,45 @@
-import React, { useEffect, useRef, memo, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, memo } from 'react';
 import { useTimerStore } from '../../store/timerSlice';
 import { useWarpStore } from '../../store/warpSlice';
-import { WARP_MODE } from '../../constants';
+
+// Warp mode enum
+const WARP_MODE = {
+  NONE: 'none',
+  BACKGROUND: 'background',
+  FULL: 'full'
+} as const;
+
+// Types
+interface Star {
+  x: number;
+  y: number;
+  z: number;  // Depth for parallax
+  vx: number; // Velocity for rotation
+  vy: number;
+  size: number;
+  colorIndex: number;
+  twinklePhase: number;
+  twinkleSpeed: number;
+}
+
+interface CelestialBody {
+  name: 'moon' | 'earth' | 'sun';
+  angle: number;  // Current orbital position
+  distance: number;  // Distance from center (camera)
+  orbitSpeed: number;  // Realistic orbital speed
+  radius: number;  // Visual size
+  opacity: number;
+  targetOpacity: number;
+  scale: number;  // For warp scaling effect
+  targetScale: number;
+  x: number;  // 3D position
+  y: number;
+  z: number;
+  visible: boolean;  // Whether in camera view
+  warpX: number;  // Position during warp animation
+  warpY: number;
+  warpZ: number;
+}
 
 // ============================================================================
 // TUNABLE CONSTANTS - Adjust these for different visual effects
@@ -20,83 +58,172 @@ const COLOR_PALETTE = [
   '#ffe8c8',                                        // 12.5% pale gold
   '#ffc8c8'                                         // 12.5% pale red
 ];
-const BASE_TWINKLE = 0.3;                           // Base twinkle brightness variation
-const IDLE_ROT_SPEED = 0.00002;                     // Rotation speed for idle drift
-const IDLE_DRIFT_RADIUS = 30;                       // Max drift radius in pixels
 
-// Speed and transition
-const IDLE_SPEED = 0.0;                             // Speed when idle
-const WARP_SPEED = 25.0;                            // Max speed in warp mode (+25% faster)
-const SPEED_SMOOTHING = 0.025;                      // Speed transition smoothing (0-1)
+// Animation constants
+const IDLE_SPEED = 0.2;
+const SPEED_SMOOTHING = 0.05;  // Smooth speed transitions
+const IDLE_ROT_SPEED = 0.0008;  // Rotation speed in idle (stars drift left)
+const IDLE_PARALLAX_FACTOR = 0.5;  // Parallax depth factor for each layer
+const CAMERA_ROT_SPEED = 0.0002;  // Camera rotation speed (slow, cinematic)
+const BASE_TWINKLE = 0.15;  // Base twinkle amount
 
-// Performance
-const MAX_DPR = 2;                                   // Max device pixel ratio for quality
+// Celestial body constants
+const OPACITY_SMOOTHING = 0.03;  // Opacity transition smoothing
+const WARP_SCALE_SPEED = 0.02;  // How fast planets scale during warp
+const MAX_WARP_SCALE = 3;  // Maximum scale before planets disappear
 
 // ============================================================================
-
-// Star interface
-interface Star {
-  x: number;
-  y: number;
-  baseX: number;      // Original position for drift calculation
-  baseY: number;
-  size: number;
-  colorIndex: number;
-  twinklePhase: number;
-  twinkleSpeed: number;
-}
+// END TUNABLE CONSTANTS
+// ============================================================================
 
 export const StarfieldCanvas: React.FC = memo(() => {
   // Get session state from timer store
   const { isSessionActive } = useTimerStore();
   
-  // Get warp mode from warp store
-  const { warpMode } = useWarpStore();
+  // Get warp mode, speed multiplier, and quality from warp store
+  const { warpMode, speedMultiplier, starfieldQuality } = useWarpStore();
 
-  // Canvas and animation refs
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const animIdRef = useRef<number | undefined>(undefined);
-  const isAnimatingRef = useRef(false);  // Track if animation is running
+  // Canvas and  // State and refs
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animIdRef = useRef<number | null>(null);
+  const isAnimatingRef = useRef(false);  // Track if animation loop is running
   
-  // Mode and speed state
-  const modeRef = useRef<'idle' | 'warp'>('idle');
-  const speedRef = useRef(0);                       // current forward speed
+  // Animation state
+  const modeRef = useRef<'idle' | 'warp'>('idle');  // current mode
+  const speedRef = useRef(IDLE_SPEED);              // current speed
   const targetSpeedRef = useRef(IDLE_SPEED);        // target speed
-  const rotPhaseRef = useRef(0);                    // rotation phase for idle drift
+  const cameraRotationRef = useRef(0);              // Camera rotation angle
+  const starsInitializedRef = useRef(false);        // Track if stars are initialized
+  const warpPhaseRef = useRef<'accelerating' | 'cruising' | 'decelerating' | 'idle'>('idle');
   
   // Layers and stars
   const layersRef = useRef<Star[][]>([]);
+  
+  // Celestial bodies
+  const celestialBodiesRef = useRef<CelestialBody[]>([]);
+  const sessionColorRef = useRef(0);  // Track session for planet color variation
 
   // Initialize stars with layers and properties
-  const initStars = useCallback(() => {
+  const initStars = useCallback((force = false) => {
+    // Only initialize if not already done or forced
+    if (!force && starsInitializedRef.current && layersRef.current.length > 0) {
+      return;
+    }
+    
     const w = window.innerWidth;
     const h = Math.max(window.innerHeight, document.documentElement.scrollHeight);
     
-    const makeStar = (): Star => ({
-      x: Math.random() * w,
-      y: Math.random() * h,
-      baseX: Math.random() * w,
-      baseY: Math.random() * h,
-      size: 0.5 + Math.random() * 2.5,
-      colorIndex: Math.floor(Math.random() * COLOR_PALETTE.length),
-      twinklePhase: Math.random() * Math.PI * 2,
-      twinkleSpeed: 0.2 + Math.random() * 0.4
-    });
+    const makeStar = (layerIdx: number): Star => {
+      // Distribute stars evenly across the canvas
+      const x = Math.random() * w * 1.5 - w * 0.25;  // Wider distribution for rotation
+      const y = Math.random() * h;
+      const z = (layerIdx + 1) * 0.3;  // Depth based on layer
+      
+      return {
+        x,
+        y,
+        z,
+        vx: 0,
+        vy: 0,
+        size: 0.5 + Math.random() * 2.5,
+        colorIndex: Math.floor(Math.random() * COLOR_PALETTE.length),
+        twinklePhase: Math.random() * Math.PI * 2,
+        twinkleSpeed: 0.2 + Math.random() * 0.4
+      };
+    };
     
-    // Create layers with increasing star counts
+    // Create layers with increasing star counts based on quality setting
+    const qualityMultiplier = starfieldQuality === 'eco' ? 0.4 : 
+                             starfieldQuality === 'ultra' ? 2.0 : 
+                             starfieldQuality === 'standard' ? 1.0 : 0;  // 'off' = 0
+    
     layersRef.current = Array.from({ length: LAYERS }, (_, i) =>
-      Array.from({ length: STARS_PER_LAYER[i] }, () => makeStar())
+      Array.from({ length: Math.floor(STARS_PER_LAYER[i] * qualityMultiplier) }, () => makeStar(i))
     );
+    
+    starsInitializedRef.current = true;
+  }, [starfieldQuality]);
+  
+  // React to quality changes - reinitialize stars
+  useEffect(() => {
+    if (starsInitializedRef.current) {
+      initStars(true);  // Force reinitialize when quality changes
+    }
+  }, [starfieldQuality, initStars]);
+  
+  // Initialize celestial bodies with realistic properties
+  const initCelestialBodies = useCallback(() => {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const baseDistance = Math.max(w, h);
+    
+    // Realistic sizes and distances (scaled for visual appeal)
+    celestialBodiesRef.current = [
+      {
+        name: 'moon',
+        angle: Math.random() * Math.PI * 2,  // Random starting position
+        distance: baseDistance * 0.8,  // Closer orbit
+        orbitSpeed: 0.00008,  // Much slower orbit (was too fast)
+        radius: 17,  // Small moon (15% larger)
+        opacity: 0,
+        targetOpacity: 1,
+        scale: 1,
+        targetScale: 1,
+        x: 0,
+        y: 0,
+        z: 0,
+        visible: false,
+        warpX: 0,  // Position during warp
+        warpY: 0,
+        warpZ: 0
+      },
+      {
+        name: 'earth',
+        angle: Math.random() * Math.PI * 2 + Math.PI / 3,  // Offset from moon
+        distance: baseDistance * 1.5,  // Mid-distance
+        orbitSpeed: 0.00005,  // Slower speed
+        radius: 35,  // Earth size (15% larger)
+        opacity: 0,
+        targetOpacity: 1,
+        scale: 1,
+        targetScale: 1,
+        x: 0,
+        y: 0,
+        z: 0,
+        visible: false,
+        warpX: 0,
+        warpY: 0,
+        warpZ: 0
+      },
+      {
+        name: 'sun',
+        angle: Math.random() * Math.PI * 2 + Math.PI * 2/3,  // Different sector
+        distance: baseDistance * 2.5,  // Far distance
+        orbitSpeed: 0.00002,  // Very slow (galactic orbit)
+        radius: 69,  // Large sun (15% larger)
+        opacity: 0,
+        targetOpacity: 1,
+        scale: 1,
+        targetScale: 1,
+        x: 0,
+        y: 0,
+        z: 0,
+        visible: false,
+        warpX: 0,
+        warpY: 0,
+        warpZ: 0
+      }
+    ];
   }, []);
 
-  // Handle window resize
+  // Canvas resize handler
   const handleResize = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     
-    const dpr = Math.min(MAX_DPR, window.devicePixelRatio || 1);
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
     const w = window.innerWidth;
-    const h = Math.max(window.innerHeight, document.documentElement.scrollHeight);
+    const h = Math.max(window.innerHeight, document.documentElement.scrollHeight, document.body.scrollHeight);
     
     canvas.width = Math.floor(w * dpr);
     canvas.height = Math.floor(h * dpr);
@@ -108,9 +235,108 @@ export const StarfieldCanvas: React.FC = memo(() => {
       ctx.scale(dpr, dpr);
     }
     
-    // Reinitialize stars on resize
-    initStars();
+    // Reinitialize stars on resize if needed
+    if (!starsInitializedRef.current || layersRef.current.length === 0) {
+      initStars();
+    }
   }, [initStars]);
+
+  // Draw celestial body with realistic appearance
+  const drawCelestialBody = (ctx: CanvasRenderingContext2D, body: any, offsetX: number, offsetY: number) => {
+    if (body.opacity <= 0.05) return;
+    
+    // Use pre-calculated screen coordinates
+    const screenX = body.x + offsetX;
+    const screenY = body.y + offsetY;
+    const screenRadius = body.radius;
+    
+    ctx.save();
+    // Ensure planets are fully opaque when visible (no transparency)
+    ctx.globalAlpha = Math.min(1, body.opacity * 1.2);  // Boost opacity to ensure full opacity
+    
+    if (body.name === 'earth') {
+      // Draw Earth with distinct blue oceans and green/brown continents
+      const gradient = ctx.createRadialGradient(
+        screenX - screenRadius * 0.3,
+        screenY - screenRadius * 0.3,
+        0,
+        screenX,
+        screenY,
+        screenRadius
+      );
+      gradient.addColorStop(0, 'rgba(135, 206, 250, 0.9)');  // Light blue
+      gradient.addColorStop(0.3, 'rgba(30, 144, 255, 0.8)');  // Ocean blue
+      gradient.addColorStop(0.6, 'rgba(34, 139, 34, 0.6)');   // Forest green
+      gradient.addColorStop(1, 'rgba(25, 25, 112, 0.3)');     // Deep blue edge
+      
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(screenX, screenY, screenRadius, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Add continent-like patches
+      ctx.fillStyle = 'rgba(34, 139, 34, 0.3)';  // Green landmasses
+      ctx.beginPath();
+      ctx.arc(screenX - screenRadius * 0.3, screenY - screenRadius * 0.2, screenRadius * 0.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(screenX + screenRadius * 0.2, screenY + screenRadius * 0.3, screenRadius * 0.25, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (body.name === 'moon') {
+      // Draw Moon with craters
+      const gradient = ctx.createRadialGradient(
+        screenX - screenRadius * 0.3,
+        screenY - screenRadius * 0.3,
+        0,
+        screenX,
+        screenY,
+        screenRadius
+      );
+      gradient.addColorStop(0, 'rgba(245, 245, 245, 0.9)');
+      gradient.addColorStop(0.5, 'rgba(192, 192, 192, 0.7)');
+      gradient.addColorStop(1, 'rgba(128, 128, 128, 0.3)');
+      
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(screenX, screenY, screenRadius, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Add crater effects
+      ctx.fillStyle = 'rgba(105, 105, 105, 0.2)';
+      for (let i = 0; i < 3; i++) {
+        const craterX = screenX + (Math.random() - 0.5) * screenRadius;
+        const craterY = screenY + (Math.random() - 0.5) * screenRadius;
+        ctx.beginPath();
+        ctx.arc(craterX, craterY, screenRadius * 0.1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (body.name === 'sun') {
+      // Draw Sun with corona
+      const gradient = ctx.createRadialGradient(
+        screenX,
+        screenY,
+        0,
+        screenX,
+        screenY,
+        screenRadius * 1.2
+      );
+      gradient.addColorStop(0, 'rgba(255, 255, 224, 1)');
+      gradient.addColorStop(0.3, 'rgba(255, 223, 0, 0.9)');
+      gradient.addColorStop(0.6, 'rgba(255, 140, 0, 0.6)');
+      gradient.addColorStop(1, 'rgba(255, 69, 0, 0.1)');
+      
+      // Corona glow
+      ctx.shadowBlur = screenRadius * 0.8;
+      ctx.shadowColor = 'rgba(255, 200, 0, 0.5)';
+      
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(screenX, screenY, screenRadius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    
+    ctx.restore();
+  };
 
   // Main animation loop
   const animate = useCallback(() => {
@@ -121,11 +347,16 @@ export const StarfieldCanvas: React.FC = memo(() => {
     if (!ctx) return;
     
     const w = window.innerWidth;
-    const h = Math.max(window.innerHeight, document.documentElement.scrollHeight);
+    // Same robust height calculation for animation
+    const bodyHeight = document.body.scrollHeight || 0;
+    const docHeight = document.documentElement.scrollHeight || 0;
+    const bodyOffsetHeight = document.body.offsetHeight || 0;
+    const viewHeight = window.innerHeight || 0;
+    const h = Math.max(viewHeight, bodyHeight, docHeight, bodyOffsetHeight);
     const viewportH = window.innerHeight;
     const scrollY = window.scrollY;
     const centerX = w / 2;
-    const centerY = viewportH / 2 + scrollY;  // Adjust center based on scroll
+    const centerY = viewportH / 2 + scrollY;
     
     // Clear canvas
     ctx.clearRect(0, 0, w, h);
@@ -138,9 +369,111 @@ export const StarfieldCanvas: React.FC = memo(() => {
       speedRef.current = targetSpeedRef.current;
     }
     
-    // Update rotation phase for idle drift
-    if (modeRef.current === 'idle') {
-      rotPhaseRef.current += IDLE_ROT_SPEED;
+    // Update camera rotation
+    cameraRotationRef.current += CAMERA_ROT_SPEED;
+    
+    // Update and draw celestial bodies (behind stars)
+    if (celestialBodiesRef.current.length > 0) {
+      for (const body of celestialBodiesRef.current) {
+        // Update orbital position in idle mode
+        if (modeRef.current === 'idle') {
+          body.angle += body.orbitSpeed;
+        }
+        
+        // Calculate 3D position with camera rotation
+        const camAngle = cameraRotationRef.current;
+        const orbitalX = Math.cos(body.angle) * body.distance;
+        const orbitalZ = Math.sin(body.angle) * body.distance;
+        const orbitalY = Math.sin(body.angle * 2) * body.distance * 0.15;  // Tilted orbit for depth
+        
+        // Apply camera rotation (rotating around Y axis)
+        const rotatedX = orbitalX * Math.cos(camAngle) - orbitalZ * Math.sin(camAngle);
+        const rotatedZ = orbitalX * Math.sin(camAngle) + orbitalZ * Math.cos(camAngle);
+        
+        // Check if planet is in front of camera (visible)
+        body.visible = rotatedZ < -100;  // Only visible when in front with some margin
+        
+        // Handle warp mode animations
+        if (modeRef.current === 'warp') {
+          if (warpPhaseRef.current === 'accelerating' && speedRef.current > 2) {
+            // During warp acceleration, move planets toward viewer
+            if (!body.warpX) {
+              // Initialize warp position from current position
+              body.warpX = rotatedX;
+              body.warpY = orbitalY;
+              body.warpZ = rotatedZ;
+            }
+            
+            // Move toward camera and scale up
+            body.warpZ += speedRef.current * 5;  // Fast approach
+            body.targetScale = 1 + (speedRef.current / 15) * 3;  // Scale up as we approach
+            
+            // Fade out as planet passes camera
+            if (body.warpZ > -50) {
+              body.targetOpacity = 0;
+            } else {
+              body.targetOpacity = body.visible ? 0.8 : 0;
+            }
+            
+            // Use warp position for rendering
+            body.x = body.warpX;
+            body.y = body.warpY;
+            body.z = body.warpZ;
+          } else if (warpPhaseRef.current === 'decelerating') {
+            // Reset warp position during deceleration
+            body.warpX = 0;
+            body.warpY = 0;
+            body.warpZ = 0;
+            body.targetScale = 1;
+            body.targetOpacity = 0;  // Fade back in slowly
+            
+            // Use orbital position
+            body.x = rotatedX;
+            body.y = orbitalY;
+            body.z = rotatedZ;
+          }
+        } else {
+          // Idle mode: use orbital positions
+          body.x = rotatedX;
+          body.y = orbitalY;
+          body.z = rotatedZ;
+          body.targetScale = 1;
+          body.targetOpacity = body.visible ? 1 : 0;
+          
+          // Reset warp positions
+          body.warpX = 0;
+          body.warpY = 0;
+          body.warpZ = 0;
+        }
+        
+        // Calculate screen position with perspective projection
+        if (body.visible || (modeRef.current === 'warp' && body.z < 0)) {
+          const perspective = 800 / Math.max(50, Math.abs(body.z));
+          const screenX = centerX + body.x * perspective;
+          const screenY = centerY + body.y * perspective;
+          const screenRadius = body.radius * body.scale * perspective;
+          
+          // Smoothly transition scale and opacity
+          if (Math.abs(body.targetScale - body.scale) > 0.01) {
+            body.scale += (body.targetScale - body.scale) * WARP_SCALE_SPEED;
+          }
+          if (Math.abs(body.targetOpacity - body.opacity) > 0.01) {
+            body.opacity += (body.targetOpacity - body.opacity) * OPACITY_SMOOTHING;
+          }
+          
+          // Only draw if opacity is significant
+          if (body.opacity > 0.05) {
+            // Store screen position for drawing
+            const drawBody = {
+              ...body,
+              x: screenX,
+              y: screenY,
+              radius: screenRadius
+            };
+            drawCelestialBody(ctx, drawBody, 0, 0);  // Already in screen coords
+          }
+        }
+      }
     }
     
     // Draw stars by layer (back to front for proper depth)
@@ -152,17 +485,6 @@ export const StarfieldCanvas: React.FC = memo(() => {
       const layerStreak = LAYER_STREAK[layerIdx];
       
       for (const star of layer) {
-        // Calculate drift offset for idle mode
-        let driftX = 0;
-        let driftY = 0;
-        
-        if (modeRef.current === 'idle') {
-          const angle = rotPhaseRef.current * (layerIdx + 1);
-          const radius = IDLE_DRIFT_RADIUS * (1 - layerSpeed);
-          driftX = Math.cos(angle) * radius;
-          driftY = Math.sin(angle) * radius;
-        }
-        
         // Update star position
         if (speedRef.current > 0) {
           // Warp mode: move stars toward viewer with perspective
@@ -177,21 +499,34 @@ export const StarfieldCanvas: React.FC = memo(() => {
             const moveY = (dy / distance) * speedRef.current * layerSpeed * perspectiveFactor;
             star.x += moveX;
             star.y += moveY;
+            star.z += speedRef.current * 2;  // Move toward viewer in Z
           }
           
-          // Wrap stars that go off screen - spawn in a wider area to reduce center clustering
+          // Wrap stars that go off screen
           if (star.x < -50 || star.x > w + 50 || star.y < -50 || star.y > h + 50) {
             const angle = Math.random() * Math.PI * 2;
-            const radius = Math.random() * Math.min(w, viewportH) * 0.3;  // Wider spawn radius
+            const radius = Math.random() * Math.min(w, viewportH) * 0.3;
             star.x = centerX + Math.cos(angle) * radius;
             star.y = centerY + Math.sin(angle) * radius;
-            star.baseX = star.x;
-            star.baseY = star.y;
           }
         } else {
-          // Idle mode: apply drift
-          star.x = star.baseX + driftX;
-          star.y = star.baseY + driftY;
+          // Idle mode: stars rotate with camera
+          const rotSpeed = CAMERA_ROT_SPEED * star.z;  // Parallax based on depth
+          
+          // Calculate rotation around center (matching camera rotation)
+          const dx = star.x - centerX;
+          const dy = star.y - centerY;
+          const angle = Math.atan2(dy, dx);
+          const radius = Math.sqrt(dx * dx + dy * dy);
+          
+          // Apply rotation
+          const newAngle = angle + rotSpeed;
+          star.x = centerX + Math.cos(newAngle) * radius;
+          star.y = centerY + Math.sin(newAngle) * radius;
+          
+          // Wrap stars horizontally for continuous effect
+          if (star.x < -50) star.x = w + 50;
+          if (star.x > w + 50) star.x = -50;
         }
         
         // Calculate twinkle
@@ -209,6 +544,13 @@ export const StarfieldCanvas: React.FC = memo(() => {
           const dx = star.x - centerX;
           const dy = star.y - centerY;
           const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          // ACTUALLY skip drawing stars in the central void area - no rendering at all
+          const voidRadius = 30 + (speedRef.current * 3);  // Dynamic void that grows with speed
+          if (distance < voidRadius) {
+            continue;  // Don't draw ANYTHING in the void area
+          }
+          
           const perspectiveFactor = 1 + (distance / (w * 0.5));
           const streakLength = speedRef.current * layerStreak * 2.5 * perspectiveFactor;
           
@@ -233,14 +575,24 @@ export const StarfieldCanvas: React.FC = memo(() => {
           }
         } else {
           // Draw point in idle mode
-          ctx.beginPath();
-          ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-          ctx.fill();
+          // Also check void in idle for smooth transition
+          const dx = star.x - centerX;
+          const dy = star.y - centerY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const voidRadius = speedRef.current > 0.5 ? (speedRef.current * 3) : 0;
+          
+          if (distance >= voidRadius) {
+            ctx.beginPath();
+            ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+            ctx.fill();
+          }
         }
         
         ctx.restore();
       }
     }
+    
+    // No need for overlay - void is created by not drawing stars in that area
     
     // Continue animation if still active
     if (isAnimatingRef.current) {
@@ -248,40 +600,94 @@ export const StarfieldCanvas: React.FC = memo(() => {
     }
   }, []);
 
+  // React to session and warp mode changes
+  useEffect(() => {
+    // Trigger warp when session starts
+    if (isSessionActive) {
+      modeRef.current = 'warp';
+      targetSpeedRef.current = 20 * speedMultiplier;  // Apply speed multiplier
+      warpPhaseRef.current = 'accelerating';
+      
+      // Reset warp positions for planets
+      celestialBodiesRef.current.forEach(body => {
+        body.warpX = 0;
+        body.warpY = 0;
+        body.warpZ = 0;
+      });
+      
+      // DO NOT reinitialize stars - keep the same ones for smooth transition
+    } else {
+      // Return to idle when session ends
+      modeRef.current = 'idle';
+      targetSpeedRef.current = IDLE_SPEED;
+      warpPhaseRef.current = 'idle';
+      
+      // DO NOT reinitialize stars - let them naturally slow down
+    }
+  }, [isSessionActive, speedMultiplier]);
+  
   // React to warp mode changes from store
   useEffect(() => {
     // Determine if canvas should be visible
     const isVisible = warpMode !== WARP_MODE.NONE;
     
     if (isVisible) {
+      // Ensure stars are initialized
+      initStars();
+      
       // Only start animation if not already running
       if (!isAnimatingRef.current) {
         isAnimatingRef.current = true;
         animIdRef.current = requestAnimationFrame(animate);
       }
-    }
-  }, [warpMode, animate]);
-
-  // React to session state changes
-  useEffect(() => {
-    // Only change speed if warp mode is active
-    if (warpMode !== WARP_MODE.NONE) {
-      const newMode = isSessionActive ? 'warp' : 'idle';
-      if (modeRef.current !== newMode) {
-        modeRef.current = newMode;
-        targetSpeedRef.current = newMode === 'warp' ? WARP_SPEED : IDLE_SPEED;
+    } else {
+      // Stop animation when warp mode is NONE
+      isAnimatingRef.current = false;
+      if (animIdRef.current) {
+        cancelAnimationFrame(animIdRef.current);
+        animIdRef.current = null;
       }
     }
-  }, [isSessionActive, warpMode]);
+  }, [warpMode, initStars, animate]);
 
   // Setup and cleanup effects
   useEffect(() => {
-    // Initialize stars
-    initStars();
+    // Initialize stars and celestial bodies only if warp mode is active
+    if (warpMode !== WARP_MODE.NONE) {
+      initStars();
+      initCelestialBodies();
+    }
     
     // Set up resize handler and scroll observer
     const handleResizeAndScroll = () => {
-      handleResize();
+      // Inline resize logic
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        const w = window.innerWidth;
+        // More robust height calculation including all possible height sources
+        const bodyHeight = document.body.scrollHeight || 0;
+        const docHeight = document.documentElement.scrollHeight || 0;
+        const bodyOffsetHeight = document.body.offsetHeight || 0;
+        const viewHeight = window.innerHeight || 0;
+        const h = Math.max(viewHeight, bodyHeight, docHeight, bodyOffsetHeight);
+        
+        canvas.width = Math.floor(w * dpr);
+        canvas.height = Math.floor(h * dpr);
+        canvas.style.width = `${w}px`;
+        canvas.style.height = `${h}px`;
+        
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.scale(dpr, dpr);
+        }
+      }
+      
+      // Re-initialize stars and bodies on significant resize
+      if (warpMode !== WARP_MODE.NONE && starsInitializedRef.current) {
+        initStars(true);
+        initCelestialBodies();
+      }
     };
     
     window.addEventListener('resize', handleResizeAndScroll);
@@ -294,7 +700,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
     resizeObserver.observe(document.body);
     
     // Initial canvas setup
-    handleResize();
+    handleResizeAndScroll();
     
     // Start animation if warp mode is active
     if (warpMode !== WARP_MODE.NONE) {
@@ -304,17 +710,14 @@ export const StarfieldCanvas: React.FC = memo(() => {
     
     return () => {
       // Stop animation
-      isAnimatingRef.current = false;
+      resizeObserver.disconnect();
       if (animIdRef.current) {
         cancelAnimationFrame(animIdRef.current);
       }
-      
-      // Remove listeners
       window.removeEventListener('resize', handleResizeAndScroll);
       window.removeEventListener('scroll', handleResizeAndScroll);
-      resizeObserver.disconnect();
     };
-  }, [initStars, handleResize, animate, warpMode]);
+  }, [initStars, initCelestialBodies, handleResize, animate, warpMode]);
 
   // Determine canvas visibility and z-index based on warp mode
   const canvasStyle = React.useMemo(() => {
