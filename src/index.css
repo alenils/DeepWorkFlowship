@@ -122,6 +122,25 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       0 0 120px rgba(139, 135, 255, 0.38);
   }
 
+  .glow-hero--s4 {
+    box-shadow:
+      0 0 0 2px rgba(139, 135, 255, 0.42) inset,
+      0 16px 44px rgba(0, 0, 0, 0.60),
+      0 0 72px rgba(139, 135, 255, 0.62),
+      0 0 150px rgba(139, 135, 255, 0.45),
+      0 0 200px rgba(139, 135, 255, 0.25);
+  }
+
+  .glow-hero--s5 {
+    box-shadow:
+      0 0 0 3px rgba(139, 135, 255, 0.50) inset,
+      0 20px 52px rgba(0, 0, 0, 0.65),
+      0 0 96px rgba(139, 135, 255, 0.75),
+      0 0 180px rgba(139, 135, 255, 0.55),
+      0 0 250px rgba(139, 135, 255, 0.35),
+      0 0 320px rgba(139, 135, 255, 0.20);
+  }
+
   /* Temporary debug outline for verification */
   .debug-ui .panel-glass {
     outline: 2px solid #8B5CF6 !important; /* violet */

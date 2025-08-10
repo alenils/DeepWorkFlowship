@@ -274,9 +274,11 @@ function App() {
   
   // Get hero glow intensity class based on total streak sessions
   const getHeroGlowClass = () => {
-    if (totalStreakSessions >= 3) return 'glow-hero glow-hero--s3';
-    if (totalStreakSessions === 2) return 'glow-hero glow-hero--s2';
-    if (totalStreakSessions === 1) return 'glow-hero glow-hero--s1';
+    if (totalStreakSessions >= 10) return 'glow-hero glow-hero--s5';
+    if (totalStreakSessions >= 7) return 'glow-hero glow-hero--s4';
+    if (totalStreakSessions >= 5) return 'glow-hero glow-hero--s3';
+    if (totalStreakSessions >= 3) return 'glow-hero glow-hero--s2';
+    if (totalStreakSessions >= 1) return 'glow-hero glow-hero--s1';
     return 'glow-hero';
   };
 

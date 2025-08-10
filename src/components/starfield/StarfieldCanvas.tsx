@@ -693,11 +693,12 @@ export const StarfieldCanvas: React.FC = memo(() => {
     window.addEventListener('resize', handleResizeAndScroll);
     window.addEventListener('scroll', handleResizeAndScroll);
     
-    // Watch for document height changes
+    // Watch for document height changes - observe both body and documentElement
     const resizeObserver = new ResizeObserver(() => {
       handleResizeAndScroll();
     });
     resizeObserver.observe(document.body);
+    resizeObserver.observe(document.documentElement);
     
     // Initial canvas setup
     handleResizeAndScroll();
@@ -727,11 +728,10 @@ export const StarfieldCanvas: React.FC = memo(() => {
     
     const isFullMode = warpMode === WARP_MODE.FULL;
     return {
-      position: 'fixed' as const,
+      position: 'absolute' as const,
       top: 0,
       left: 0,
       width: '100%',
-      height: '100%',
       backgroundColor: 'black',
       zIndex: isFullMode ? 9999 : 1,
       pointerEvents: 'none' as const
