@@ -90,6 +90,7 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     /* same radius as our cards */
     border-radius: 16px; /* rounded-2xl equivalent */
     /* multi-layer neon purple per style guide */
+    border: 1px solid rgba(139, 135, 255, 0.30);  /* visible border */
     box-shadow:
       0 0 0 1px rgba(139, 135, 255, 0.20) inset, /* subtle edge */
       0 8px 24px rgba(0, 0, 0, 0.45),            /* depth */
@@ -99,32 +100,41 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
 
   /* Streak intensity variants (override base glow) */
   .glow-hero--s1 {
+    border: 2px solid rgba(139, 135, 255, 0.60);  /* visible purple border */
     box-shadow:
-      0 0 0 1px rgba(139, 135, 255, 0.24) inset,
+      0 0 0 1px rgba(139, 135, 255, 0.40) inset,  /* inner glow */
+      0 0 0 4px rgba(139, 135, 255, 0.15),        /* outer ring */
       0 10px 28px rgba(0, 0, 0, 0.50),
       0 0 36px rgba(139, 135, 255, 0.38),
       0 0 76px rgba(139, 135, 255, 0.28);
   }
 
   .glow-hero--s2 {
+    border: 2px solid rgba(139, 135, 255, 0.75);  /* brighter border */
     box-shadow:
-      0 0 0 1px rgba(139, 135, 255, 0.28) inset,
+      0 0 0 2px rgba(139, 135, 255, 0.50) inset,  /* stronger inner glow */
+      0 0 0 5px rgba(139, 135, 255, 0.20),        /* outer ring */
       0 12px 32px rgba(0, 0, 0, 0.52),
       0 0 44px rgba(139, 135, 255, 0.44),
       0 0 96px rgba(139, 135, 255, 0.32);
   }
 
   .glow-hero--s3 {
+    border: 3px solid rgba(139, 135, 255, 0.85);  /* thick bright border */
     box-shadow:
-      0 0 0 1px rgba(139, 135, 255, 0.34) inset,
+      0 0 0 2px rgba(139, 135, 255, 0.60) inset,  /* strong inner glow */
+      0 0 0 6px rgba(139, 135, 255, 0.25),        /* outer ring */
       0 14px 38px rgba(0, 0, 0, 0.55),
       0 0 56px rgba(139, 135, 255, 0.52),
       0 0 120px rgba(139, 135, 255, 0.38);
   }
 
   .glow-hero--s4 {
+    border: 3px solid rgba(139, 135, 255, 0.95);  /* very bright border */
     box-shadow:
-      0 0 0 2px rgba(139, 135, 255, 0.42) inset,
+      0 0 0 3px rgba(139, 135, 255, 0.70) inset,  /* prominent inner glow */
+      0 0 0 7px rgba(139, 135, 255, 0.35),        /* double ring effect */
+      0 0 0 12px rgba(139, 135, 255, 0.15),       /* triple ring */
       0 16px 44px rgba(0, 0, 0, 0.60),
       0 0 72px rgba(139, 135, 255, 0.62),
       0 0 150px rgba(139, 135, 255, 0.45),
@@ -132,8 +142,12 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   }
 
   .glow-hero--s5 {
+    border: 4px solid rgba(139, 135, 255, 1.0);   /* full opacity border */
     box-shadow:
-      0 0 0 3px rgba(139, 135, 255, 0.50) inset,
+      0 0 0 4px rgba(139, 135, 255, 0.85) inset,  /* strong inner glow */
+      0 0 0 8px rgba(139, 135, 255, 0.45),        /* double ring */
+      0 0 0 14px rgba(139, 135, 255, 0.25),       /* triple ring */
+      0 0 0 20px rgba(139, 135, 255, 0.10),       /* quad ring */
       0 20px 52px rgba(0, 0, 0, 0.65),
       0 0 96px rgba(139, 135, 255, 0.75),
       0 0 180px rgba(139, 135, 255, 0.55),

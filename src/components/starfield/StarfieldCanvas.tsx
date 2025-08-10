@@ -361,10 +361,12 @@ export const StarfieldCanvas: React.FC = memo(() => {
     // Clear canvas
     ctx.clearRect(0, 0, w, h);
     
-    // Update speed with easing
+    // Update speed with smoother easing for seamless transition
     const speedDiff = targetSpeedRef.current - speedRef.current;
     if (Math.abs(speedDiff) > 0.01) {
-      speedRef.current += speedDiff * SPEED_SMOOTHING;
+      // Use smoother easing for more gradual acceleration
+      const easing = speedDiff > 0 ? 0.04 : 0.08; // Slower acceleration, faster deceleration
+      speedRef.current += speedDiff * easing;
     } else {
       speedRef.current = targetSpeedRef.current;
     }
@@ -539,17 +541,23 @@ export const StarfieldCanvas: React.FC = memo(() => {
         ctx.globalAlpha = brightness;
         ctx.fillStyle = COLOR_PALETTE[star.colorIndex];
         
+        // Check if we should skip drawing due to central void
+        const dx = star.x - centerX;
+        const dy = star.y - centerY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        // Apply void during work sessions (both idle and warp)
+        if (isSessionActive) {
+          const baseVoidRadius = 40;  // Base void size during sessions
+          const voidRadius = baseVoidRadius + (speedRef.current * 3);  // Grows with speed
+          if (distance < voidRadius) {
+            ctx.restore();
+            continue;  // Don't draw stars in the void area
+          }
+        }
+        
         if (speedRef.current > 1) {
           // Draw streak in warp mode with improved forward motion
-          const dx = star.x - centerX;
-          const dy = star.y - centerY;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          
-          // ACTUALLY skip drawing stars in the central void area - no rendering at all
-          const voidRadius = 30 + (speedRef.current * 3);  // Dynamic void that grows with speed
-          if (distance < voidRadius) {
-            continue;  // Don't draw ANYTHING in the void area
-          }
           
           const perspectiveFactor = 1 + (distance / (w * 0.5));
           const streakLength = speedRef.current * layerStreak * 2.5 * perspectiveFactor;
@@ -575,9 +583,6 @@ export const StarfieldCanvas: React.FC = memo(() => {
           }
         } else {
           // Draw point in idle mode
-          // Also check void in idle for smooth transition
-          const dx = star.x - centerX;
-          const dy = star.y - centerY;
           const distance = Math.sqrt(dx * dx + dy * dy);
           const voidRadius = speedRef.current > 0.5 ? (speedRef.current * 3) : 0;
           
@@ -598,33 +603,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
     if (isAnimatingRef.current) {
       animIdRef.current = requestAnimationFrame(animate);
     }
-  }, []);
-
-  // React to session and warp mode changes
-  useEffect(() => {
-    // Trigger warp when session starts
-    if (isSessionActive) {
-      modeRef.current = 'warp';
-      targetSpeedRef.current = 20 * speedMultiplier;  // Apply speed multiplier
-      warpPhaseRef.current = 'accelerating';
-      
-      // Reset warp positions for planets
-      celestialBodiesRef.current.forEach(body => {
-        body.warpX = 0;
-        body.warpY = 0;
-        body.warpZ = 0;
-      });
-      
-      // DO NOT reinitialize stars - keep the same ones for smooth transition
-    } else {
-      // Return to idle when session ends
-      modeRef.current = 'idle';
-      targetSpeedRef.current = IDLE_SPEED;
-      warpPhaseRef.current = 'idle';
-      
-      // DO NOT reinitialize stars - let them naturally slow down
-    }
-  }, [isSessionActive, speedMultiplier]);
+  }, [isSessionActive]);
   
   // React to warp mode changes from store
   useEffect(() => {
@@ -719,6 +698,33 @@ export const StarfieldCanvas: React.FC = memo(() => {
       window.removeEventListener('scroll', handleResizeAndScroll);
     };
   }, [initStars, initCelestialBodies, handleResize, animate, warpMode]);
+
+  // Warp mode effect: update target speed based on mode and session state
+  useEffect(() => {
+    if (warpMode === WARP_MODE.NONE) {
+      // Still have slow idle movement when no warp mode
+      targetSpeedRef.current = IDLE_SPEED;
+      modeRef.current = 'idle';
+      warpPhaseRef.current = 'idle';
+    } else if (warpMode === WARP_MODE.BACKGROUND || warpMode === WARP_MODE.FULL) {
+      // Only accelerate to warp speed during active sessions
+      if (isSessionActive) {
+        targetSpeedRef.current = 25 * speedMultiplier;  // WARP_SPEED equivalent
+        modeRef.current = 'warp';
+        warpPhaseRef.current = 'accelerating';
+      } else {
+        // Keep idle speed when not in session
+        targetSpeedRef.current = IDLE_SPEED;
+        modeRef.current = 'idle';
+        warpPhaseRef.current = 'idle';
+      }
+      // Don't re-initialize stars to keep smooth transition
+    } else {
+      targetSpeedRef.current = IDLE_SPEED;
+      modeRef.current = 'idle';
+      warpPhaseRef.current = 'idle';
+    }
+  }, [warpMode, speedMultiplier, isSessionActive]);
 
   // Determine canvas visibility and z-index based on warp mode
   const canvasStyle = React.useMemo(() => {
