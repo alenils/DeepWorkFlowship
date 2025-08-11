@@ -8,6 +8,17 @@ import { WARP_MODE, EXPERIMENT_LIGHT_SPEED } from '../../constants';
 // LIGHT_SPEED_EXPERIMENT: debug marker for sanity checks
 console.log('[LIGHT_SPEED_EXPERIMENT] StarfieldCanvas.tsx loaded; EXPERIMENT_LIGHT_SPEED =', EXPERIMENT_LIGHT_SPEED);
 
+// LIGHT_SPEED_EXPERIMENT: LS tuning and helpers
+const LS = {
+  axialOmega: 0.18,      // radians/sec, slow ship rotation
+  lineLenMult: 6.0,      // times longer than FULL
+  lineWidthMult: 1.25,   // slightly thicker
+  globalDrift: 0.0,      // nearly static radial drift
+  headAlpha: 0.95,
+  tailAlpha: 0.02,
+};
+function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
+
 // Types
 interface Star {
   x: number;
@@ -93,6 +104,10 @@ export const StarfieldCanvas: React.FC = memo(() => {
   // LIGHT_SPEED_EXPERIMENT: track LS mode to tweak visuals without per-frame store reads
   const isLightSpeedRef = useRef(false);
   const hasLoggedLightSpeedRef = useRef(false);
+  // LIGHT_SPEED_EXPERIMENT: rotation and blending state for LS branch
+  const lsRotationRef = useRef(0);
+  const lsBlendRef = useRef(0); // 0 = FULL style, 1 = LS style
+  const lastTimeRef = useRef<number | null>(null);
   
   // Layers and stars
   const layersRef = useRef<Star[][]>([]);
@@ -108,8 +123,13 @@ export const StarfieldCanvas: React.FC = memo(() => {
       return;
     }
     
-    const w = window.innerWidth;
-    const h = Math.max(window.innerHeight, document.documentElement.scrollHeight);
+    const w = Math.max(window.innerWidth, document.documentElement.scrollWidth || 0);
+    const h = Math.max(
+      window.innerHeight,
+      document.documentElement.scrollHeight || 0,
+      document.body.scrollHeight || 0,
+      document.body.offsetHeight || 0
+    );
     
     const makeStar = (layerIdx: number): Star => {
       // Distribute stars evenly across the canvas
@@ -220,17 +240,17 @@ export const StarfieldCanvas: React.FC = memo(() => {
     if (!canvas) return;
     
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const w = window.innerWidth;
-    const h = Math.max(window.innerHeight, document.documentElement.scrollHeight, document.body.scrollHeight);
+    const wCss = Math.max(window.innerWidth, document.documentElement.scrollWidth || 0);
+    const hCss = Math.max(window.innerHeight, document.documentElement.scrollHeight || 0, document.body.scrollHeight || 0);
     
-    canvas.width = Math.floor(w * dpr);
-    canvas.height = Math.floor(h * dpr);
-    canvas.style.width = `${w}px`;
-    canvas.style.height = `${h}px`;
+    canvas.width = Math.floor(wCss * dpr);
+    canvas.height = Math.floor(hCss * dpr);
+    canvas.style.width = `${wCss}px`;
+    canvas.style.height = `${hCss}px`;
     
     const ctx = canvas.getContext('2d');
     if (ctx) {
-      ctx.scale(dpr, dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
     
     // Reinitialize stars on resize if needed
@@ -358,6 +378,10 @@ export const StarfieldCanvas: React.FC = memo(() => {
     // LIGHT_SPEED_EXPERIMENT: time base for harmonic motion
     const time = performance.now() * 0.001;
     const lsActive = isLightSpeedRef.current;
+    // Frame delta time (seconds)
+    const nowSec = time;
+    const dt = lastTimeRef.current != null ? (nowSec - lastTimeRef.current) : 1 / 60;
+    lastTimeRef.current = nowSec;
     
     // Clear canvas
     ctx.clearRect(0, 0, w, h);
@@ -374,6 +398,12 @@ export const StarfieldCanvas: React.FC = memo(() => {
     
     // Update camera rotation
     cameraRotationRef.current += CAMERA_ROT_SPEED;
+
+    // LIGHT_SPEED_EXPERIMENT: ease blend factor toward target and advance axial rotation
+    const lsTarget = lsActive ? 1 : 0;
+    // ~150ms half-life (dt * 6)
+    lsBlendRef.current = lerp(lsBlendRef.current, lsTarget, Math.min(1, dt * 6));
+    lsRotationRef.current += (LS.axialOmega * dt) * (0.5 + 0.5 * lsBlendRef.current); // slower at entry, full speed at blend=1
     
     // Update and draw celestial bodies (behind stars)
     if (celestialBodiesRef.current.length > 0) {
@@ -479,6 +509,79 @@ export const StarfieldCanvas: React.FC = memo(() => {
       }
     }
     
+    // LIGHT_SPEED_EXPERIMENT: distinct LIGHT_SPEED rendering branch
+    if (lsActive || (lsBlendRef.current > 0.01 && modeRef.current === 'warp')) {
+      const cosR = Math.cos(lsRotationRef.current);
+      const sinR = Math.sin(lsRotationRef.current);
+      const blend = lsBlendRef.current;
+
+      // Draw back-to-front for depth consistency
+      for (let layerIdx = LAYERS - 1; layerIdx >= 0; layerIdx--) {
+        const layer = layersRef.current[layerIdx];
+        if (!layer) continue;
+
+        // Base length derived from layer streak tuning
+        const baseLen = LAYER_STREAK[layerIdx] * 20; // engine baseline
+        const lenMult = 1 + (LS.lineLenMult - 1) * blend; // smoothly extend
+        const widthMult = 1 + (LS.lineWidthMult - 1) * blend;
+        const headAlpha = LS.headAlpha * blend;
+        const tailAlpha = Math.max(LS.tailAlpha * blend, 0.01);
+
+        for (const s of layer) {
+          const dx = s.x - centerX;
+          const dy = s.y - centerY;
+          // Rotate for global axial spin illusion
+          const rx = dx * cosR - dy * sinR;
+          const ry = dx * sinR + dy * cosR;
+          const px = centerX + rx;
+          const py = centerY + ry;
+
+          const r = Math.hypot(rx, ry) || 1;
+          const ux = rx / r, uy = ry / r; // radial unit
+
+          // Very long tapered streak, nearly static
+          const L = baseLen * lenMult;
+          const tx = px - ux * L * 0.5; // tail
+          const ty = py - uy * L * 0.5;
+          const hx = px + ux * L * 0.5; // head
+          const hy = py + uy * L * 0.5;
+
+          // Skip drawing in session void area
+          if (isSessionActive) {
+            const baseVoidRadius = 40;
+            const voidRadius = baseVoidRadius + (speedRef.current * 3) * (lsActive ? 1.15 : 1);
+            if (r < voidRadius) continue;
+          }
+
+          const grad = ctx.createLinearGradient(tx, ty, hx, hy);
+          grad.addColorStop(0.00, `rgba(255,255,255,${tailAlpha})`);
+          grad.addColorStop(0.85, `rgba(216,180,254,${headAlpha})`); // violet-ish head
+          grad.addColorStop(1.00, `rgba(255,255,255,${Math.min(1, headAlpha)})`);
+
+          ctx.strokeStyle = grad;
+          ctx.lineCap = 'round';
+          ctx.lineWidth = (s.size || 1) * widthMult;
+          ctx.beginPath();
+          ctx.moveTo(tx, ty);
+          ctx.lineTo(hx, hy);
+          ctx.stroke();
+
+          // Optional tiny radial drift near entry so it doesn't look frozen
+          if (blend < 0.2) {
+            const drift = (0.05 + 0.15 * blend) * (1 + layerIdx * 0.1);
+            s.x += ux * drift;
+            s.y += uy * drift;
+          }
+        }
+      }
+
+      // Continue animation and early return to avoid FULL logic
+      if (isAnimatingRef.current) {
+        animIdRef.current = requestAnimationFrame(animate);
+      }
+      return;
+    }
+
     // Draw stars by layer (back to front for proper depth)
     for (let layerIdx = LAYERS - 1; layerIdx >= 0; layerIdx--) {
       const layer = layersRef.current[layerIdx];
@@ -674,22 +777,17 @@ export const StarfieldCanvas: React.FC = memo(() => {
       const canvas = canvasRef.current;
       if (canvas) {
         const dpr = Math.min(2, window.devicePixelRatio || 1);
-        const w = window.innerWidth;
-        // More robust height calculation including all possible height sources
-        const bodyHeight = document.body.scrollHeight || 0;
-        const docHeight = document.documentElement.scrollHeight || 0;
-        const bodyOffsetHeight = document.body.offsetHeight || 0;
-        const viewHeight = window.innerHeight || 0;
-        const h = Math.max(viewHeight, bodyHeight, docHeight, bodyOffsetHeight);
+        const wCss = Math.max(window.innerWidth, document.documentElement.scrollWidth || 0);
+        const hCss = Math.max(window.innerHeight, document.documentElement.scrollHeight || 0, document.body.scrollHeight || 0);
         
-        canvas.width = Math.floor(w * dpr);
-        canvas.height = Math.floor(h * dpr);
-        canvas.style.width = `${w}px`;
-        canvas.style.height = `${h}px`;
+        canvas.width = Math.floor(wCss * dpr);
+        canvas.height = Math.floor(hCss * dpr);
+        canvas.style.width = `${wCss}px`;
+        canvas.style.height = `${hCss}px`;
         
         const ctx = canvas.getContext('2d');
         if (ctx) {
-          ctx.scale(dpr, dpr);
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         }
       }
       
