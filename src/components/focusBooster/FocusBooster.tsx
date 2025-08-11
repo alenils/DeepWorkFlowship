@@ -101,67 +101,70 @@ export const FocusBooster: React.FC = () => {
       
       {/* Central content - adjusted for perfect centering */}
       <div className="relative flex flex-col items-center justify-center">
-        {/* Progress circle - removed absolute positioning for better centering */}
-        <svg width="150" height="150" viewBox="0 0 150 150" className="relative">
-          {/* Background track circle */}
-          <circle 
-            cx="75" 
-            cy="75" 
-            r={radius} 
-            fill="none" 
-            stroke="rgba(255, 255, 255, 0.2)" 
-            strokeWidth="2"
-          />
-          
+        {/* Wrapper ensures dot overlays exactly at the circle center */}
+        <div className="relative w-[150px] h-[150px]">
           {/* Progress circle */}
-          <circle 
-            cx="75" 
-            cy="75" 
-            r={radius} 
-            fill="none" 
-            stroke="#FBBF24" // Amber-400 color
-            strokeWidth="4"
-            strokeLinecap="round"
-            strokeDasharray={strokeDasharray}
-            strokeDashoffset={progressOffset}
-            transform="rotate(-90 75 75)" // Start from top (12 o'clock)
-            style={{ 
-              transition: 'stroke-dashoffset 0.1s linear' 
-            }}
-          />
-        </svg>
-        
-        {/* Central dot with evenly distributed glow */}
-        <div className="relative flex items-center justify-center">
-          {/* Outer glow effect */}
-          <div 
-            className="absolute rounded-full bg-yellow-300/20"
-            style={{ 
-              width: '24px',
-              height: '24px',
-              filter: 'blur(5px)',
-              boxShadow: '0 0 10px 4px rgba(250, 204, 21, 0.3)'
-            }} 
-          />
-          
-          {/* Inner glow effect */}
-          <div 
-            className="absolute rounded-full bg-yellow-300/30"
-            style={{ 
-              width: '18px',
-              height: '18px',
-              filter: 'blur(3px)',
-              boxShadow: '0 0 6px 2px rgba(250, 204, 21, 0.4)'
-            }} 
-          />
-          
-          {/* Central dot */}
-          <div 
-            className="w-4 h-4 bg-yellow-300 rounded-full z-10"
-            style={{
-              boxShadow: '0 0 5px rgba(250, 204, 21, 0.6)'
-            }}
-          />
+          <svg width="150" height="150" viewBox="0 0 150 150" className="absolute inset-0">
+            {/* Background track circle */}
+            <circle 
+              cx="75" 
+              cy="75" 
+              r={radius} 
+              fill="none" 
+              stroke="rgba(255, 255, 255, 0.2)" 
+              strokeWidth="2"
+            />
+            
+            {/* Progress circle */}
+            <circle 
+              cx="75" 
+              cy="75" 
+              r={radius} 
+              fill="none" 
+              stroke="#FBBF24" // Amber-400 color
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeDasharray={strokeDasharray}
+              strokeDashoffset={progressOffset}
+              transform="rotate(-90 75 75)" // Start from top (12 o'clock)
+              style={{ 
+                transition: 'stroke-dashoffset 0.1s linear' 
+              }}
+            />
+          </svg>
+
+          {/* Central dot with evenly distributed glow - absolutely centered */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            {/* Outer glow effect */}
+            <div 
+              className="absolute rounded-full bg-yellow-300/20"
+              style={{ 
+                width: '24px',
+                height: '24px',
+                filter: 'blur(5px)',
+                boxShadow: '0 0 10px 4px rgba(250, 204, 21, 0.3)'
+              }} 
+            />
+            
+            {/* Inner glow effect */}
+            <div 
+              className="absolute rounded-full bg-yellow-300/30"
+              style={{ 
+                width: '18px',
+                height: '18px',
+                filter: 'blur(3px)',
+                boxShadow: '0 0 6px 2px rgba(250, 204, 21, 0.4)'
+              }} 
+            />
+            
+            {/* Central dot */}
+            <div 
+              className="w-4 h-4 bg-yellow-300 rounded-full z-10"
+              style={{
+                boxShadow: '0 0 5px rgba(250, 204, 21, 0.6)'
+              }}
+            />
+          </div>
         </div>
         
         {/* Initial text - single straight line above the star */}

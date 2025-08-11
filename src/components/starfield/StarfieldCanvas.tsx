@@ -480,8 +480,8 @@ export const StarfieldCanvas: React.FC = memo(() => {
       
       for (const star of layer) {
         // Update star position
-        if (speedRef.current > 0) {
-          // Warp mode: move stars toward viewer with perspective
+        if (modeRef.current === 'warp' && speedRef.current > 0) {
+          // Warp mode: move stars radially outward with perspective
           const dx = star.x - centerX;
           const dy = star.y - centerY;
           const distance = Math.sqrt(dx * dx + dy * dy);
@@ -496,15 +496,15 @@ export const StarfieldCanvas: React.FC = memo(() => {
             star.z += speedRef.current * 2;  // Move toward viewer in Z
           }
           
-          // Wrap stars that go off screen
-          if (star.x < -50 || star.x > w + 50 || star.y < -50 || star.y > h + 50) {
+          // Wrap stars that go off screen (use wider margins to reduce edge cutoffs)
+          if (star.x < -150 || star.x > w + 150 || star.y < -150 || star.y > h + 150) {
             const angle = Math.random() * Math.PI * 2;
-            const radius = Math.random() * Math.min(w, viewportH) * 0.3;
+            const radius = Math.random() * Math.min(w, viewportH) * 0.35;
             star.x = centerX + Math.cos(angle) * radius;
             star.y = centerY + Math.sin(angle) * radius;
           }
         } else {
-          // Idle mode: stars rotate with camera
+          // Idle mode: subtle rotation based on depth
           const rotSpeed = CAMERA_ROT_SPEED * star.z;  // Parallax based on depth
           
           // Calculate rotation around center (matching camera rotation)
@@ -590,6 +590,15 @@ export const StarfieldCanvas: React.FC = memo(() => {
     }
     
     // No need for overlay - void is created by not drawing stars in that area
+    
+    // Edge fade vignette to hide canvas edges during long sessions
+    const vignetteInner = Math.min(w, viewportH) * 0.45;
+    const vignetteOuter = Math.min(w, viewportH) * 0.5;
+    const vignette = ctx.createRadialGradient(centerX, centerY, vignetteInner, centerX, centerY, vignetteOuter);
+    vignette.addColorStop(0, 'rgba(0,0,0,0)');
+    vignette.addColorStop(1, 'rgba(0,0,0,0.6)');
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, w, h);
     
     // Continue animation if still active
     if (isAnimatingRef.current) {
@@ -738,8 +747,8 @@ export const StarfieldCanvas: React.FC = memo(() => {
       left: 0,
       width: '100%',
       backgroundColor: 'black',
-      // Keep starfield behind the UI in all modes to prevent dark screen overlays
-      zIndex: 1,
+      // In FULL warp, overlay main UI but keep controls/booster above
+      zIndex: warpMode === WARP_MODE.FULL ? 9998 : 1,
       pointerEvents: 'none' as const
     };
   }, [warpMode]);
