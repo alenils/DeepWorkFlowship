@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { FOCUS_BOOSTER, STORAGE_KEYS } from '../constants';
 import { useWarpStore } from './warpSlice';
+import { WARP_MODE } from '../constants';
+import type { WarpMode } from './warpSlice';
 
 // Define the focus booster state type
 export type FocusBoosterStatus = 'idle' | 'active' | 'finishing';
@@ -11,6 +13,7 @@ export const initialFocusBoosterState = {
   status: 'idle' as FocusBoosterStatus,
   progress: 0, // From 0 to 1
   startTime: null as number | null,
+  previousWarpMode: null as WarpMode | null, // Store the previous warp mode
 };
 
 // Define the state interface
@@ -18,6 +21,7 @@ interface FocusBoosterState {
   status: FocusBoosterStatus;
   progress: number;
   startTime: number | null;
+  previousWarpMode: WarpMode | null;
 }
 
 // Define the actions interface
@@ -37,14 +41,18 @@ export const useFocusBoosterStore = create<FocusBoosterState & FocusBoosterActio
       
       // Actions
       startBooster: () => {
+        // Store the current warp mode before changing it
+        const currentWarpMode = useWarpStore.getState().warpMode;
+        
         // First activate full warp mode
-        useWarpStore.getState().setWarpMode('full');
+        useWarpStore.getState().setWarpMode(WARP_MODE.FULL);
         
         // Then start the booster
         set({
           status: 'active',
           progress: 0,
           startTime: Date.now(),
+          previousWarpMode: currentWarpMode,
         });
         
         // Set up timer to update progress
@@ -83,11 +91,22 @@ export const useFocusBoosterStore = create<FocusBoosterState & FocusBoosterActio
       },
       
       exitBooster: () => {
-        // Reset the booster state without changing warp mode
+        const state = get();
+        
+        // Restore the previous warp mode if we have one
+        if (state.previousWarpMode !== null) {
+          useWarpStore.getState().setWarpMode(state.previousWarpMode);
+        } else {
+          // Fallback to background mode if no previous mode was stored
+          useWarpStore.getState().setWarpMode(WARP_MODE.BACKGROUND);
+        }
+        
+        // Reset the booster state
         set({
           status: 'idle',
           progress: 0,
           startTime: null,
+          previousWarpMode: null,
         });
       },
       

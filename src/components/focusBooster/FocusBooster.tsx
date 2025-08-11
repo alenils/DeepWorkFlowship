@@ -99,10 +99,10 @@ export const FocusBooster: React.FC = () => {
       {/* Semi-transparent overlay */}
       <div className="absolute inset-0 bg-black bg-opacity-30 pointer-events-none" />
       
-      {/* Central content */}
+      {/* Central content - adjusted for perfect centering */}
       <div className="relative flex flex-col items-center justify-center">
-        {/* Progress circle */}
-        <svg width="150" height="150" viewBox="0 0 150 150" className="absolute">
+        {/* Progress circle - removed absolute positioning for better centering */}
+        <svg width="150" height="150" viewBox="0 0 150 150" className="relative">
           {/* Background track circle */}
           <circle 
             cx="75" 

@@ -2,12 +2,8 @@ import React, { useRef, useEffect, useCallback, memo } from 'react';
 import { useTimerStore } from '../../store/timerSlice';
 import { useWarpStore } from '../../store/warpSlice';
 
-// Warp mode enum
-const WARP_MODE = {
-  NONE: 'none',
-  BACKGROUND: 'background',
-  FULL: 'full'
-} as const;
+// Warp mode enum from central constants (avoid duplication/mismatch)
+import { WARP_MODE } from '../../constants';
 
 // Types
 interface Star {
@@ -61,16 +57,12 @@ const COLOR_PALETTE = [
 
 // Animation constants
 const IDLE_SPEED = 0.2;
-const SPEED_SMOOTHING = 0.05;  // Smooth speed transitions
-const IDLE_ROT_SPEED = 0.0008;  // Rotation speed in idle (stars drift left)
-const IDLE_PARALLAX_FACTOR = 0.5;  // Parallax depth factor for each layer
 const CAMERA_ROT_SPEED = 0.0002;  // Camera rotation speed (slow, cinematic)
 const BASE_TWINKLE = 0.15;  // Base twinkle amount
 
 // Celestial body constants
 const OPACITY_SMOOTHING = 0.03;  // Opacity transition smoothing
 const WARP_SCALE_SPEED = 0.02;  // How fast planets scale during warp
-const MAX_WARP_SCALE = 3;  // Maximum scale before planets disappear
 
 // ============================================================================
 // END TUNABLE CONSTANTS
@@ -101,7 +93,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
   
   // Celestial bodies
   const celestialBodiesRef = useRef<CelestialBody[]>([]);
-  const sessionColorRef = useRef(0);  // Track session for planet color variation
+  // const sessionColorRef = useRef(0);  // Not currently used
 
   // Initialize stars with layers and properties
   const initStars = useCallback((force = false) => {
@@ -300,21 +292,6 @@ export const StarfieldCanvas: React.FC = memo(() => {
       ctx.beginPath();
       ctx.arc(screenX, screenY, screenRadius, 0, Math.PI * 2);
       ctx.fill();
-      
-      // Draw central void during work sessions (slightly offset to right for alignment)
-      if (isSessionActive && speedRef.current > 0.5) {
-        const voidRadius = 40 + speedRef.current * 2;
-        const voidCenterX = centerX + 8; // Shift 8px to the right for better alignment
-        const voidGradient = ctx.createRadialGradient(voidCenterX, centerY, 0, voidCenterX, centerY, voidRadius);
-        voidGradient.addColorStop(0, 'rgba(0, 0, 0, 1)');
-        voidGradient.addColorStop(0.7, 'rgba(0, 0, 0, 0.8)');
-        voidGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        
-        ctx.fillStyle = voidGradient;
-        ctx.beginPath();
-        ctx.arc(voidCenterX, centerY, voidRadius, 0, Math.PI * 2);
-        ctx.fill();
-      }
       
       // Add crater effects
       ctx.fillStyle = 'rgba(105, 105, 105, 0.2)';
@@ -626,8 +603,16 @@ export const StarfieldCanvas: React.FC = memo(() => {
     const isVisible = warpMode !== WARP_MODE.NONE;
     
     if (isVisible) {
-      // Ensure stars are initialized
-      initStars();
+      // Force reinitialize stars when transitioning from no warp to any warp mode
+      // This fixes the black background issue after focus booster
+      initStars(true);
+      
+      // Update mode based on warp setting
+      if (warpMode === WARP_MODE.FULL) {
+        modeRef.current = 'warp';
+      } else {
+        modeRef.current = 'idle';
+      }
       
       // Only start animation if not already running
       if (!isAnimatingRef.current) {
@@ -642,7 +627,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
         animIdRef.current = null;
       }
     }
-  }, [warpMode, initStars, animate]);
+  }, [warpMode, isSessionActive, initStars, animate]);
 
   // Setup and cleanup effects
   useEffect(() => {
@@ -747,14 +732,14 @@ export const StarfieldCanvas: React.FC = memo(() => {
       return { display: 'none' };
     }
     
-    const isFullMode = warpMode === WARP_MODE.FULL;
     return {
       position: 'absolute' as const,
       top: 0,
       left: 0,
       width: '100%',
       backgroundColor: 'black',
-      zIndex: isFullMode ? 9999 : 1,
+      // Keep starfield behind the UI in all modes to prevent dark screen overlays
+      zIndex: 1,
       pointerEvents: 'none' as const
     };
   }, [warpMode]);
