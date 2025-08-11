@@ -26,7 +26,9 @@ import {
   BAD_POSTURE_TIME_THRESHOLD_MS,
   ELEMENT_IDS,
   CSS_CLASSES,
-  SESSION_TYPE
+  SESSION_TYPE,
+  // LIGHT_SPEED_EXPERIMENT: flag controls exposure of LIGHT_SPEED mode
+  EXPERIMENT_LIGHT_SPEED
 } from './constants'
 
 // Type guards for history items
@@ -169,10 +171,16 @@ function App() {
         case 'w':
           if (e.ctrlKey || e.metaKey) break; // Skip browser shortcuts
           
-          // Cycle through warp modes - now handled by warpStore
+          // LIGHT_SPEED_EXPERIMENT: cycle through modes including LIGHT_SPEED when enabled
           const { setWarpMode } = useWarpStore.getState();
-          // Toggle only between BACKGROUND and FULL modes when pressing 'w'
-          setWarpMode(warpMode === WARP_MODE.BACKGROUND ? WARP_MODE.FULL : WARP_MODE.BACKGROUND);
+          const cycle = EXPERIMENT_LIGHT_SPEED
+            ? [WARP_MODE.BACKGROUND, WARP_MODE.FULL, WARP_MODE.LIGHT_SPEED]
+            : [WARP_MODE.BACKGROUND, WARP_MODE.FULL];
+          const currentIdx = cycle.indexOf(warpMode as typeof cycle[number]);
+          const nextMode = currentIdx === -1
+            ? cycle[0]
+            : cycle[(currentIdx + 1) % cycle.length];
+          setWarpMode(nextMode);
           break;
           
         default:
@@ -327,8 +335,8 @@ return (
       {/* 3. Main UI Content Wrapper. It must have a HIGHER z-index and a TRANSPARENT background. */}
       <main className="relative z-10 mx-auto max-w-[1360px] p-6 min-h-screen flex flex-col bg-transparent">
         
-        {/* DarkModeToggle (if it should be on top of starfield but not in full warp) */}
-        {warpMode !== WARP_MODE.FULL && <DarkModeToggle />}
+        {/* DarkModeToggle (render only when not overlaying in FULL/LIGHT_SPEED) */}
+        {(warpMode !== WARP_MODE.FULL && warpMode !== WARP_MODE.LIGHT_SPEED) && <DarkModeToggle />}
 
         {/* Grid Container */}
         <div className="grid gap-6 grid-cols-1 md:grid-cols-[clamp(300px,26vw,320px)_minmax(0,1fr)_clamp(300px,26vw,320px)] lg:grid-cols-[320px_minmax(640px,1fr)_320px] items-start flex-grow">
@@ -497,8 +505,8 @@ return (
         </div>
       </main>
 
-      {/* Floating Action Buttons - Only visible in FULL warp mode */}
-      {warpMode === WARP_MODE.FULL && (
+      {/* Floating Action Buttons - Visible when overlaying (FULL or LIGHT_SPEED) */}
+      {(warpMode === WARP_MODE.FULL || warpMode === WARP_MODE.LIGHT_SPEED) && (
         <div id={ELEMENT_IDS.WARP_CONTROLS} className="absolute bottom-4 right-4 z-[10000] flex gap-3 items-center">
           <button
             id={ELEMENT_IDS.WARP_DISTRACT}

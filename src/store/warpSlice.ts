@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { WARP_MODE, WARP_ANIMATION, STORAGE_KEYS, STARFIELD_QUALITY, THRUST_SHAKE_DURATION_MS } from '../constants';
+import { WARP_MODE, WARP_ANIMATION, STORAGE_KEYS, STARFIELD_QUALITY, THRUST_SHAKE_DURATION_MS, EXPERIMENT_LIGHT_SPEED } from '../constants';
 
 // Warp mode types using constants
 export type WarpMode = typeof WARP_MODE[keyof typeof WARP_MODE];
@@ -58,7 +58,13 @@ export const useWarpStore = create<WarpState & WarpActions>()(
       ...initialWarpState,
       
       // Actions
-      setWarpMode: (mode) => set({ warpMode: mode }),
+      setWarpMode: (mode) => {
+        // LIGHT_SPEED_EXPERIMENT: sanitize when flag disabled
+        const nextMode = (!EXPERIMENT_LIGHT_SPEED && mode === WARP_MODE.LIGHT_SPEED)
+          ? WARP_MODE.FULL
+          : mode;
+        set({ warpMode: nextMode });
+      },
       setSpeedMultiplier: (multiplier) => {
         // Ensure multiplier is between 0.1 and 1.0
         const clampedMultiplier = Math.max(0.1, Math.min(1.0, multiplier));
@@ -180,6 +186,7 @@ export const useWarpStore = create<WarpState & WarpActions>()(
     }),
     {
       name: STORAGE_KEYS.WARP, // localStorage key
+      version: 1,
       partialize: (state) => ({
         // Only persist these values in localStorage
         warpMode: state.warpMode,
@@ -188,6 +195,14 @@ export const useWarpStore = create<WarpState & WarpActions>()(
         showDistractionInWarp: state.showDistractionInWarp,
         starfieldQuality: state.starfieldQuality,
       }),
+      // LIGHT_SPEED_EXPERIMENT: coerce persisted light_speed to FULL when the experiment is disabled
+      migrate: (persistedState: any) => {
+        if (!persistedState) return persistedState;
+        if (!EXPERIMENT_LIGHT_SPEED && persistedState.warpMode === WARP_MODE.LIGHT_SPEED) {
+          return { ...persistedState, warpMode: WARP_MODE.FULL };
+        }
+        return persistedState;
+      }
     }
   )
 ); 

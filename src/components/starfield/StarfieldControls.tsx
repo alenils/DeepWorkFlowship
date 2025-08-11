@@ -3,7 +3,9 @@ import {
   WARP_MODE, 
   STARFIELD_QUALITY, 
   STARFIELD_QUALITY_LABELS,
-  STAR_COUNTS_BY_QUALITY
+  STAR_COUNTS_BY_QUALITY,
+  // LIGHT_SPEED_EXPERIMENT: flag controls exposure of LIGHT_SPEED mode
+  EXPERIMENT_LIGHT_SPEED
 } from '../../constants';
 import PanelContainer from '../ui/PanelContainer';
 
@@ -127,6 +129,20 @@ export const StarfieldControls: React.FC = () => {
           >
             Full Warp
           </button>
+          {/* LIGHT_SPEED_EXPERIMENT: gated LIGHT SPEED button */}
+          {EXPERIMENT_LIGHT_SPEED && (
+            <button
+              onClick={() => handleWarpModeChange(WARP_MODE.LIGHT_SPEED)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                warpMode === WARP_MODE.LIGHT_SPEED
+                  ? 'bg-deep-purple-600 text-white animate-pulse'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
+              }`}
+              title="Experimental light speed mode"
+            >
+              LIGHT SPEED
+            </button>
+          )}
         </div>
 
         {/* Speed Multiplier Slider */}
@@ -172,7 +188,17 @@ export const StarfieldControls: React.FC = () => {
 
         {/* Keyboard Shortcuts Info */}
         <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-          <p>Press <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">W</kbd> to cycle through warp modes</p>
+          {EXPERIMENT_LIGHT_SPEED ? (
+            <p>
+              Press <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">W</kbd>
+              {' '}to cycle: Background → Full → Light Speed
+            </p>
+          ) : (
+            <p>
+              Press <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">W</kbd>
+              {' '}to cycle: Background ↔ Full
+            </p>
+          )}
         </div>
       </div>
     </PanelContainer>

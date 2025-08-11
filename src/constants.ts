@@ -57,10 +57,15 @@ export const FOCUS_BOOSTER = {
 } as const;
 
 // ===== WARP MODE =====
+// LIGHT_SPEED_EXPERIMENT: master flag to enable the experimental LIGHT_SPEED mode and related UI
+export const EXPERIMENT_LIGHT_SPEED = false as const; // Toggle to true to enable experiment
+
 export const WARP_MODE = {
   NONE: 'none',
   BACKGROUND: 'background',
-  FULL: 'full'
+  FULL: 'full',
+  // LIGHT_SPEED_EXPERIMENT: new experimental warp mode
+  LIGHT_SPEED: 'light_speed'
 } as const;
 
 export const WARP_ANIMATION = {

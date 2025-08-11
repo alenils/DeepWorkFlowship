@@ -3,7 +3,7 @@ import { useTimerStore } from '../../store/timerSlice';
 import { useWarpStore } from '../../store/warpSlice';
 
 // Warp mode enum from central constants (avoid duplication/mismatch)
-import { WARP_MODE } from '../../constants';
+import { WARP_MODE, EXPERIMENT_LIGHT_SPEED } from '../../constants';
 
 // Types
 interface Star {
@@ -87,6 +87,8 @@ export const StarfieldCanvas: React.FC = memo(() => {
   const cameraRotationRef = useRef(0);              // Camera rotation angle
   const starsInitializedRef = useRef(false);        // Track if stars are initialized
   const warpPhaseRef = useRef<'accelerating' | 'cruising' | 'decelerating' | 'idle'>('idle');
+  // LIGHT_SPEED_EXPERIMENT: track LS mode to tweak visuals without per-frame store reads
+  const isLightSpeedRef = useRef(false);
   
   // Layers and stars
   const layersRef = useRef<Star[][]>([]);
@@ -349,6 +351,9 @@ export const StarfieldCanvas: React.FC = memo(() => {
     const scrollY = window.scrollY;
     const centerX = w / 2;
     const centerY = viewportH / 2 + scrollY;
+    // LIGHT_SPEED_EXPERIMENT: time base for harmonic motion
+    const time = performance.now() * 0.001;
+    const lsActive = isLightSpeedRef.current;
     
     // Clear canvas
     ctx.clearRect(0, 0, w, h);
@@ -489,10 +494,20 @@ export const StarfieldCanvas: React.FC = memo(() => {
           if (distance > 0) {
             // Add perspective factor to reduce center burst effect
             const perspectiveFactor = 1 + (distance / (w * 0.5));
-            const moveX = (dx / distance) * speedRef.current * layerSpeed * perspectiveFactor;
-            const moveY = (dy / distance) * speedRef.current * layerSpeed * perspectiveFactor;
-            star.x += moveX;
-            star.y += moveY;
+            const baseX = (dx / distance) * speedRef.current * layerSpeed * perspectiveFactor;
+            const baseY = (dy / distance) * speedRef.current * layerSpeed * perspectiveFactor;
+            // LIGHT_SPEED_EXPERIMENT: add subtle harmonic swirl and slight speed boost
+            const lsSpeedBoost = lsActive ? 1.15 : 1.0;
+            let swirlX = 0, swirlY = 0;
+            if (lsActive) {
+              const layerHarmonic = Math.sin(time * (1.1 + layerIdx * 0.35)) * 0.6;
+              const tx = -dy / distance; // perpendicular unit vector X
+              const ty =  dx / distance; // perpendicular unit vector Y
+              swirlX = tx * layerHarmonic;
+              swirlY = ty * layerHarmonic;
+            }
+            star.x += baseX * lsSpeedBoost + swirlX;
+            star.y += baseY * lsSpeedBoost + swirlY;
             star.z += speedRef.current * 2;  // Move toward viewer in Z
           }
           
@@ -541,7 +556,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
         // Apply void during work sessions (both idle and warp)
         if (isSessionActive) {
           const baseVoidRadius = 40;  // Base void size during sessions
-          const voidRadius = baseVoidRadius + (speedRef.current * 3);  // Grows with speed
+          const voidRadius = baseVoidRadius + (speedRef.current * 3) * (lsActive ? 1.15 : 1);  // Slightly larger in LIGHT_SPEED
           if (distance < voidRadius) {
             ctx.restore();
             continue;  // Don't draw stars in the void area
@@ -552,7 +567,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
           // Draw streak in warp mode with improved forward motion
           
           const perspectiveFactor = 1 + (distance / (w * 0.5));
-          const streakLength = speedRef.current * layerStreak * 2.5 * perspectiveFactor;
+          const streakLength = speedRef.current * layerStreak * (lsActive ? 3.1 : 2.5) * perspectiveFactor; // longer in LIGHT_SPEED
           
           if (distance > 0) {
             const streakX = -(dx / distance) * streakLength;
@@ -562,11 +577,13 @@ export const StarfieldCanvas: React.FC = memo(() => {
               star.x, star.y,
               star.x + streakX, star.y + streakY
             );
-            gradient.addColorStop(0, COLOR_PALETTE[star.colorIndex]);
+            // LIGHT_SPEED_EXPERIMENT: violet accent at streak head
+            const headColor = lsActive ? '#d8b4fe' : COLOR_PALETTE[star.colorIndex];
+            gradient.addColorStop(0, headColor);
             gradient.addColorStop(1, 'transparent');
             
             ctx.strokeStyle = gradient;
-            ctx.lineWidth = star.size * 1.15;  // +15% thickness
+            ctx.lineWidth = star.size * (lsActive ? 1.35 : 1.15);  // thicker in LIGHT_SPEED
             ctx.lineCap = 'round';
             ctx.beginPath();
             ctx.moveTo(star.x, star.y);
@@ -617,7 +634,8 @@ export const StarfieldCanvas: React.FC = memo(() => {
       initStars(true);
       
       // Update mode based on warp setting
-      if (warpMode === WARP_MODE.FULL) {
+      // LIGHT_SPEED_EXPERIMENT: treat LIGHT_SPEED as 'warp' path initially
+      if (warpMode === WARP_MODE.FULL || warpMode === WARP_MODE.LIGHT_SPEED) {
         modeRef.current = 'warp';
       } else {
         modeRef.current = 'idle';
@@ -715,7 +733,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
       targetSpeedRef.current = IDLE_SPEED;
       modeRef.current = 'idle';
       warpPhaseRef.current = 'idle';
-    } else if (warpMode === WARP_MODE.BACKGROUND || warpMode === WARP_MODE.FULL) {
+    } else if (warpMode === WARP_MODE.BACKGROUND || warpMode === WARP_MODE.FULL || warpMode === WARP_MODE.LIGHT_SPEED) {
       // Only accelerate to warp speed during active sessions
       if (isSessionActive) {
         targetSpeedRef.current = 25 * speedMultiplier;  // WARP_SPEED equivalent
@@ -735,6 +753,11 @@ export const StarfieldCanvas: React.FC = memo(() => {
     }
   }, [warpMode, speedMultiplier, isSessionActive]);
 
+  // LIGHT_SPEED_EXPERIMENT: update LS active ref when mode or flag changes
+  useEffect(() => {
+    isLightSpeedRef.current = Boolean(EXPERIMENT_LIGHT_SPEED && warpMode === WARP_MODE.LIGHT_SPEED);
+  }, [warpMode]);
+
   // Determine canvas visibility and z-index based on warp mode
   const canvasStyle = React.useMemo(() => {
     if (warpMode === WARP_MODE.NONE) {
@@ -747,8 +770,8 @@ export const StarfieldCanvas: React.FC = memo(() => {
       left: 0,
       width: '100%',
       backgroundColor: 'black',
-      // In FULL warp, overlay main UI but keep controls/booster above
-      zIndex: warpMode === WARP_MODE.FULL ? 9998 : 1,
+      // In FULL or LIGHT_SPEED warp, overlay main UI but keep controls/booster above
+      zIndex: (warpMode === WARP_MODE.FULL || warpMode === WARP_MODE.LIGHT_SPEED) ? 9998 : 1,
       pointerEvents: 'none' as const
     };
   }, [warpMode]);
