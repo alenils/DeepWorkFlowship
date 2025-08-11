@@ -31,6 +31,9 @@ import {
   EXPERIMENT_LIGHT_SPEED
 } from './constants'
 
+// LIGHT_SPEED_EXPERIMENT: debug marker for sanity checks
+console.log('[LIGHT_SPEED_EXPERIMENT] App.tsx loaded; EXPERIMENT_LIGHT_SPEED =', EXPERIMENT_LIGHT_SPEED)
+
 // Type guards for history items
 const isSessionData = (item: HistoryItem): item is SessionData => item.type === SESSION_TYPE.FOCUS;
 const isBreakData = (item: HistoryItem): item is BreakData => item.type === SESSION_TYPE.BREAK;
@@ -180,6 +183,7 @@ function App() {
           const nextMode = currentIdx === -1
             ? cycle[0]
             : cycle[(currentIdx + 1) % cycle.length];
+          console.log('[LIGHT_SPEED_EXPERIMENT] App: key "w" cycle', { from: warpMode, to: nextMode, flag: EXPERIMENT_LIGHT_SPEED });
           setWarpMode(nextMode);
           break;
           

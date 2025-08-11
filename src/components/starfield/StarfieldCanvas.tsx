@@ -5,6 +5,9 @@ import { useWarpStore } from '../../store/warpSlice';
 // Warp mode enum from central constants (avoid duplication/mismatch)
 import { WARP_MODE, EXPERIMENT_LIGHT_SPEED } from '../../constants';
 
+// LIGHT_SPEED_EXPERIMENT: debug marker for sanity checks
+console.log('[LIGHT_SPEED_EXPERIMENT] StarfieldCanvas.tsx loaded; EXPERIMENT_LIGHT_SPEED =', EXPERIMENT_LIGHT_SPEED);
+
 // Types
 interface Star {
   x: number;
@@ -89,6 +92,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
   const warpPhaseRef = useRef<'accelerating' | 'cruising' | 'decelerating' | 'idle'>('idle');
   // LIGHT_SPEED_EXPERIMENT: track LS mode to tweak visuals without per-frame store reads
   const isLightSpeedRef = useRef(false);
+  const hasLoggedLightSpeedRef = useRef(false);
   
   // Layers and stars
   const layersRef = useRef<Star[][]>([]);
@@ -753,9 +757,14 @@ export const StarfieldCanvas: React.FC = memo(() => {
     }
   }, [warpMode, speedMultiplier, isSessionActive]);
 
-  // LIGHT_SPEED_EXPERIMENT: update LS active ref when mode or flag changes
+  // LIGHT_SPEED_EXPERIMENT: update LS active ref when mode or flag changes (log once on activation)
   useEffect(() => {
-    isLightSpeedRef.current = Boolean(EXPERIMENT_LIGHT_SPEED && warpMode === WARP_MODE.LIGHT_SPEED);
+    const active = Boolean(EXPERIMENT_LIGHT_SPEED && warpMode === WARP_MODE.LIGHT_SPEED);
+    isLightSpeedRef.current = active;
+    if (active && !hasLoggedLightSpeedRef.current) {
+      console.log('[LIGHT_SPEED_EXPERIMENT] StarfieldCanvas: entering LIGHT_SPEED branch (harmonic swirl, longer/thicker streaks, violet head).');
+      hasLoggedLightSpeedRef.current = true;
+    }
   }, [warpMode]);
 
   // Determine canvas visibility and z-index based on warp mode

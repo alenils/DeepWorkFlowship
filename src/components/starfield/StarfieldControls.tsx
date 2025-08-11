@@ -9,6 +9,9 @@ import {
 } from '../../constants';
 import PanelContainer from '../ui/PanelContainer';
 
+// LIGHT_SPEED_EXPERIMENT: debug marker for sanity checks
+console.log('[LIGHT_SPEED_EXPERIMENT] StarfieldControls.tsx loaded; EXPERIMENT_LIGHT_SPEED =', EXPERIMENT_LIGHT_SPEED);
+
 export const StarfieldControls: React.FC = () => {
   const {
     warpMode,
@@ -135,7 +138,7 @@ export const StarfieldControls: React.FC = () => {
               onClick={() => handleWarpModeChange(WARP_MODE.LIGHT_SPEED)}
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                 warpMode === WARP_MODE.LIGHT_SPEED
-                  ? 'bg-deep-purple-600 text-white animate-pulse'
+                  ? 'bg-deep-purple-600 text-white halo-pulse'
                   : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
               }`}
               title="Experimental light speed mode"
