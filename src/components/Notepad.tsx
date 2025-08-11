@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { STORAGE_KEYS } from '../constants';
+import PanelContainer from './ui/PanelContainer';
 
 export const Notepad = () => {
   const [note, setNote] = useState('');
@@ -80,7 +81,7 @@ export const Notepad = () => {
   };
   
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 transform transition-all">
+    <PanelContainer className="p-4 transform transition-all">
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-lg text-gray-800 dark:text-white">Notepad</h2>
       </div>
@@ -113,6 +114,6 @@ export const Notepad = () => {
       <p className="text-[10px] italic opacity-50 pt-1 text-center text-gray-600 dark:text-gray-400">
         Alt + Shift + T inserts timestamp
       </p>
-    </div>
+    </PanelContainer>
   );
 }; 

@@ -5,6 +5,7 @@ import {
   STARFIELD_QUALITY_LABELS,
   STAR_COUNTS_BY_QUALITY
 } from '../../constants';
+import PanelContainer from '../ui/PanelContainer';
 
 export const StarfieldControls: React.FC = () => {
   const {
@@ -90,7 +91,7 @@ export const StarfieldControls: React.FC = () => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-4">
+    <PanelContainer className="p-4 mb-4">
       <h3 className="text-lg text-gray-900 dark:text-white mb-3">Stars Settings</h3>
       
       <div className="space-y-4">
@@ -174,6 +175,6 @@ export const StarfieldControls: React.FC = () => {
           <p>Press <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">W</kbd> to cycle through warp modes</p>
         </div>
       </div>
-    </div>
+    </PanelContainer>
   );
 }; 

@@ -4,6 +4,7 @@ import { usePosture } from "@/context/PostureContext";
 import { POSE_LANDMARKS } from "@/utils/postureDetect";
 import PostureControls from './PostureControls';
 import { BaselineMetrics, usePostureStore } from "@/store/postureSlice";
+import PanelContainer from './ui/PanelContainer';
 
 /**
  * PostureView.tsx
@@ -203,7 +204,7 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
   // console.log("UI RENDER: PostureView received postureStatus:", postureStatus); 
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden max-w-[640px] mx-auto">
+    <PanelContainer className="overflow-hidden max-w-[640px] mx-auto">
       <div className="p-4 pb-2 flex justify-between items-center">
         <h2 className="text-lg text-gray-800 dark:text-white">
           Posture Tracker
@@ -274,7 +275,7 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
         )}
       </div>
       <PostureControls />
-    </div>
+    </PanelContainer>
   );
 };
 

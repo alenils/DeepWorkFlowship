@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSound } from '../features/audio/useSound';
 import { STORAGE_KEYS } from '../constants';
+import PanelContainer from './ui/PanelContainer';
 
 interface TodoItem {
   id: string;
@@ -75,7 +76,7 @@ export const ActionsList = () => {
   };
   
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+    <PanelContainer className="p-4">
       <h2 className="text-lg text-gray-800 dark:text-white mb-4">Today's Actions</h2>
       
       {/* Add new item form */}
@@ -135,6 +136,6 @@ export const ActionsList = () => {
           ))
         )}
       </div>
-    </div>
+    </PanelContainer>
   );
 }; 

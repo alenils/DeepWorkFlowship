@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { msToClock } from '../../utils/time';
 import { useAudio, AlbumId } from './AudioProvider'; // Import useAudio
+import PanelContainer from '../../components/ui/PanelContainer';
 
 interface MusicPlayerProps {
   isSessionActive?: boolean; // This prop might still be useful for UI elements specific to session state
@@ -178,14 +179,14 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ isSessionActive = fals
 
   if (!currentTrack && songs.length === 0) {
       return (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 mt-6 text-center">
+        <PanelContainer className="p-4 mt-6 text-center">
             <p className="text-gray-500 dark:text-gray-400">Loading audio albums...</p>
-        </div>
+        </PanelContainer>
       )
   }
   
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 mt-6">
+    <PanelContainer className="p-4 mt-6">
       <audio ref={audioElementRef} loop={isLoopEnabled} />
       <div className="flex justify-between items-center mb-3">
         <h2 className="text-lg text-gray-800 dark:text-white">Flow Music</h2>
@@ -270,11 +271,11 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ isSessionActive = fals
           disabled={songs.length <= 1 || !currentTrack}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-            <path d="M5 12V4a1 1 0 0 1 1.514-.857L11 8l-4.486 4.857A1 1 0 0 1 5 12zm1 0h4.5a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H6v8z"/>
+            <path d="M5 12V4a1 1 0 0 0-1.514-.857L11 8l-4.486 4.857A1 1 0 0 0 5 12zm1 0h4.5a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H6v8z"/>
           </svg>
         </button>
       </div>
-    </div>
+    </PanelContainer>
   );
 };
 
