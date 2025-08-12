@@ -787,13 +787,16 @@ export const StarfieldCanvas: React.FC = memo(() => {
     // No need for overlay - void is created by not drawing stars in that area
     
     // Edge fade vignette to hide canvas edges during long sessions
-    const vignetteInner = Math.min(w, viewportH) * 0.45;
-    const vignetteOuter = Math.min(w, viewportH) * 0.5;
-    const vignette = ctx.createRadialGradient(centerX, centerY, vignetteInner, centerX, centerY, vignetteOuter);
-    vignette.addColorStop(0, 'rgba(0,0,0,0)');
-    vignette.addColorStop(1, 'rgba(0,0,0,0.6)');
-    ctx.fillStyle = vignette;
-    ctx.fillRect(0, 0, w, h);
+    // Disabled during warp to avoid darkened edges in FULL warp mode
+    if (modeRef.current !== 'warp') {
+      const vignetteInner = Math.min(w, viewportH) * 0.45;
+      const vignetteOuter = Math.min(w, viewportH) * 0.5;
+      const vignette = ctx.createRadialGradient(centerX, centerY, vignetteInner, centerX, centerY, vignetteOuter);
+      vignette.addColorStop(0, 'rgba(0,0,0,0)');
+      vignette.addColorStop(1, 'rgba(0,0,0,0.6)');
+      ctx.fillStyle = vignette;
+      ctx.fillRect(0, 0, w, h);
+    }
     
     // Continue animation if still active
     if (isAnimatingRef.current) {
