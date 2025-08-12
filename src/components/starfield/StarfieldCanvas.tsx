@@ -144,6 +144,10 @@ export const StarfieldCanvas: React.FC = memo(() => {
   const celestialBodiesRef = useRef<CelestialBody[]>([]);
   // const sessionColorRef = useRef(0);  // Not currently used
 
+  // Keep latest quality available in animation loop without recreating callbacks
+  const qualityRef = useRef(starfieldQuality);
+  useEffect(() => { qualityRef.current = starfieldQuality; }, [starfieldQuality]);
+
   // Initialize stars with layers and properties
   const initStars = useCallback((force = false) => {
     // Only initialize if not already done or forced
@@ -178,17 +182,35 @@ export const StarfieldCanvas: React.FC = memo(() => {
       };
     };
     
-    // Create layers with increasing star counts based on quality setting
-    const qualityMultiplier = starfieldQuality === 'eco' ? 0.4 : 
-                             starfieldQuality === 'ultra' ? 2.0 : 
-                             starfieldQuality === 'standard' ? 1.0 : 0;  // 'off' = 0
-    
-    layersRef.current = Array.from({ length: LAYERS }, (_, i) =>
-      Array.from({ length: Math.floor(STARS_PER_LAYER[i] * qualityMultiplier) }, () => makeStar(i))
-    );
+    // Create layers based on mode
+    const isLS = warpMode === WARP_MODE.LIGHT_SPEED;
+    if (isLS) {
+      // LIGHT_SPEED: much denser field with quality caps
+      const q = starfieldQuality;
+      const baseCountsStandard = [400, 450, 500, 600];
+      const factor = q === 'eco' ? 0.5 : q === 'ultra' ? 1.2 : q === 'standard' ? 1.0 : 0; // 'off' = 0
+      let counts = baseCountsStandard.map((c) => Math.floor(c * factor));
+      const total = counts.reduce((a, b) => a + b, 0);
+      const cap = q === 'eco' ? 1000 : q === 'ultra' ? 2400 : q === 'standard' ? 1800 : 0;
+      if (total > cap && total > 0) {
+        const scale = cap / total;
+        counts = counts.map((c) => Math.max(0, Math.floor(c * scale)));
+      }
+      layersRef.current = Array.from({ length: LAYERS }, (_, i) =>
+        Array.from({ length: counts[i] ?? 0 }, () => makeStar(i))
+      );
+    } else {
+      // FULL/BACKGROUND: preserve original behavior exactly
+      const qualityMultiplier = starfieldQuality === 'eco' ? 0.4 :
+                               starfieldQuality === 'ultra' ? 2.0 :
+                               starfieldQuality === 'standard' ? 1.0 : 0;  // 'off' = 0
+      layersRef.current = Array.from({ length: LAYERS }, (_, i) =>
+        Array.from({ length: Math.floor(STARS_PER_LAYER[i] * qualityMultiplier) }, () => makeStar(i))
+      );
+    }
     
     starsInitializedRef.current = true;
-  }, [starfieldQuality]);
+  }, [starfieldQuality, warpMode]);
   
   // React to quality changes - reinitialize stars
   useEffect(() => {
@@ -548,11 +570,55 @@ export const StarfieldCanvas: React.FC = memo(() => {
     if (lsActive || (lsBlendRef.current > 0.01 && modeRef.current === 'warp')) {
       const t = time; // seconds
       const breath = 0.85 + 0.15 * Math.sin(t * LS.densityHz * Math.PI * 2);
+      const quality = qualityRef.current;
+      const isEco = quality === 'eco' || quality === 'off';
+
+      // Optional cosmic background glow (disabled on ECO for performance)
+      if (!isEco) {
+        const glowR = Math.hypot(w * 0.5, viewportH * 0.5) * 1.15;
+        const bg = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, glowR);
+        bg.addColorStop(0.0, 'rgba(6, 20, 36, 0.55)');   // deep blue core
+        bg.addColorStop(0.5, 'rgba(12, 52, 74, 0.30)');  // cyan-teal mid
+        bg.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)');      // fade to transparent
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, w, h);
+      }
 
       ctx.save();
       ctx.translate(centerX, centerY);
       ctx.rotate(lsRotationRef.current);
       ctx.translate(-centerX, -centerY);
+
+      // Update star positions with radial motion + gentle swirl (LIGHT_SPEED)
+      for (let layerIdx = LAYERS - 1; layerIdx >= 0; layerIdx--) {
+        const layer = layersRef.current[layerIdx];
+        if (!layer) continue;
+        const layerSpeed = (LAYER_SPEED[layerIdx] || 1);
+        for (let i = 0; i < layer.length; i++) {
+          const s = layer[i];
+          const dx = s.x - centerX;
+          const dy = s.y - centerY;
+          const dist = Math.hypot(dx, dy);
+          if (dist > 0) {
+            const ux = dx / dist;
+            const uy = dy / dist;
+            const base = speedRef.current * layerSpeed * 1.35; // faster than FULL for LS depth
+            // perpendicular swirl
+            const tx = -uy;
+            const ty = ux;
+            const swirl = Math.sin(t * (1.1 + layerIdx * 0.35) + i * 0.25) * 0.6;
+            s.x += ux * base + tx * swirl;
+            s.y += uy * base + ty * swirl;
+          }
+          // Wrap with generous bounds to avoid edge pops
+          if (s.x < -200 || s.x > w + 200 || s.y < -200 || s.y > h + 200) {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = Math.random() * Math.min(w, viewportH) * 0.4;
+            s.x = centerX + Math.cos(angle) * radius;
+            s.y = centerY + Math.sin(angle) * radius;
+          }
+        }
+      }
 
       // Draw back-to-front for depth consistency
       for (let layerIdx = LAYERS - 1; layerIdx >= 0; layerIdx--) {
@@ -597,12 +663,18 @@ export const StarfieldCanvas: React.FC = memo(() => {
           }
 
           const grad = ctx.createLinearGradient(tx, ty, hx, hy);
-          // LIGHT_SPEED_EXPERIMENT: inverted feather fade (edges bright, center softer)
+          // LIGHT_SPEED_EXPERIMENT: blue→cyan→white radial-tinted streaks, crisp tail
           const cfg = getLightSpeedSessionConfig();
-          grad.addColorStop(0.00, `rgba(255,255,255,${cfg.edgeBrightness})`);
-          grad.addColorStop(0.20, LS.headViolet);
-          grad.addColorStop(0.55, `rgba(255,255,255,${cfg.centerBrightness})`);
-          grad.addColorStop(1.00, `rgba(255,255,255,${cfg.edgeBrightness})`);
+          const maxR = Math.hypot(w * 0.5, viewportH * 0.5) || 1;
+          const rn = Math.min(r / maxR, 1);
+          const headColor = rn < 0.35
+            ? 'rgba(96, 165, 250, 0.95)'   // blue
+            : rn < 0.7
+              ? 'rgba(34, 211, 238, 0.92)' // cyan
+              : 'rgba(255, 255, 255, 0.92)'; // white near edges
+          grad.addColorStop(0.00, headColor);
+          grad.addColorStop(0.78, `rgba(255,255,255,${cfg.centerBrightness})`);
+          grad.addColorStop(1.00, 'rgba(255,255,255,0.08)');
 
           ctx.strokeStyle = grad;
           ctx.lineCap = 'round';
@@ -618,7 +690,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
       ctx.restore();
 
       // LIGHT_SPEED_EXPERIMENT: central tunnel void overlay (subtle dark radial fade)
-      {
+      if (!isEco) {
         const cfg = getLightSpeedSessionConfig();
         const tunnelRadius = Math.min(w, viewportH) * cfg.tunnelRadiusFactor;
         const tunnelGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, tunnelRadius);
@@ -629,7 +701,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
       }
 
       // LIGHT_SPEED_EXPERIMENT: inverted feather fade on canvas (edges brightest, center softer)
-      {
+      if (!isEco) {
         const cfg = getLightSpeedSessionConfig();
         const centerToCorner = Math.hypot(w * 0.5, viewportH * 0.5);
         const outerR = centerToCorner * 1.02; // ensure it reaches beyond the corners
