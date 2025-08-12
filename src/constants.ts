@@ -71,6 +71,23 @@ export const WARP_MODE = {
   LIGHT_SPEED: 'light_speed'
 } as const;
 
+// LIGHT_SPEED_EXPERIMENT: configuration for LIGHT SPEED visuals and per-session variation
+export const LIGHT_SPEED_CONFIG = {
+  swirlSpeed: 2500,        // ms for full oscillation
+  swirlAmplitude: 0.003,   // radians
+  tunnelRadiusFactor: 0.10,// % of min(canvas.width, canvas.height)
+  tunnelDarkness: 0.35,    // 0 = no dark center, 1 = full black
+  edgeBrightness: 0.95,    // alpha at edges
+  centerBrightness: 0.70,  // alpha at center
+
+  variation: {
+    swirlSpeedRange: [2000, 3000] as [number, number],     // ms range
+    swirlAmplitudeRange: [0.002, 0.004] as [number, number],
+    tunnelRadiusRange: [0.08, 0.12] as [number, number],   // factor range
+    tunnelDarknessRange: [0.3, 0.4] as [number, number]
+  }
+} as const;
+
 export const WARP_ANIMATION = {
   STAR_COUNT: 520,         // For full warp
   STAR_COUNT_BG: 455,      // For background warp

@@ -138,7 +138,7 @@ export const StarfieldControls: React.FC = () => {
           {EXPERIMENT_LIGHT_SPEED && (
             <button
               onClick={() => handleWarpModeChange(WARP_MODE.LIGHT_SPEED)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors light-speed-btn ${
                 warpMode === WARP_MODE.LIGHT_SPEED
                   ? 'bg-deep-purple-600 text-white ls-active'
                   : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
@@ -150,16 +150,16 @@ export const StarfieldControls: React.FC = () => {
           )}
         </div>
 
-        {/* LIGHT SPEED Fullscreen toggle */}
-        {EXPERIMENT_LIGHT_SPEED && (
+        {/* LIGHT SPEED Fullscreen toggle - only visible in LIGHT SPEED */}
+        {EXPERIMENT_LIGHT_SPEED && warpMode === WARP_MODE.LIGHT_SPEED && (
           <div className="flex items-center gap-3">
             <label className="text-sm text-gray-700 dark:text-gray-300">Fullscreen</label>
             <input
               type="checkbox"
               checked={!!lightSpeedFullscreen}
               onChange={(e) => setLightSpeedFullscreen(e.target.checked)}
-              disabled={warpMode !== WARP_MODE.LIGHT_SPEED}
-              title={warpMode !== WARP_MODE.LIGHT_SPEED ? 'Only available in LIGHT SPEED' : ''}
+              disabled={false}
+              title={''}
               className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-deep-purple-600 focus:ring-deep-purple-500 disabled:opacity-50"
             />
           </div>

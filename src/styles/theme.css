@@ -57,6 +57,18 @@ body{
   55% { box-shadow: 0 0 0 8px rgba(139,92,246,0); opacity:.55 }
   100%{ box-shadow: 0 0 0 0 rgba(139,92,246,0); opacity:.95 }
 }
+/* LIGHT_SPEED_EXPERIMENT: animated LIGHT SPEED segmented button styling */
+.light-speed-btn {
+  background: linear-gradient(90deg, #9333ea, #c084fc, #9333ea);
+  background-size: 200% 200%;
+  animation: lightSpeedPulse 3s infinite ease-in-out;
+  box-shadow: 0 0 8px rgba(192, 132, 252, 0.6);
+  color: #fff;
+}
+@keyframes lightSpeedPulse {
+  0%, 100% { background-position: 0% 50%; box-shadow: 0 0 8px rgba(192, 132, 252, 0.6); }
+  50% { background-position: 100% 50%; box-shadow: 0 0 14px rgba(192, 132, 252, 0.9); }
+}
 @media (prefers-reduced-motion: reduce){
   .halo-pulse::after, .ls-active::after{ animation: none }
 }

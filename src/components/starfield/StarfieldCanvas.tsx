@@ -3,7 +3,7 @@ import { useTimerStore } from '../../store/timerSlice';
 import { useWarpStore } from '../../store/warpSlice';
 
 // Warp mode enum from central constants (avoid duplication/mismatch)
-import { WARP_MODE, EXPERIMENT_LIGHT_SPEED } from '../../constants';
+import { WARP_MODE, EXPERIMENT_LIGHT_SPEED, LIGHT_SPEED_CONFIG } from '../../constants';
 
 // LIGHT_SPEED_EXPERIMENT: debug marker for sanity checks
 console.log('[LIGHT_SPEED_EXPERIMENT] StarfieldCanvas.tsx loaded; EXPERIMENT_LIGHT_SPEED =', EXPERIMENT_LIGHT_SPEED);
@@ -21,6 +21,31 @@ const LS = {
   headViolet: 'rgba(216,180,254,0.95)',
   tailWhite: 'rgba(255,255,255,0.08)'
 };
+
+// LIGHT_SPEED_EXPERIMENT: per-session variation configuration (resets on reload)
+let lightSpeedSessionConfig: {
+  swirlSpeed: number;
+  swirlAmplitude: number;
+  tunnelRadiusFactor: number;
+  tunnelDarkness: number;
+  edgeBrightness: number;
+  centerBrightness: number;
+} | null = null;
+
+function getLightSpeedSessionConfig() {
+  if (!lightSpeedSessionConfig) {
+    const randInRange = (min: number, max: number) => min + Math.random() * (max - min);
+    lightSpeedSessionConfig = {
+      swirlSpeed: randInRange(...LIGHT_SPEED_CONFIG.variation.swirlSpeedRange),
+      swirlAmplitude: randInRange(...LIGHT_SPEED_CONFIG.variation.swirlAmplitudeRange),
+      tunnelRadiusFactor: randInRange(...LIGHT_SPEED_CONFIG.variation.tunnelRadiusRange),
+      tunnelDarkness: randInRange(...LIGHT_SPEED_CONFIG.variation.tunnelDarknessRange),
+      edgeBrightness: LIGHT_SPEED_CONFIG.edgeBrightness,
+      centerBrightness: LIGHT_SPEED_CONFIG.centerBrightness,
+    };
+  }
+  return lightSpeedSessionConfig;
+}
 
 // Types
 interface Star {
@@ -388,6 +413,13 @@ export const StarfieldCanvas: React.FC = memo(() => {
     
     // Clear canvas
     ctx.clearRect(0, 0, w, h);
+
+    // LIGHT_SPEED_EXPERIMENT: compute a global swirl angle (do not mutate star positions)
+    let lsGlobalSwirl = 0;
+    if (lsActive) {
+      const cfg = getLightSpeedSessionConfig();
+      lsGlobalSwirl = Math.sin(performance.now() / cfg.swirlSpeed) * cfg.swirlAmplitude;
+    }
     
     // Update speed with smoother easing for seamless transition
     const speedDiff = targetSpeedRef.current - speedRef.current;
@@ -538,7 +570,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
           const r = Math.hypot(dx, dy) || 1;
           const baseAng = Math.atan2(dy, dx);
           const swirl = Math.sin(t * swirlFreq + i * 0.33) * 0.06;
-          const ang = baseAng + swirl;
+          const ang = baseAng + swirl + lsGlobalSwirl;
           const ux = Math.cos(ang);
           const uy = Math.sin(ang);
 
@@ -565,9 +597,12 @@ export const StarfieldCanvas: React.FC = memo(() => {
           }
 
           const grad = ctx.createLinearGradient(tx, ty, hx, hy);
-          grad.addColorStop(0.00, LS.tailWhite);
-          grad.addColorStop(0.78, LS.headViolet);
-          grad.addColorStop(1.00, 'rgba(255,255,255,0.95)');
+          // LIGHT_SPEED_EXPERIMENT: inverted feather fade (edges bright, center softer)
+          const cfg = getLightSpeedSessionConfig();
+          grad.addColorStop(0.00, `rgba(255,255,255,${cfg.edgeBrightness})`);
+          grad.addColorStop(0.20, LS.headViolet);
+          grad.addColorStop(0.55, `rgba(255,255,255,${cfg.centerBrightness})`);
+          grad.addColorStop(1.00, `rgba(255,255,255,${cfg.edgeBrightness})`);
 
           ctx.strokeStyle = grad;
           ctx.lineCap = 'round';
@@ -581,6 +616,31 @@ export const StarfieldCanvas: React.FC = memo(() => {
       }
 
       ctx.restore();
+
+      // LIGHT_SPEED_EXPERIMENT: central tunnel void overlay (subtle dark radial fade)
+      {
+        const cfg = getLightSpeedSessionConfig();
+        const tunnelRadius = Math.min(w, viewportH) * cfg.tunnelRadiusFactor;
+        const tunnelGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, tunnelRadius);
+        tunnelGrad.addColorStop(0, `rgba(0,0,0,${cfg.tunnelDarkness})`);
+        tunnelGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = tunnelGrad;
+        ctx.fillRect(0, 0, w, h);
+      }
+
+      // LIGHT_SPEED_EXPERIMENT: inverted feather fade on canvas (edges slightly brighter)
+      {
+        const cfg = getLightSpeedSessionConfig();
+        const vignetteRadius = Math.max(w, viewportH) * 0.75;
+        const edgeGrad = ctx.createRadialGradient(centerX, centerY, vignetteRadius * 0.4, centerX, centerY, vignetteRadius);
+        edgeGrad.addColorStop(0, 'rgba(255,255,255,0)');
+        edgeGrad.addColorStop(1, `rgba(255,255,255,${Math.max(0, Math.min(0.08, (cfg.edgeBrightness - cfg.centerBrightness) * 0.2))})`);
+        const prevOp = ctx.globalCompositeOperation;
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.fillStyle = edgeGrad;
+        ctx.fillRect(0, 0, w, h);
+        ctx.globalCompositeOperation = prevOp as GlobalCompositeOperation;
+      }
 
       // Continue animation and early return to avoid FULL logic
       if (isAnimatingRef.current) {
