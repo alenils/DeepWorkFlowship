@@ -628,15 +628,19 @@ export const StarfieldCanvas: React.FC = memo(() => {
         ctx.fillRect(0, 0, w, h);
       }
 
-      // LIGHT_SPEED_EXPERIMENT: inverted feather fade on canvas (edges slightly brighter)
+      // LIGHT_SPEED_EXPERIMENT: inverted feather fade on canvas (edges brightest, center softer)
       {
         const cfg = getLightSpeedSessionConfig();
-        const vignetteRadius = Math.max(w, viewportH) * 0.75;
-        const edgeGrad = ctx.createRadialGradient(centerX, centerY, vignetteRadius * 0.4, centerX, centerY, vignetteRadius);
-        edgeGrad.addColorStop(0, 'rgba(255,255,255,0)');
-        edgeGrad.addColorStop(1, `rgba(255,255,255,${Math.max(0, Math.min(0.08, (cfg.edgeBrightness - cfg.centerBrightness) * 0.2))})`);
+        const centerToCorner = Math.hypot(w * 0.5, viewportH * 0.5);
+        const outerR = centerToCorner * 1.02; // ensure it reaches beyond the corners
+        const innerR = outerR * 0.93; // thin rim near the very edges
+        const edgeGrad = ctx.createRadialGradient(centerX, centerY, innerR, centerX, centerY, outerR);
+        edgeGrad.addColorStop(0.0, 'rgba(255,255,255,0)');
+        edgeGrad.addColorStop(0.92, 'rgba(255,255,255,0)');
+        const edgeStrength = Math.min(0.40, Math.max(0.18, (cfg.edgeBrightness - cfg.centerBrightness) * 2.2));
+        edgeGrad.addColorStop(1.0, `rgba(255,255,255,${edgeStrength})`);
         const prevOp = ctx.globalCompositeOperation;
-        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalCompositeOperation = 'screen';
         ctx.fillStyle = edgeGrad;
         ctx.fillRect(0, 0, w, h);
         ctx.globalCompositeOperation = prevOp as GlobalCompositeOperation;
