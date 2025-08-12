@@ -138,7 +138,7 @@ export const StarfieldControls: React.FC = () => {
               onClick={() => handleWarpModeChange(WARP_MODE.LIGHT_SPEED)}
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                 warpMode === WARP_MODE.LIGHT_SPEED
-                  ? 'bg-deep-purple-600 text-white halo-pulse'
+                  ? 'bg-deep-purple-600 text-white ls-active'
                   : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
               }`}
               title="Experimental light speed mode"
@@ -194,12 +194,12 @@ export const StarfieldControls: React.FC = () => {
           {EXPERIMENT_LIGHT_SPEED ? (
             <p>
               Press <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">W</kbd>
-              {' '}to cycle: Background → Full → Light Speed
+              {' '}to cycle: None → Background → Full → Light Speed
             </p>
           ) : (
             <p>
               Press <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">W</kbd>
-              {' '}to cycle: Background ↔ Full
+              {' '}to cycle: None → Background → Full
             </p>
           )}
         </div>

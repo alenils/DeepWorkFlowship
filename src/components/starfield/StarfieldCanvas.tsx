@@ -10,14 +10,17 @@ console.log('[LIGHT_SPEED_EXPERIMENT] StarfieldCanvas.tsx loaded; EXPERIMENT_LIG
 
 // LIGHT_SPEED_EXPERIMENT: LS tuning and helpers
 const LS = {
-  axialOmega: 0.18,      // radians/sec, slow ship rotation
-  lineLenMult: 6.0,      // times longer than FULL
-  lineWidthMult: 1.25,   // slightly thicker
-  globalDrift: 0.0,      // nearly static radial drift
-  headAlpha: 0.95,
-  tailAlpha: 0.02,
+  axialOmega: 0.12,            // slow ship spin (rad/s)
+  lineLenMult: 5.5,            // much longer than normal warp
+  lineWidthMult: 1.15,         // slightly thicker
+  microJitter: 0.15,           // px jitter amplitude
+  microHz: 1.1,                // jitter frequency (Hz)
+  layerParallax: [0.92, 1.0, 1.06], // three depth layers scaling
+  swirlHz: [0.20, 0.27, 0.34],      // gentle layer swirl freqs
+  densityHz: 0.06,             // slow breathing of density/intensity
+  headViolet: 'rgba(216,180,254,0.95)',
+  tailWhite: 'rgba(255,255,255,0.05)'
 };
-function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
 
 // Types
 interface Star {
@@ -402,8 +405,8 @@ export const StarfieldCanvas: React.FC = memo(() => {
     // LIGHT_SPEED_EXPERIMENT: ease blend factor toward target and advance axial rotation
     const lsTarget = lsActive ? 1 : 0;
     // ~150ms half-life (dt * 6)
-    lsBlendRef.current = lerp(lsBlendRef.current, lsTarget, Math.min(1, dt * 6));
-    lsRotationRef.current += (LS.axialOmega * dt) * (0.5 + 0.5 * lsBlendRef.current); // slower at entry, full speed at blend=1
+    lsBlendRef.current = Math.min(1, Math.max(0, lsBlendRef.current + (lsTarget - lsBlendRef.current) * Math.min(1, dt * 6)));
+    lsRotationRef.current += LS.axialOmega * dt;
     
     // Update and draw celestial bodies (behind stars)
     if (celestialBodiesRef.current.length > 0) {
@@ -509,71 +512,75 @@ export const StarfieldCanvas: React.FC = memo(() => {
       }
     }
     
-    // LIGHT_SPEED_EXPERIMENT: distinct LIGHT_SPEED rendering branch
+    // LIGHT_SPEED_EXPERIMENT: distinct LIGHT_SPEED atmospheric rendering branch
     if (lsActive || (lsBlendRef.current > 0.01 && modeRef.current === 'warp')) {
-      const cosR = Math.cos(lsRotationRef.current);
-      const sinR = Math.sin(lsRotationRef.current);
-      const blend = lsBlendRef.current;
+      const t = time; // seconds
+      const breath = 0.85 + 0.15 * Math.sin(t * LS.densityHz * Math.PI * 2);
+
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.rotate(lsRotationRef.current);
+      ctx.translate(-centerX, -centerY);
 
       // Draw back-to-front for depth consistency
       for (let layerIdx = LAYERS - 1; layerIdx >= 0; layerIdx--) {
         const layer = layersRef.current[layerIdx];
         if (!layer) continue;
 
-        // Base length derived from layer streak tuning
-        const baseLen = LAYER_STREAK[layerIdx] * 20; // engine baseline
-        const lenMult = 1 + (LS.lineLenMult - 1) * blend; // smoothly extend
-        const widthMult = 1 + (LS.lineWidthMult - 1) * blend;
-        const headAlpha = LS.headAlpha * blend;
-        const tailAlpha = Math.max(LS.tailAlpha * blend, 0.01);
+        const parallax = LS.layerParallax[Math.min(layerIdx, LS.layerParallax.length - 1)];
+        const swirlFreq = LS.swirlHz[Math.min(layerIdx, LS.swirlHz.length - 1)];
+        const baseLen = LAYER_STREAK[layerIdx] * 20;
 
-        for (const s of layer) {
+        for (let i = 0; i < layer.length; i++) {
+          const s = layer[i];
           const dx = s.x - centerX;
           const dy = s.y - centerY;
-          // Rotate for global axial spin illusion
-          const rx = dx * cosR - dy * sinR;
-          const ry = dx * sinR + dy * cosR;
-          const px = centerX + rx;
-          const py = centerY + ry;
+          const r = Math.hypot(dx, dy) || 1;
+          const baseAng = Math.atan2(dy, dx);
+          const swirl = Math.sin(t * swirlFreq + i * 0.33) * 0.06;
+          const ang = baseAng + swirl;
+          const ux = Math.cos(ang);
+          const uy = Math.sin(ang);
 
-          const r = Math.hypot(rx, ry) || 1;
-          const ux = rx / r, uy = ry / r; // radial unit
+          // Micro jitter along streak direction so it feels alive
+          const j = LS.microJitter * Math.sin((t + i) * LS.microHz * 2 * Math.PI);
+          const px = centerX + ux * r + ux * j;
+          const py = centerY + uy * r + uy * j;
 
-          // Very long tapered streak, nearly static
-          const L = baseLen * lenMult;
-          const tx = px - ux * L * 0.5; // tail
+          // Very long tapered streak, slightly wider; scale by blend & parallax
+          const L = baseLen * LS.lineLenMult * parallax * (0.8 + 0.2 * lsBlendRef.current);
+          const W = (s.size || 1) * LS.lineWidthMult;
+
+          const tx = px - ux * L * 0.5;
           const ty = py - uy * L * 0.5;
-          const hx = px + ux * L * 0.5; // head
+          const hx = px + ux * L * 0.5;
           const hy = py + uy * L * 0.5;
 
           // Skip drawing in session void area
           if (isSessionActive) {
             const baseVoidRadius = 40;
-            const voidRadius = baseVoidRadius + (speedRef.current * 3) * (lsActive ? 1.15 : 1);
-            if (r < voidRadius) continue;
+            const dist = Math.hypot(px - centerX, py - centerY);
+            const voidRadius = baseVoidRadius + (speedRef.current * 3) * 1.15;
+            if (dist < voidRadius) continue;
           }
 
           const grad = ctx.createLinearGradient(tx, ty, hx, hy);
-          grad.addColorStop(0.00, `rgba(255,255,255,${tailAlpha})`);
-          grad.addColorStop(0.85, `rgba(216,180,254,${headAlpha})`); // violet-ish head
-          grad.addColorStop(1.00, `rgba(255,255,255,${Math.min(1, headAlpha)})`);
+          grad.addColorStop(0.00, LS.tailWhite);
+          grad.addColorStop(0.85, LS.headViolet);
+          grad.addColorStop(1.00, 'rgba(255,255,255,0.95)');
 
           ctx.strokeStyle = grad;
           ctx.lineCap = 'round';
-          ctx.lineWidth = (s.size || 1) * widthMult;
+          ctx.lineWidth = W;
+          ctx.globalAlpha = breath;
           ctx.beginPath();
           ctx.moveTo(tx, ty);
           ctx.lineTo(hx, hy);
           ctx.stroke();
-
-          // Optional tiny radial drift near entry so it doesn't look frozen
-          if (blend < 0.2) {
-            const drift = (0.05 + 0.15 * blend) * (1 + layerIdx * 0.1);
-            s.x += ux * drift;
-            s.y += uy * drift;
-          }
         }
       }
+
+      ctx.restore();
 
       // Continue animation and early return to avoid FULL logic
       if (isAnimatingRef.current) {
@@ -870,17 +877,24 @@ export const StarfieldCanvas: React.FC = memo(() => {
     if (warpMode === WARP_MODE.NONE) {
       return { display: 'none' };
     }
-    
-    return {
-      position: 'absolute' as const,
-      top: 0,
-      left: 0,
-      width: '100%',
-      backgroundColor: 'black',
-      // In FULL or LIGHT_SPEED warp, overlay main UI but keep controls/booster above
-      zIndex: (warpMode === WARP_MODE.FULL || warpMode === WARP_MODE.LIGHT_SPEED) ? 9998 : 1,
-      pointerEvents: 'none' as const
-    };
+    const isFullOverlay = warpMode === WARP_MODE.FULL; // LIGHT_SPEED excluded
+    return isFullOverlay
+      ? {
+          position: 'fixed' as const,
+          top: 0,
+          left: 0,
+          backgroundColor: 'black',
+          zIndex: 9998,
+          pointerEvents: 'none' as const
+        }
+      : {
+          position: 'fixed' as const,
+          top: 0,
+          left: 0,
+          backgroundColor: 'black',
+          zIndex: 1,
+          pointerEvents: 'none' as const
+        };
   }, [warpMode]);
   
   return (
