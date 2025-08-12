@@ -20,6 +20,8 @@ export const initialWarpState = {
   isDecelerating: false, // New state for session end deceleration
   thrustTransitionProgress: 0, // 0 to 1 for smooth transition
   effectiveSpeed: WARP_ANIMATION.DEFAULT_SPEED, // Actual speed used for rendering
+  // LIGHT_SPEED fullscreen overlay toggle (persisted)
+  lightSpeedFullscreen: false,
 };
 
 // Define the warp state interface
@@ -33,6 +35,7 @@ interface WarpState {
   isDecelerating: boolean; // New state for session end deceleration
   thrustTransitionProgress: number;
   effectiveSpeed: number;
+  lightSpeedFullscreen: boolean;
 }
 
 // Define warp actions
@@ -46,6 +49,7 @@ interface WarpActions {
   setIsDecelerating: (isDecelerating: boolean) => void; // New setter
   setThrustTransitionProgress: (progress: number) => void;
   setEffectiveSpeed: (speed: number) => void;
+  setLightSpeedFullscreen: (on: boolean) => void;
   triggerThrust: (durationMs?: number) => void;
   startSessionWarp: () => void; // New function for session start
   endSessionWarp: () => void; // New function for session end
@@ -85,6 +89,7 @@ export const useWarpStore = create<WarpState & WarpActions>()(
       setIsDecelerating: (isDecelerating) => set({ isDecelerating }),
       setThrustTransitionProgress: (progress) => set({ thrustTransitionProgress: progress }),
       setEffectiveSpeed: (speed) => set({ effectiveSpeed: speed }),
+      setLightSpeedFullscreen: (on) => set({ lightSpeedFullscreen: on }),
       
       // Complex actions
       triggerThrust: (durationMs = THRUST_SHAKE_DURATION_MS) => {
@@ -197,14 +202,24 @@ export const useWarpStore = create<WarpState & WarpActions>()(
         showExitButton: state.showExitButton,
         showDistractionInWarp: state.showDistractionInWarp,
         starfieldQuality: state.starfieldQuality,
+        lightSpeedFullscreen: state.lightSpeedFullscreen,
       }),
       // LIGHT_SPEED_EXPERIMENT: coerce persisted light_speed to FULL when the experiment is disabled
       migrate: (persistedState: any) => {
         if (!persistedState) return persistedState;
-        if (!EXPERIMENT_LIGHT_SPEED && persistedState.warpMode === WARP_MODE.LIGHT_SPEED) {
-          return { ...persistedState, warpMode: WARP_MODE.FULL };
+        const next = { 
+          lightSpeedFullscreen: false,
+          ...persistedState,
+        };
+        // Coerce LIGHT_SPEED to FULL when experiment disabled
+        if (!EXPERIMENT_LIGHT_SPEED && next.warpMode === WARP_MODE.LIGHT_SPEED) {
+          next.warpMode = WARP_MODE.FULL;
         }
-        return persistedState;
+        // Ensure boolean default for new key
+        if (typeof next.lightSpeedFullscreen !== 'boolean') {
+          next.lightSpeedFullscreen = false;
+        }
+        return next;
       }
     }
   )

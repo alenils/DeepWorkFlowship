@@ -17,9 +17,11 @@ export const StarfieldControls: React.FC = () => {
     warpMode,
     speedMultiplier,
     starfieldQuality,
+    lightSpeedFullscreen,
     setWarpMode,
     setSpeedMultiplier,
-    setStarfieldQuality
+    setStarfieldQuality,
+    setLightSpeedFullscreen
   } = useWarpStore();
 
 
@@ -148,6 +150,21 @@ export const StarfieldControls: React.FC = () => {
           )}
         </div>
 
+        {/* LIGHT SPEED Fullscreen toggle */}
+        {EXPERIMENT_LIGHT_SPEED && (
+          <div className="flex items-center gap-3">
+            <label className="text-sm text-gray-700 dark:text-gray-300">Fullscreen</label>
+            <input
+              type="checkbox"
+              checked={!!lightSpeedFullscreen}
+              onChange={(e) => setLightSpeedFullscreen(e.target.checked)}
+              disabled={warpMode !== WARP_MODE.LIGHT_SPEED}
+              title={warpMode !== WARP_MODE.LIGHT_SPEED ? 'Only available in LIGHT SPEED' : ''}
+              className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-deep-purple-600 focus:ring-deep-purple-500 disabled:opacity-50"
+            />
+          </div>
+        )}
+
         {/* Speed Multiplier Slider */}
         <div className="space-y-1">
           <div className="flex justify-between">
@@ -206,4 +223,4 @@ export const StarfieldControls: React.FC = () => {
       </div>
     </PanelContainer>
   );
-}; 
+};

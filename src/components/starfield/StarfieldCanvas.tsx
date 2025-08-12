@@ -19,7 +19,7 @@ const LS = {
   swirlHz: [0.20, 0.27, 0.34],      // gentle layer swirl freqs
   densityHz: 0.06,             // slow breathing of density/intensity
   headViolet: 'rgba(216,180,254,0.95)',
-  tailWhite: 'rgba(255,255,255,0.05)'
+  tailWhite: 'rgba(255,255,255,0.08)'
 };
 
 // Types
@@ -89,8 +89,8 @@ export const StarfieldCanvas: React.FC = memo(() => {
   // Get session state from timer store
   const { isSessionActive } = useTimerStore();
   
-  // Get warp mode, speed multiplier, and quality from warp store
-  const { warpMode, speedMultiplier, starfieldQuality } = useWarpStore();
+  // Get warp mode, speed multiplier, quality, and LS fullscreen flag from warp store
+  const { warpMode, speedMultiplier, starfieldQuality, lightSpeedFullscreen } = useWarpStore();
 
   // Canvas and  // State and refs
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -566,7 +566,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
 
           const grad = ctx.createLinearGradient(tx, ty, hx, hy);
           grad.addColorStop(0.00, LS.tailWhite);
-          grad.addColorStop(0.85, LS.headViolet);
+          grad.addColorStop(0.78, LS.headViolet);
           grad.addColorStop(1.00, 'rgba(255,255,255,0.95)');
 
           ctx.strokeStyle = grad;
@@ -875,16 +875,18 @@ export const StarfieldCanvas: React.FC = memo(() => {
   // Determine canvas visibility and z-index based on warp mode
   const canvasStyle = React.useMemo(() => {
     if (warpMode === WARP_MODE.NONE) {
-      return { display: 'none' };
+      return { display: 'none' } as const;
     }
-    const isFullOverlay = warpMode === WARP_MODE.FULL; // LIGHT_SPEED excluded
+    const isFullOverlay =
+      warpMode === WARP_MODE.FULL ||
+      (warpMode === WARP_MODE.LIGHT_SPEED && lightSpeedFullscreen);
     return isFullOverlay
       ? {
           position: 'fixed' as const,
           top: 0,
           left: 0,
           backgroundColor: 'black',
-          zIndex: 9998,
+          zIndex: 9999,
           pointerEvents: 'none' as const
         }
       : {
@@ -895,7 +897,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
           zIndex: 1,
           pointerEvents: 'none' as const
         };
-  }, [warpMode]);
+  }, [warpMode, lightSpeedFullscreen]);
   
   return (
     <canvas
