@@ -10,14 +10,14 @@ console.log('[LIGHT_SPEED_EXPERIMENT] StarfieldCanvas.tsx loaded; EXPERIMENT_LIG
 
 // LIGHT_SPEED_EXPERIMENT: LS tuning and helpers
 const LS = {
-  axialOmega: 0.12,            // slow ship spin (rad/s)
-  lineLenMult: 5.5,            // much longer than normal warp
+  axialOmega: 0.006,           // axial rotation (rad/s) ≤ 0.008 for near-static feel
+  lineLenMult: 8.0,            // much longer than normal warp (3–4× typical)
   lineWidthMult: 1.15,         // slightly thicker
-  microJitter: 0.15,           // px jitter amplitude
-  microHz: 1.1,                // jitter frequency (Hz)
+  microJitter: 0.006,          // noise amplitude factor (≤ 0.6% of radius)
+  microHz: 0.8,                // jitter frequency (Hz)
   layerParallax: [0.92, 1.0, 1.06], // three depth layers scaling
-  swirlHz: [0.20, 0.27, 0.34],      // gentle layer swirl freqs
-  densityHz: 0.06,             // slow breathing of density/intensity
+  swirlHz: [0.07, 0.09, 0.11],      // gentle layer swirl freqs
+  densityHz: 0.06,             // legacy breath rate (not used for lightness directly)
   headViolet: 'rgba(216,180,254,0.95)',
   tailWhite: 'rgba(255,255,255,0.08)'
 };
@@ -30,6 +30,11 @@ let lightSpeedSessionConfig: {
   tunnelDarkness: number;
   edgeBrightness: number;
   centerBrightness: number;
+  breathPeriodSec: number;      // 10–14s breathing period
+  breathLightnessAmp: number;   // ±4% lightness
+  twinkleActiveRatio: number;   // 1–2% active at any moment
+  twinkleDurationMsMin: number; // 250ms
+  twinkleDurationMsMax: number; // 400ms
 } | null = null;
 
 function getLightSpeedSessionConfig() {
@@ -38,10 +43,15 @@ function getLightSpeedSessionConfig() {
     lightSpeedSessionConfig = {
       swirlSpeed: randInRange(...LIGHT_SPEED_CONFIG.variation.swirlSpeedRange),
       swirlAmplitude: randInRange(...LIGHT_SPEED_CONFIG.variation.swirlAmplitudeRange),
-      tunnelRadiusFactor: randInRange(...LIGHT_SPEED_CONFIG.variation.tunnelRadiusRange),
-      tunnelDarkness: randInRange(...LIGHT_SPEED_CONFIG.variation.tunnelDarknessRange),
+      tunnelRadiusFactor: 0.08, // center void ≈ 8% of min(view W,H)
+      tunnelDarkness: 0.28,     // ~20% lighter than previous 0.35
       edgeBrightness: LIGHT_SPEED_CONFIG.edgeBrightness,
       centerBrightness: LIGHT_SPEED_CONFIG.centerBrightness,
+      breathPeriodSec: randInRange(10, 14),
+      breathLightnessAmp: 0.04,
+      twinkleActiveRatio: 0.015, // 1.5% of streaks twinkling
+      twinkleDurationMsMin: 250,
+      twinkleDurationMsMax: 400,
     };
   }
   return lightSpeedSessionConfig;
@@ -58,6 +68,11 @@ interface Star {
   colorIndex: number;
   twinklePhase: number;
   twinkleSpeed: number;
+  // LIGHT_SPEED_EXPERIMENT: per-star seeds and twinkle state (for rare twinkle + noise)
+  seedA: number;
+  seedB: number;
+  twinkleUntil: number;     // epoch seconds when twinkle ends
+  twinkleStrength: number;  // 0..1, scaled to ±12%
 }
 
 interface CelestialBody {
@@ -136,6 +151,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
   const lsRotationRef = useRef(0);
   const lsBlendRef = useRef(0); // 0 = FULL style, 1 = LS style
   const lastTimeRef = useRef<number | null>(null);
+  const isFullWarpRef = useRef(false);
   
   // Layers and stars
   const layersRef = useRef<Star[][]>([]);
@@ -178,7 +194,11 @@ export const StarfieldCanvas: React.FC = memo(() => {
         size: 0.5 + Math.random() * 2.5,
         colorIndex: Math.floor(Math.random() * COLOR_PALETTE.length),
         twinklePhase: Math.random() * Math.PI * 2,
-        twinkleSpeed: 0.2 + Math.random() * 0.4
+        twinkleSpeed: 0.2 + Math.random() * 0.4,
+        seedA: Math.random() * 1000,
+        seedB: Math.random() * 1000,
+        twinkleUntil: 0,
+        twinkleStrength: 0.6 + Math.random() * 0.4
       };
     };
     
@@ -453,7 +473,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
       speedRef.current = targetSpeedRef.current;
     }
     
-    // Update camera rotation
+    // Update camera rotation (global), very subtle in LIGHT SPEED
     cameraRotationRef.current += CAMERA_ROT_SPEED;
 
     // LIGHT_SPEED_EXPERIMENT: ease blend factor toward target and advance axial rotation
@@ -569,16 +589,18 @@ export const StarfieldCanvas: React.FC = memo(() => {
     // LIGHT_SPEED_EXPERIMENT: distinct LIGHT_SPEED atmospheric rendering branch
     if (lsActive || (lsBlendRef.current > 0.01 && modeRef.current === 'warp')) {
       const t = time; // seconds
-      const breath = 0.85 + 0.15 * Math.sin(t * LS.densityHz * Math.PI * 2);
+      const cfg = getLightSpeedSessionConfig();
+      // Gentle HSL-like lightness breathing (±4% over 10–14s)
+      const breathLight = 1 + cfg.breathLightnessAmp * Math.sin((t / cfg.breathPeriodSec) * Math.PI * 2);
       const quality = qualityRef.current;
       const isEco = quality === 'eco' || quality === 'off';
 
-      // Optional cosmic background glow (disabled on ECO for performance)
+      // Background: very dark blue-violet radial gradient (disabled on ECO for perf)
       if (!isEco) {
         const glowR = Math.hypot(w * 0.5, viewportH * 0.5) * 1.15;
         const bg = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, glowR);
-        bg.addColorStop(0.0, 'rgba(6, 20, 36, 0.55)');   // deep blue core
-        bg.addColorStop(0.5, 'rgba(12, 52, 74, 0.30)');  // cyan-teal mid
+        bg.addColorStop(0.0, 'rgba(8, 10, 30, 0.70)');   // deep blue-violet core
+        bg.addColorStop(0.5, 'rgba(10, 20, 45, 0.35)');  // subtle blue mid
         bg.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)');      // fade to transparent
         ctx.fillStyle = bg;
         ctx.fillRect(0, 0, w, h);
@@ -589,36 +611,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
       ctx.rotate(lsRotationRef.current);
       ctx.translate(-centerX, -centerY);
 
-      // Update star positions with radial motion + gentle swirl (LIGHT_SPEED)
-      for (let layerIdx = LAYERS - 1; layerIdx >= 0; layerIdx--) {
-        const layer = layersRef.current[layerIdx];
-        if (!layer) continue;
-        const layerSpeed = (LAYER_SPEED[layerIdx] || 1);
-        for (let i = 0; i < layer.length; i++) {
-          const s = layer[i];
-          const dx = s.x - centerX;
-          const dy = s.y - centerY;
-          const dist = Math.hypot(dx, dy);
-          if (dist > 0) {
-            const ux = dx / dist;
-            const uy = dy / dist;
-            const base = speedRef.current * layerSpeed * 1.35; // faster than FULL for LS depth
-            // perpendicular swirl
-            const tx = -uy;
-            const ty = ux;
-            const swirl = Math.sin(t * (1.1 + layerIdx * 0.35) + i * 0.25) * 0.6;
-            s.x += ux * base + tx * swirl;
-            s.y += uy * base + ty * swirl;
-          }
-          // Wrap with generous bounds to avoid edge pops
-          if (s.x < -200 || s.x > w + 200 || s.y < -200 || s.y > h + 200) {
-            const angle = Math.random() * Math.PI * 2;
-            const radius = Math.random() * Math.min(w, viewportH) * 0.4;
-            s.x = centerX + Math.cos(angle) * radius;
-            s.y = centerY + Math.sin(angle) * radius;
-          }
-        }
-      }
+      // No radial drift; no per-layer rotation updates. Stars remain near-static.
 
       // Draw back-to-front for depth consistency
       for (let layerIdx = LAYERS - 1; layerIdx >= 0; layerIdx--) {
@@ -627,7 +620,8 @@ export const StarfieldCanvas: React.FC = memo(() => {
 
         const parallax = LS.layerParallax[Math.min(layerIdx, LS.layerParallax.length - 1)];
         const swirlFreq = LS.swirlHz[Math.min(layerIdx, LS.swirlHz.length - 1)];
-        const baseLen = LAYER_STREAK[layerIdx] * 20;
+        // Length derived from view size to appear very long (3–4× normal)
+        const baseLen = Math.min(w, viewportH) * 0.55;
 
         for (let i = 0; i < layer.length; i++) {
           const s = layer[i];
@@ -635,18 +629,21 @@ export const StarfieldCanvas: React.FC = memo(() => {
           const dy = s.y - centerY;
           const r = Math.hypot(dx, dy) || 1;
           const baseAng = Math.atan2(dy, dx);
-          const swirl = Math.sin(t * swirlFreq + i * 0.33) * 0.06;
-          const ang = baseAng + swirl + lsGlobalSwirl;
-          const ux = Math.cos(ang);
-          const uy = Math.sin(ang);
+          const swirl = Math.sin(t * swirlFreq + i * 0.33) * 0.015; // calmer swirl for mysterious feel
+          // Orient streak tangentially (perpendicular to radial vector) with subtle swirl
+          const tangential = baseAng + Math.PI / 2 + swirl + lsGlobalSwirl;
+          const ux = Math.cos(tangential);
+          const uy = Math.sin(tangential);
 
-          // Micro jitter along streak direction so it feels alive
-          const j = LS.microJitter * Math.sin((t + i) * LS.microHz * 2 * Math.PI);
-          const px = centerX + ux * r + ux * j;
-          const py = centerY + uy * r + uy * j;
+          // Organic micro-movements: low-amp noise <= 0.6% of radius
+          const amp = r * LS.microJitter; // amplitude scales with radius
+          const n1 = Math.sin((t * 0.7) + s.seedA * 0.013) * 0.5 + Math.sin((t * 1.1 * 1.618) + s.seedA * 0.031) * 0.5;
+          const n2 = Math.sin((t * 0.6) + s.seedB * 0.017) * 0.5 + Math.sin((t * 0.95 * 1.618) + s.seedB * 0.029) * 0.5;
+          const px = s.x + n1 * amp;
+          const py = s.y + n2 * amp;
 
           // Very long tapered streak, slightly wider; scale by blend & parallax
-          const L = baseLen * LS.lineLenMult * parallax * (0.8 + 0.2 * lsBlendRef.current);
+          const L = baseLen * parallax * (0.9 + 0.1 * lsBlendRef.current);
           const W = (s.size || 1) * LS.lineWidthMult;
 
           const tx = px - ux * L * 0.5;
@@ -654,36 +651,55 @@ export const StarfieldCanvas: React.FC = memo(() => {
           const hx = px + ux * L * 0.5;
           const hy = py + uy * L * 0.5;
 
-          // Skip drawing in session void area
-          if (isSessionActive) {
-            const baseVoidRadius = 40;
-            const dist = Math.hypot(px - centerX, py - centerY);
-            const voidRadius = baseVoidRadius + (speedRef.current * 3) * 1.15;
-            if (dist < voidRadius) continue;
-          }
+          // Center dark void: always active in LIGHT SPEED (no bright hotspot)
+          const voidRadius = Math.min(w, viewportH) * getLightSpeedSessionConfig().tunnelRadiusFactor;
+          if (r < voidRadius) continue;
 
           const grad = ctx.createLinearGradient(tx, ty, hx, hy);
-          // LIGHT_SPEED_EXPERIMENT: blue→cyan→white radial-tinted streaks, crisp tail
-          const cfg = getLightSpeedSessionConfig();
+          // LIGHT_SPEED_EXPERIMENT: blue→cyan→white palette with breathing lightness
           const maxR = Math.hypot(w * 0.5, viewportH * 0.5) || 1;
           const rn = Math.min(r / maxR, 1);
           const headColor = rn < 0.35
-            ? 'rgba(96, 165, 250, 0.95)'   // blue
+            ? `rgba(${Math.round(96*breathLight)}, ${Math.round(165*breathLight)}, ${Math.round(250*breathLight)}, 0.95)`   // blue
             : rn < 0.7
-              ? 'rgba(34, 211, 238, 0.92)' // cyan
-              : 'rgba(255, 255, 255, 0.92)'; // white near edges
+              ? `rgba(${Math.round(34*breathLight)}, ${Math.round(211*breathLight)}, ${Math.round(238*breathLight)}, 0.92)` // cyan
+              : `rgba(255, 255, 255, 0.92)`; // white near edges
           grad.addColorStop(0.00, headColor);
           grad.addColorStop(0.78, `rgba(255,255,255,${cfg.centerBrightness})`);
           grad.addColorStop(1.00, 'rgba(255,255,255,0.08)');
 
+          // Rare twinkle: ±12% brightness for 250–400ms affecting ~1–2% at a time
+          const now = t; // seconds
+          const isTwinkling = now < s.twinkleUntil;
+          // Lazy Poisson trigger per star
+          if (!isTwinkling) {
+            const lambda = getLightSpeedSessionConfig().twinkleActiveRatio / ((getLightSpeedSessionConfig().twinkleDurationMsMin + getLightSpeedSessionConfig().twinkleDurationMsMax) * 0.5 / 1000);
+            if (Math.random() < lambda * dt) {
+              const d = getLightSpeedSessionConfig().twinkleDurationMsMin + Math.random() * (getLightSpeedSessionConfig().twinkleDurationMsMax - getLightSpeedSessionConfig().twinkleDurationMsMin);
+              s.twinkleUntil = now + d / 1000;
+            }
+          }
+          const twinkleBoost = isTwinkling ? (1 + 0.12 * (0.5 + 0.5 * Math.sin((now - (s.twinkleUntil - 0.001)) * 40))) : 1.0;
+
           ctx.strokeStyle = grad;
           ctx.lineCap = 'round';
           ctx.lineWidth = W;
-          ctx.globalAlpha = breath;
+          ctx.globalAlpha = 1.0 * twinkleBoost; // brightness handled via twinkle; color handles breathing
           ctx.beginPath();
           ctx.moveTo(tx, ty);
           ctx.lineTo(hx, hy);
           ctx.stroke();
+
+          // Optional tiny cyan halo on brightest heads (no heavy bloom)
+          if (rn > 0.7) {
+            ctx.save();
+            ctx.globalAlpha = 0.35;
+            ctx.fillStyle = 'rgba(34, 211, 238, 0.35)';
+            ctx.beginPath();
+            ctx.arc(hx, hy, Math.max(0.6, W * 0.9), 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
         }
       }
 
@@ -691,31 +707,18 @@ export const StarfieldCanvas: React.FC = memo(() => {
 
       // LIGHT_SPEED_EXPERIMENT: central tunnel void overlay (subtle dark radial fade)
       if (!isEco) {
-        const cfg = getLightSpeedSessionConfig();
-        const tunnelRadius = Math.min(w, viewportH) * cfg.tunnelRadiusFactor;
+        const cfg2 = getLightSpeedSessionConfig();
+        const tunnelRadius = Math.min(w, viewportH) * cfg2.tunnelRadiusFactor;
         const tunnelGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, tunnelRadius);
-        tunnelGrad.addColorStop(0, `rgba(0,0,0,${cfg.tunnelDarkness})`);
+        tunnelGrad.addColorStop(0, `rgba(0,0,0,${cfg2.tunnelDarkness})`);
         tunnelGrad.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = tunnelGrad;
         ctx.fillRect(0, 0, w, h);
       }
 
-      // LIGHT_SPEED_EXPERIMENT: inverted feather fade on canvas (edges brightest, center softer)
-      if (!isEco) {
-        const cfg = getLightSpeedSessionConfig();
-        const centerToCorner = Math.hypot(w * 0.5, viewportH * 0.5);
-        const outerR = centerToCorner * 1.02; // ensure it reaches beyond the corners
-        const innerR = outerR * 0.93; // thin rim near the very edges
-        const edgeGrad = ctx.createRadialGradient(centerX, centerY, innerR, centerX, centerY, outerR);
-        edgeGrad.addColorStop(0.0, 'rgba(255,255,255,0)');
-        edgeGrad.addColorStop(0.92, 'rgba(255,255,255,0)');
-        const edgeStrength = Math.min(0.40, Math.max(0.18, (cfg.edgeBrightness - cfg.centerBrightness) * 2.2));
-        edgeGrad.addColorStop(1.0, `rgba(255,255,255,${edgeStrength})`);
-        const prevOp = ctx.globalCompositeOperation;
-        ctx.globalCompositeOperation = 'screen';
-        ctx.fillStyle = edgeGrad;
-        ctx.fillRect(0, 0, w, h);
-        ctx.globalCompositeOperation = prevOp as GlobalCompositeOperation;
+      // LIGHT_SPEED_EXPERIMENT: edge feathering disabled per user feedback (sides should be brighter, no vignette)
+      if (false) {
+        // intentionally disabled
       }
 
       // Continue animation and early return to avoid FULL logic
@@ -736,35 +739,26 @@ export const StarfieldCanvas: React.FC = memo(() => {
       for (const star of layer) {
         // Update star position
         if (modeRef.current === 'warp' && speedRef.current > 0) {
-          // Warp mode: move stars radially outward with perspective
+          // Warp mode (FULL): move stars radially outward from center to simulate forward motion through a tunnel
           const dx = star.x - centerX;
           const dy = star.y - centerY;
           const distance = Math.sqrt(dx * dx + dy * dy);
-          
+
           if (distance > 0) {
-            // Add perspective factor to reduce center burst effect
+            // Add perspective factor so outer stars drift faster, enhancing tunnel feel
             const perspectiveFactor = 1 + (distance / (w * 0.5));
-            const baseX = (dx / distance) * speedRef.current * layerSpeed * perspectiveFactor;
-            const baseY = (dy / distance) * speedRef.current * layerSpeed * perspectiveFactor;
-            // LIGHT_SPEED_EXPERIMENT: add subtle harmonic swirl and slight speed boost
-            const lsSpeedBoost = lsActive ? 1.15 : 1.0;
-            let swirlX = 0, swirlY = 0;
-            if (lsActive) {
-              const layerHarmonic = Math.sin(time * (1.1 + layerIdx * 0.35)) * 0.6;
-              const tx = -dy / distance; // perpendicular unit vector X
-              const ty =  dx / distance; // perpendicular unit vector Y
-              swirlX = tx * layerHarmonic;
-              swirlY = ty * layerHarmonic;
-            }
-            star.x += baseX * lsSpeedBoost + swirlX;
-            star.y += baseY * lsSpeedBoost + swirlY;
-            star.z += speedRef.current * 2;  // Move toward viewer in Z
+            const moveX = (dx / distance) * speedRef.current * layerSpeed * perspectiveFactor;
+            const moveY = (dy / distance) * speedRef.current * layerSpeed * perspectiveFactor;
+            star.x += moveX;
+            star.y += moveY;
           }
           
-          // Wrap stars that go off screen (use wider margins to reduce edge cutoffs)
+          // When a star leaves the viewport, respawn it near the center ring for continuous outward flow
           if (star.x < -150 || star.x > w + 150 || star.y < -150 || star.y > h + 150) {
             const angle = Math.random() * Math.PI * 2;
-            const radius = Math.random() * Math.min(w, viewportH) * 0.35;
+            const radiusMin = 0;
+            const radiusMax = Math.min(w, viewportH) * 0.25;
+            const radius = radiusMin + Math.random() * (radiusMax - radiusMin);
             star.x = centerX + Math.cos(angle) * radius;
             star.y = centerY + Math.sin(angle) * radius;
           }
@@ -817,9 +811,10 @@ export const StarfieldCanvas: React.FC = memo(() => {
           // Draw streak in warp mode with improved forward motion
           
           const perspectiveFactor = 1 + (distance / (w * 0.5));
-          const streakLength = speedRef.current * layerStreak * (lsActive ? 3.1 : 2.5) * perspectiveFactor; // longer in LIGHT_SPEED
+          const streakLength = speedRef.current * layerStreak * 3.3 * perspectiveFactor; // longer for cinematic tunnel
           
           if (distance > 0) {
+            // For outward motion, the tail should extend toward the center (behind the star)
             const streakX = -(dx / distance) * streakLength;
             const streakY = -(dy / distance) * streakLength;
             
@@ -857,6 +852,16 @@ export const StarfieldCanvas: React.FC = memo(() => {
     }
     
     // No need for overlay - void is created by not drawing stars in that area
+    // FULL warp: add a subtle inverted vignette (dark tunnel center) to reinforce depth
+    if (modeRef.current === 'warp' && !lsActive && isFullWarpRef.current) {
+      const tunnelRadius = Math.min(w, viewportH) * 0.22;
+      const tunnelGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, tunnelRadius);
+      tunnelGrad.addColorStop(0.0, 'rgba(0,0,0,0.55)');
+      tunnelGrad.addColorStop(0.6, 'rgba(0,0,0,0.25)');
+      tunnelGrad.addColorStop(1.0, 'rgba(0,0,0,0.0)');
+      ctx.fillStyle = tunnelGrad;
+      ctx.fillRect(0, 0, w, h);
+    }
     
     // Edge fade vignette to hide canvas edges during long sessions
     // Disabled during warp to avoid darkened edges in FULL warp mode
@@ -1009,6 +1014,11 @@ export const StarfieldCanvas: React.FC = memo(() => {
       console.log('[LIGHT_SPEED_EXPERIMENT] StarfieldCanvas: entering LIGHT_SPEED branch (harmonic swirl, longer/thicker streaks, violet head).');
       hasLoggedLightSpeedRef.current = true;
     }
+  }, [warpMode]);
+
+  // Track if current warp mode is FULL for tunnel overlay decisions inside rAF
+  useEffect(() => {
+    isFullWarpRef.current = warpMode === WARP_MODE.FULL;
   }, [warpMode]);
 
   // Determine canvas visibility and z-index based on warp mode
