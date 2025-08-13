@@ -2,8 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { WARP_MODE, WARP_ANIMATION, STORAGE_KEYS, STARFIELD_QUALITY, THRUST_SHAKE_DURATION_MS, EXPERIMENT_LIGHT_SPEED } from '../constants';
 
-// LIGHT_SPEED_EXPERIMENT: debug marker for sanity checks
-console.log('[LIGHT_SPEED_EXPERIMENT] warpSlice.ts loaded; EXPERIMENT_LIGHT_SPEED =', EXPERIMENT_LIGHT_SPEED);
+ 
 
 // Warp mode types using constants
 export type WarpMode = typeof WARP_MODE[keyof typeof WARP_MODE];

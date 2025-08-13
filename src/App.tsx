@@ -31,8 +31,7 @@ import {
   EXPERIMENT_LIGHT_SPEED
 } from './constants'
 
-// LIGHT_SPEED_EXPERIMENT: debug marker for sanity checks
-console.log('[LIGHT_SPEED_EXPERIMENT] App.tsx loaded; EXPERIMENT_LIGHT_SPEED =', EXPERIMENT_LIGHT_SPEED)
+ 
 
 // Type guards for history items
 const isSessionData = (item: HistoryItem): item is SessionData => item.type === SESSION_TYPE.FOCUS;
@@ -100,6 +99,7 @@ function App() {
   // Get warp state from store
   const warpMode = useWarpStore((state) => state.warpMode);
   const isThrusting = useWarpStore((state) => state.isThrusting);
+  const lightSpeedFullscreen = useWarpStore((state) => state.lightSpeedFullscreen);
   
   // Toast state
   const [toast, setToast] = useState({ show: false, message: '' });
@@ -183,7 +183,6 @@ function App() {
           const nextMode = currentIdx === -1
             ? cycle[0]
             : cycle[(currentIdx + 1) % cycle.length];
-          console.log('[LIGHT_SPEED_EXPERIMENT] App: key "w" cycle', { from: warpMode, to: nextMode, flag: EXPERIMENT_LIGHT_SPEED });
           setWarpMode(nextMode);
           break;
           
@@ -211,10 +210,16 @@ function App() {
     }
   };
   
-  // Handle exit warp - return to background mode instead of turning off completely
+  // Handle exit overlay/warp
+  // - If in LIGHT_SPEED overlay, disable fullscreen toggle (stay in LS background)
+  // - Otherwise, return to BACKGROUND warp mode
   const handleExitWarp = () => {
-    const { setWarpMode } = useWarpStore.getState();
-    setWarpMode(WARP_MODE.BACKGROUND);
+    const { setWarpMode, setLightSpeedFullscreen } = useWarpStore.getState();
+    if (warpMode === WARP_MODE.LIGHT_SPEED) {
+      setLightSpeedFullscreen(false);
+    } else {
+      setWarpMode(WARP_MODE.BACKGROUND);
+    }
   };
   
   // Handle distraction button click
@@ -509,8 +514,8 @@ return (
         </div>
       </main>
 
-      {/* Floating Action Buttons - Visible when overlaying (FULL or LIGHT_SPEED) */}
-      {(warpMode === WARP_MODE.FULL || warpMode === WARP_MODE.LIGHT_SPEED) && (
+      {/* Floating Action Buttons - Visible when overlaying (FULL or LIGHT_SPEED fullscreen) */}
+      {(warpMode === WARP_MODE.FULL || (warpMode === WARP_MODE.LIGHT_SPEED && lightSpeedFullscreen)) && (
         <div id={ELEMENT_IDS.WARP_CONTROLS} className="absolute bottom-4 right-4 z-[10000] flex gap-3 items-center">
           <button
             id={ELEMENT_IDS.WARP_DISTRACT}

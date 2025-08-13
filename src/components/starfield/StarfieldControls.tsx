@@ -9,8 +9,7 @@ import {
 } from '../../constants';
 import PanelContainer from '../ui/PanelContainer';
 
-// LIGHT_SPEED_EXPERIMENT: debug marker for sanity checks
-console.log('[LIGHT_SPEED_EXPERIMENT] StarfieldControls.tsx loaded; EXPERIMENT_LIGHT_SPEED =', EXPERIMENT_LIGHT_SPEED);
+ 
 
 export const StarfieldControls: React.FC = () => {
   const {

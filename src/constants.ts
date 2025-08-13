@@ -60,8 +60,7 @@ export const FOCUS_BOOSTER = {
 // LIGHT_SPEED_EXPERIMENT: master flag to enable the experimental LIGHT_SPEED mode and related UI
 export const EXPERIMENT_LIGHT_SPEED = true as const; // Toggle to true to enable experiment
 
-// LIGHT_SPEED_EXPERIMENT: debug marker for sanity checks
-console.log('[LIGHT_SPEED_EXPERIMENT] constants.ts loaded; EXPERIMENT_LIGHT_SPEED =', EXPERIMENT_LIGHT_SPEED);
+ 
 
 export const WARP_MODE = {
   NONE: 'none',
