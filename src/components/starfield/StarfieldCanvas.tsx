@@ -641,6 +641,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
     // LIGHT_SPEED Frozen Drift rendering branch
     if (lsActive || (lsBlendRef.current > 0.01 && modeRef.current === 'warp')) {
       const t = time; // seconds
+      const TAU = Math.PI * 2;
       const cfg = getLightSpeedSessionConfig();
       const reduce = reduceMotionRef.current;
       // Breathing ±4% over 12s (disable if reduced motion)
@@ -666,13 +667,13 @@ export const StarfieldCanvas: React.FC = memo(() => {
       // No radial drift; no per-layer rotation updates. Stars remain near-static.
 
       // Per-layer rotation (ω) with optional wobble
-      const omegaBase = [0.004, 0.006, 0.008];
+      const omegaBase = [0.0048, 0.0072, 0.0096];
       const layerOpacity = [0.45, 0.70, 1.0];
       const layerThicknessScale = [0.9, 1.0, 1.15];
       const omegaMult = Math.min(1.5, Math.max(0.5, speedMultiplier));
       const omegaReduce = reduce ? 0.4 : 1.0; // reduce ω by 60%
       for (let i = 0; i < 3; i++) {
-        const wobble = Math.sin(t * 0.31 + (i+1)) * 0.001;
+        const wobble = Math.sin(t * 0.31 + (i+1)) * (reduce ? 0.0006 : 0.0014);
         lsLayerRotRef.current[i] += (omegaBase[i] * omegaMult * omegaReduce + wobble) * dt;
       }
 
@@ -682,14 +683,13 @@ export const StarfieldCanvas: React.FC = memo(() => {
         if (!layer) continue;
         const minDim = Math.min(w, viewportH);
         const voidR = 0.10 * minDim;
-        const feather = 0.06 * minDim;
 
         for (let i = 0; i < layer.length; i++) {
           const s = layer[i];
           if (s.lsAngle == null || s.lsRadius == null || s.lsLen == null || s.lsThickness == null) continue;
           // Position update: per-layer rotation + organic drift (no radial velocity)
           const ang = s.lsAngle + lsLayerRotRef.current[layerIdx];
-          const driftAmp = 0.006 * minDim;
+          const driftAmp = (reduce ? 0.0115 * 0.7 : 0.0115) * minDim; // slightly more organic movement
           const driftT = t / (s.lsDriftPeriod || 12);
           const dn1 = Math.sin(driftT + s.seedA * 0.013) * 0.5 + Math.sin((driftT * 1.618) + s.seedA * 0.031) * 0.5;
           const dn2 = Math.sin(driftT * 0.9 + s.seedB * 0.017) * 0.5 + Math.sin((driftT * 1.113) + s.seedB * 0.029) * 0.5;
@@ -703,7 +703,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
           const ux = Math.cos(ang);
           const uy = Math.sin(ang);
           const L = s.lsLen;
-          const W = s.lsThickness * (layerIdx === 0 ? 0.9 : layerIdx === 1 ? 1.0 : 1.15);
+          const W = s.lsThickness * layerThicknessScale[layerIdx];
           const tx = cx - ux * L * 0.5;
           const ty = cy - uy * L * 0.5;
           const hx = cx + ux * L * 0.5;
@@ -711,8 +711,15 @@ export const StarfieldCanvas: React.FC = memo(() => {
 
           // HSL by normalized radius with breathing and inverse vignette
           const rn = Math.min(s.lsRadius / (minDim * 0.5), 1);
-          const hue = s.lsHue ?? 195;
-          const sat = rn < 0.25 ? (60 + 5 * (rn / 0.25)) : rn < 0.7 ? (55 + 5 * ((rn - 0.25) / 0.45)) : (50 + 5 * ((rn - 0.7) / 0.3));
+          // Subtle continuous hue drift (±24–28° over ~32s) toward light violet/blue "cosmic" vibes
+          const huePeriod = reduce ? 80 : 32;
+          const hueAmplitude = reduce ? 8 : 26;
+          const perLayerHue = (layerIdx === 2 ? 20 : layerIdx === 1 ? 12 : 0);
+          const hueBase = 228; // shift center toward light blue/violet
+          const hueDrift = Math.sin((t / huePeriod) * TAU) * hueAmplitude;
+          const hue = hueBase + perLayerHue + hueDrift;
+          const satBase = rn < 0.25 ? (60 + 5 * (rn / 0.25)) : rn < 0.7 ? (55 + 5 * ((rn - 0.25) / 0.45)) : (50 + 5 * ((rn - 0.7) / 0.3));
+          const sat = Math.min(100, satBase + (reduce ? 0 : 6));
           // Breathing rate scaled by speed multiplier (0.5x–1.5x)
           const omegaMult = Math.min(1.5, Math.max(0.5, speedMultiplier));
           const breathPeriodScaled = reduce ? Infinity : (12 / omegaMult);
@@ -722,8 +729,8 @@ export const StarfieldCanvas: React.FC = memo(() => {
           const lmod = Math.min(100, baseLight * breathFactor * vignette);
           const hsl = (h:number,s:number,l:number,a:number) => `hsla(${Math.round(h)}, ${Math.round(s)}%, ${Math.round(l)}%, ${a})`;
           const grad = ctx.createLinearGradient(tx, ty, hx, hy);
-          grad.addColorStop(0.00, hsl(hue, sat, lmod, [0.45,0.70,1.0][layerIdx]));
-          grad.addColorStop(0.78, hsl(hue, Math.max(45, sat-10), Math.max(50, lmod-18), [0.45,0.70,1.0][layerIdx] * 0.9));
+          grad.addColorStop(0.00, hsl(hue, sat, lmod, layerOpacity[layerIdx]));
+          grad.addColorStop(0.78, hsl(hue, Math.max(45, sat-10), Math.max(50, lmod-18), layerOpacity[layerIdx] * 0.9));
           grad.addColorStop(1.00, 'rgba(255,255,255,0.06)');
 
           // Twinkle: only hero layer, disabled when reduced motion
