@@ -1,8 +1,8 @@
+import { useEffect, useMemo, useState, type FC } from 'react';
 import { useWarpStore } from '../../store/warpSlice';
 import { 
   WARP_MODE, 
   STARFIELD_QUALITY, 
-  STARFIELD_QUALITY_LABELS,
   STAR_COUNTS_BY_QUALITY,
   // LIGHT_SPEED_EXPERIMENT: flag controls exposure of LIGHT_SPEED mode
   EXPERIMENT_LIGHT_SPEED
@@ -11,7 +11,7 @@ import PanelContainer from '../ui/PanelContainer';
 
  
 
-export const StarfieldControls: React.FC = () => {
+export const StarfieldControls: FC = () => {
   const {
     warpMode,
     speedMultiplier,
@@ -23,17 +23,18 @@ export const StarfieldControls: React.FC = () => {
     setLightSpeedFullscreen
   } = useWarpStore();
 
+  // Minimize state persisted to localStorage (UI-only)
+  const [minimized, setMinimized] = useState<boolean>(() =>
+    typeof window !== 'undefined' && localStorage.getItem('starfieldPanelMinimized') === '1'
+  );
 
-
-  // Handle warp mode change
-  const handleWarpModeChange = (mode: typeof WARP_MODE[keyof typeof WARP_MODE]) => {
-    setWarpMode(mode);
-  };
+  // handleWarpModeChange removed (unused)
 
   // Handle speed multiplier change (0.1 to 1.0)
   const handleSpeedMultiplierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Get slider value (0-100)
-    const sliderValue = parseFloat(e.target.value);
+    // UI slider is 10–100; normalize to 0–100 for mapping
+    const uiValue = parseFloat(e.target.value);
+    const sliderValue = Math.min(100, Math.max(0, ((uiValue - 10) / 90) * 100));
     
     // Convert slider value (0-100) to multiplier (0.1-1.0)
     // Use a non-linear mapping for better control
@@ -88,145 +89,253 @@ export const StarfieldControls: React.FC = () => {
     const quality = e.target.value as typeof STARFIELD_QUALITY[keyof typeof STARFIELD_QUALITY];
     setStarfieldQuality(quality);
   };
+  // Derived UI labels
+  const modeLabel = useMemo(() => {
+    if (warpMode === WARP_MODE.NONE) return 'Off';
+    if (warpMode === WARP_MODE.LIGHT_SPEED) return 'Light Speed';
+    // Treat FULL as SpaceX for display/selection
+    return 'SpaceX';
+  }, [warpMode]);
 
-  // Get simplified speed label showing only percentage
-  const getSpeedLabel = () => {
-    // Show percentage of maximum speed based on multiplier
-    const percentValue = Math.round(speedMultiplier * 100);
-    return `${percentValue}%`;
-  };
+  const qualityHeaderLabel = useMemo(() => {
+    switch (starfieldQuality) {
+      case STARFIELD_QUALITY.ECO:
+        return 'Eco • 200';
+      case STARFIELD_QUALITY.STANDARD:
+        return 'Balanced • 500';
+      case STARFIELD_QUALITY.ULTRA:
+        return 'Ultra • 1000';
+      default:
+        return 'Eco • 200';
+    }
+  }, [starfieldQuality]);
+
+  const speedPercent = useMemo(() => Math.max(10, Math.round(speedMultiplier * 100)), [speedMultiplier]);
 
   // Overlay active when FULL warp, or LS with fullscreen toggle
   const overlayActive = warpMode === WARP_MODE.FULL || (warpMode === WARP_MODE.LIGHT_SPEED && !!lightSpeedFullscreen);
 
+  // Fullscreen toggle reusing existing per-mode logic
+  const toggleFullscreen = () => {
+    if (warpMode === WARP_MODE.NONE) return;
+    if (warpMode === WARP_MODE.LIGHT_SPEED) {
+      setLightSpeedFullscreen(!lightSpeedFullscreen);
+    } else if (warpMode === WARP_MODE.BACKGROUND) {
+      setWarpMode(WARP_MODE.FULL);
+    } else if (warpMode === WARP_MODE.FULL) {
+      setWarpMode(WARP_MODE.BACKGROUND);
+    }
+  };
+
+  // Minimize helpers
+  const minimize = () => {
+    if (!minimized) {
+      localStorage.setItem('starfieldPanelMinimized', '1');
+      setMinimized(true);
+    }
+  };
+  const restore = () => {
+    if (minimized) {
+      localStorage.removeItem('starfieldPanelMinimized');
+      setMinimized(false);
+    }
+  };
+  const toggleMinimize = () => {
+    if (minimized) {
+      restore();
+    } else {
+      minimize();
+    }
+  };
+
+  // Keyboard shortcuts: F toggles fullscreen, M toggles minimize (W handled globally in App)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      const k = e.key.toLowerCase();
+      if (k === 'f') {
+        e.preventDefault();
+        toggleFullscreen();
+      } else if (k === 'm') {
+        e.preventDefault();
+        toggleMinimize();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [warpMode, lightSpeedFullscreen, minimized]);
+
+  // Segmented control helpers
+  const selectOff = () => setWarpMode(WARP_MODE.NONE);
+  const selectSpaceX = () => setWarpMode(WARP_MODE.BACKGROUND);
+  const selectLightSpeed = () => setWarpMode(WARP_MODE.LIGHT_SPEED);
+
+  // UI
   return (
-    <PanelContainer className="p-4 mb-4">
-      <h3 className="text-lg text-gray-900 dark:text-white mb-3">Environment</h3>
-      
-      <div className="space-y-4">
-        {/* Environment Controls */}
-        <div className="flex flex-wrap gap-2">
-          {/* SPACEX (maps to BACKGROUND) */}
-          <button
-            onClick={() => handleWarpModeChange(WARP_MODE.BACKGROUND)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              warpMode === WARP_MODE.BACKGROUND
-                ? 'bg-deep-purple-600 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-          >
-            SPACEX
-          </button>
-
-          {/* LIGHT SPEED (gated by experiment flag) */}
-          {EXPERIMENT_LIGHT_SPEED && (
-            <button
-              onClick={() => handleWarpModeChange(WARP_MODE.LIGHT_SPEED)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors light-speed-btn ${
-                warpMode === WARP_MODE.LIGHT_SPEED
-                  ? 'ls-active'
-                  : ''
-              }`}
-              title="Experimental light speed mode"
-            >
-              LIGHT SPEED
-            </button>
-          )}
-
-          {/* FULL SCREEN toggles overlay for current mode */}
-          <button
-            onClick={() => {
-              if (warpMode === WARP_MODE.LIGHT_SPEED) {
-                setLightSpeedFullscreen(!lightSpeedFullscreen);
-              } else if (warpMode === WARP_MODE.BACKGROUND) {
-                setWarpMode(WARP_MODE.FULL);
-              } else if (warpMode === WARP_MODE.FULL) {
-                setWarpMode(WARP_MODE.BACKGROUND);
-              }
-            }}
-            disabled={warpMode === WARP_MODE.NONE}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              warpMode === WARP_MODE.NONE
-                ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 opacity-60 cursor-not-allowed'
-                : overlayActive
-                  ? 'bg-deep-purple-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-          >
-            FULL SCREEN
-          </button>
-
-          {/* OFF */}
-          <button
-            onClick={() => handleWarpModeChange(WARP_MODE.NONE)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              warpMode === WARP_MODE.NONE
-                ? 'bg-deep-purple-600 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-          >
-            OFF
-          </button>
-        </div>
-
-        {/* Removed LS-only fullscreen checkbox; use button above */}
-
-        {/* Speed Multiplier Slider */}
-        <div className="space-y-1">
-          <div className="flex justify-between">
-            <label className="text-sm text-gray-700 dark:text-gray-300">
-              Speed
-            </label>
-            <span className="text-sm text-gray-700 dark:text-gray-300">{getSpeedLabel()}</span>
+    <>
+      {!minimized && (
+        <PanelContainer className="p-3 w-[360px] rounded-2xl">
+          {/* Header */}
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Environment</h3>
+              <div className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">
+                {modeLabel} • {speedPercent}% • {qualityHeaderLabel}
+                {overlayActive ? ' • Fullscreen' : ''}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                title="Shortcuts: W cycle • F fullscreen • M minimize"
+                aria-label="Help"
+                className="px-2 py-1 rounded-md text-xs text-gray-800 dark:text-gray-200 bg-white/40 dark:bg-gray-700/60 hover:bg-white/60 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              >
+                ?
+              </button>
+              <button
+                type="button"
+                onClick={toggleFullscreen}
+                disabled={warpMode === WARP_MODE.NONE}
+                aria-label="Toggle fullscreen"
+                aria-pressed={overlayActive}
+                className={`px-2 py-1 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-violet-500 ${
+                  warpMode === WARP_MODE.NONE
+                    ? 'text-gray-400 bg-white/30 dark:bg-gray-700/40 cursor-not-allowed'
+                    : overlayActive
+                      ? 'text-white bg-violet-600'
+                      : 'text-gray-800 dark:text-gray-200 bg-white/40 dark:bg-gray-700/60 hover:bg-white/60 dark:hover:bg-gray-700'
+                }`}
+                title="Fullscreen"
+              >
+                ⛶
+              </button>
+              <button
+                type="button"
+                onClick={minimize}
+                aria-label="Minimize panel"
+                className="px-2 py-1 rounded-md text-xs text-gray-800 dark:text-gray-200 bg-white/40 dark:bg-gray-700/60 hover:bg-white/60 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                title="Minimize"
+              >
+                ▾
+              </button>
+            </div>
           </div>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            step="1"
-            value={multiplierToSliderValue(speedMultiplier)}
-            onChange={handleSpeedMultiplierChange}
-            disabled={warpMode === WARP_MODE.NONE}
-            className="star-slider w-full h-2 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
+
+          <div className="mt-3 space-y-4">
+            {/* Mode segmented control */}
+            <div role="tablist" aria-label="Environment mode" className="grid grid-cols-3 gap-1 rounded-lg p-1 bg-white/30 dark:bg-gray-700/50">
+              {/* Off */}
+              <button
+                role="tab"
+                aria-selected={warpMode === WARP_MODE.NONE}
+                onClick={selectOff}
+                className={`w-full px-3 py-2 rounded-md text-xs font-medium focus:outline-none focus:ring-2 focus:ring-violet-500 ${
+                  warpMode === WARP_MODE.NONE
+                    ? 'bg-violet-600 text-white'
+                    : 'bg-transparent text-gray-800 dark:text-gray-200 hover:bg-white/40 dark:hover:bg-gray-600'
+                }`}
+              >
+                Off
+              </button>
+              {/* SpaceX */}
+              <button
+                role="tab"
+                aria-selected={warpMode === WARP_MODE.BACKGROUND || warpMode === WARP_MODE.FULL}
+                onClick={selectSpaceX}
+                className={`w-full px-3 py-2 rounded-md text-xs font-medium focus:outline-none focus:ring-2 focus:ring-violet-500 ${
+                  warpMode === WARP_MODE.BACKGROUND || warpMode === WARP_MODE.FULL
+                    ? 'bg-violet-600 text-white'
+                    : 'bg-transparent text-gray-800 dark:text-gray-200 hover:bg-white/40 dark:hover:bg-gray-600'
+                }`}
+              >
+                SpaceX
+              </button>
+              {/* Light Speed (gated) */}
+              {EXPERIMENT_LIGHT_SPEED && (
+                <button
+                  role="tab"
+                  aria-selected={warpMode === WARP_MODE.LIGHT_SPEED}
+                  onClick={selectLightSpeed}
+                  className={`w-full px-3 py-2 rounded-md text-xs font-medium focus:outline-none focus:ring-2 focus:ring-violet-500 light-speed-btn ${
+                    warpMode === WARP_MODE.LIGHT_SPEED ? 'ls-active bg-violet-600 text-white' : 'bg-transparent text-gray-800 dark:text-gray-200 hover:bg-white/40 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  Light Speed
+                </button>
+              )}
+              {!EXPERIMENT_LIGHT_SPEED && (
+                <div className="w-full" aria-hidden="true"></div>
+              )}
+            </div>
+
+            {/* Speed */}
+            <div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm text-gray-700 dark:text-gray-300" htmlFor="env-speed">Speed</label>
+                <span className="text-sm tabular-nums text-gray-700 dark:text-gray-300">{speedPercent}%</span>
+              </div>
+              <input
+                id="env-speed"
+                type="range"
+                min={10}
+                max={100}
+                step={1}
+                value={Math.round(10 + multiplierToSliderValue(speedMultiplier) * 0.9)}
+                onChange={handleSpeedMultiplierChange}
+                disabled={warpMode === WARP_MODE.NONE}
+                className="star-slider w-full h-2 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
+                aria-valuemin={10}
+                aria-valuemax={100}
+                aria-valuenow={speedPercent}
+              />
+              <div className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">10 | 50 | 100</div>
+            </div>
+
+            {/* Quality */}
+            <div>
+              <label className="text-sm text-gray-700 dark:text-gray-300" htmlFor="env-quality">Quality</label>
+              <select
+                id="env-quality"
+                value={starfieldQuality === STARFIELD_QUALITY.OFF ? STARFIELD_QUALITY.ECO : starfieldQuality}
+                onChange={handleQualityChange}
+                disabled={warpMode === WARP_MODE.NONE}
+                className="mt-1 w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500 disabled:opacity-50"
+                aria-label="Starfield quality"
+              >
+                <option value={STARFIELD_QUALITY.ECO}>Eco • {STAR_COUNTS_BY_QUALITY[STARFIELD_QUALITY.ECO]}</option>
+                <option value={STARFIELD_QUALITY.STANDARD}>Balanced • {STAR_COUNTS_BY_QUALITY[STARFIELD_QUALITY.STANDARD]}</option>
+                <option value={STARFIELD_QUALITY.ULTRA}>Ultra • {STAR_COUNTS_BY_QUALITY[STARFIELD_QUALITY.ULTRA]}</option>
+              </select>
+            </div>
+
+            {/* Footer shortcuts */}
+            <div className="pt-1 text-xs text-gray-500 dark:text-gray-400">W: cycle • F: fullscreen • M: minimize</div>
+          </div>
+        </PanelContainer>
+      )}
+
+      {/* Dock pill when minimized */}
+      {minimized && (
+        <button
+          onClick={restore}
+          className="fixed bottom-4 right-4 z-[9998] px-3 py-2 rounded-full text-xs bg-gray-900/80 text-white border border-white/10 backdrop-blur hover:bg-gray-900/90 focus:outline-none focus:ring-2 focus:ring-violet-500"
+          aria-label="Restore Environment panel"
+          title="Click to restore Environment panel"
+        >
+          <span
+            className={`inline-block w-2 h-2 rounded-full mr-2 align-middle ${
+              warpMode === WARP_MODE.NONE
+                ? 'bg-gray-400'
+                : warpMode === WARP_MODE.LIGHT_SPEED
+                  ? 'bg-violet-400'
+                  : 'bg-indigo-400'
+            }`}
           />
-          <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
-            <span>10%</span>
-            <span>100%</span>
-          </div>
-        </div>
-
-        {/* Starfield Quality Selection */}
-        <div className="space-y-1">
-          <label className="text-sm text-gray-700 dark:text-gray-300">Quality</label>
-          <select
-            value={starfieldQuality}
-            onChange={handleQualityChange}
-            disabled={warpMode === WARP_MODE.NONE}
-            className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-deep-purple-500 focus:border-deep-purple-500 disabled:opacity-50"
-          >
-            {Object.entries(STARFIELD_QUALITY).map(([_, value]) => (
-              <option key={value} value={value}>
-                {STARFIELD_QUALITY_LABELS[value]} ({STAR_COUNTS_BY_QUALITY[value]} stars)
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Keyboard Shortcuts Info */}
-        <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-          {EXPERIMENT_LIGHT_SPEED ? (
-            <p>
-              Press <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">W</kbd>
-              {' '}to cycle: OFF → SPACEX → LIGHT SPEED
-            </p>
-          ) : (
-            <p>
-              Press <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">W</kbd>
-              {' '}to cycle: OFF → SPACEX
-            </p>
-          )}
-        </div>
-      </div>
-    </PanelContainer>
+          <span className="align-middle">{modeLabel} • {speedPercent}%</span>
+        </button>
+      )}
+    </>
   );
 };
