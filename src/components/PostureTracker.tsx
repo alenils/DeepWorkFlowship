@@ -99,12 +99,14 @@ const PostureTrackerComponent = ({
   }, [posture.good, isSessionActive, onPostureChange]);
 
   return (
-    <div className="bg-gray-800 text-white p-4 rounded-lg shadow-lg max-w-md mx-auto">
+    <div className="bg-gray-800 text-white p-3 rounded-lg shadow-lg max-w-md mx-auto">
+
       <h2 className="text-xl font-semibold mb-3 flex items-center">
         Posture Monitor 
         {posture.isActive && (posture.good ? '✅' : '❌')}
       </h2>
-      <div className="relative mb-3">
+      <div className="relative mb-2">
+
         <PostureView /> 
         {posture.isActive && (
           <PoseLandmarksRenderer 
@@ -127,34 +129,37 @@ const PostureTrackerComponent = ({
           />
         )}
         {posture.isActive && (
-          <div className="absolute top-2 right-2 p-2 rounded bg-black/50 text-white text-xs">
+          <div className="absolute top-2 left-2 p-1 px-2 rounded bg-black/50 text-white text-[10px] z-10">
             Posture: {posture.isActive ? (posture.good ? 'Good ✅' : 'Bad ❌') : 'Off'}<br />
             {posture.baselineEye !== null && latestEye.current !== null && 
               `Eye Pos: ${((latestEye.current - posture.baselineEye) * videoSize.height).toFixed(1)}px`}
           </div>
         )}
         
-        {/* Always visible camera controls */}
+        {/* Camera controls moved to top-right and made smaller */}
         {posture.isActive && (
-          <div className="absolute bottom-3 inset-x-0 flex justify-center gap-4 text-xs">
+          <div className="absolute top-2 right-2 flex gap-2 text-[10px] z-20">
             <button
               onClick={posture.toggleActive}
-              className={`px-3 py-1 rounded font-semibold ${
+              className={`px-2 py-1 rounded-md font-semibold ${
                 posture.isActive 
                   ? 'bg-blue-500/80 hover:bg-blue-600 text-white' 
                   : 'bg-gray-500/80 hover:bg-gray-600 text-white'
               }`}
+              title="Toggle posture tracking"
             >
-              {posture.isActive ? 'Posture ON' : 'Posture OFF'}
+              {posture.isActive ? 'On' : 'Off'}
             </button>
             <button
               onClick={posture.calibrate}
-              className="bg-gray-700/80 hover:bg-gray-600 text-white px-3 py-1 rounded font-semibold"
+              className="bg-gray-700/80 hover:bg-gray-600 text-white px-2 py-1 rounded-md font-semibold"
+              title="Recalibrate baseline"
             >
               Calibrate
             </button>
           </div>
         )}
+
       </div>
       <PostureStatusDisplay /> 
       <PostureControls />      

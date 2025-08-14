@@ -205,19 +205,21 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
 
   return (
     <PanelContainer className="overflow-hidden max-w-[640px] mx-auto">
-      <div className="p-4 pb-2 flex justify-between items-center">
+      <div className="p-3 pb-1 flex justify-between items-center">
         <h2 className="text-lg text-gray-800 dark:text-white">
           Posture Tracker
         </h2>
-        <div className="flex space-x-2">
-          <button 
-            onClick={handleCalibration} 
-            disabled={isLoadingDetector || !!cameraError || isCalibrating} 
-            className="bg-deep-purple-600 text-white hover:bg-deep-purple-700 dark:bg-deep-purple-700 dark:hover:bg-deep-purple-800 px-3 py-1 rounded font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isCalibrating ? `Calibrating (${countdown ?? ''}...)` : "Calibrate"} 
-          </button>
-        </div>
+        {!isDetecting && (
+          <div className="flex space-x-2">
+            <button 
+              onClick={handleCalibration} 
+              disabled={isLoadingDetector || !!cameraError || isCalibrating} 
+              className="bg-deep-purple-600 text-white hover:bg-deep-purple-700 dark:bg-deep-purple-700 dark:hover:bg-deep-purple-800 px-3 py-1 rounded font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isCalibrating ? `Calibrating (${countdown ?? ''}...)` : "Calibrate"} 
+            </button>
+          </div>
+        )}
       </div>
       
       <div className="relative w-full bg-black">
@@ -260,7 +262,7 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
         )}
         
         { !isLoadingDetector && !cameraError && (
-          <div className="absolute top-2 right-2 p-1 px-2 rounded bg-black/60 text-white text-xs font-medium z-10">
+          <div className="absolute top-2 left-2 p-1 px-2 rounded bg-black/60 text-white text-[10px] font-medium z-10">
             {isCalibrating && countdown !== null ? 
               <span>Calibrating... {countdown}</span> : 
               <span>
