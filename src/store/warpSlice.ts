@@ -69,7 +69,13 @@ export const useWarpStore = create<WarpState & WarpActions>()(
         const nextMode = (!EXPERIMENT_LIGHT_SPEED && mode === WARP_MODE.LIGHT_SPEED)
           ? WARP_MODE.FULL
           : mode;
-        set({ warpMode: nextMode });
+        // Default LIGHT_SPEED to background mode (no fullscreen overlay)
+        // Reset persisted fullscreen toggle when entering LIGHT_SPEED
+        if (nextMode === WARP_MODE.LIGHT_SPEED) {
+          set({ warpMode: nextMode, lightSpeedFullscreen: false });
+        } else {
+          set({ warpMode: nextMode });
+        }
       },
       setSpeedMultiplier: (multiplier) => {
         // Ensure multiplier is between 0.1 and 1.0

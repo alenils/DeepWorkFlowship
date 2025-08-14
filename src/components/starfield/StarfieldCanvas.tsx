@@ -158,6 +158,12 @@ export const StarfieldCanvas: React.FC = memo(() => {
   const lsBlendRef = useRef(0); // 0 = FULL style, 1 = LS style
   // LS per-layer rotation angles
   const lsLayerRotRef = useRef<number[]>([0,0,0]);
+  // LIGHT_SPEED engage sequence state: shake -> extend -> settle
+  const lsEngageRef = useRef<{ phase: 'idle'|'shake'|'extend'|'settle'; t0: number; lastActive: boolean }>({
+    phase: 'idle',
+    t0: 0,
+    lastActive: false,
+  });
   // prefers-reduced-motion
   const reduceMotionRef = useRef(false);
   const lastTimeRef = useRef<number | null>(null);
@@ -175,7 +181,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
   useEffect(() => { qualityRef.current = starfieldQuality; }, [starfieldQuality]);
 
   // Initialize stars with layers and properties
-  const initStars = useCallback((force = false) => {
+  const initStars = useCallback((force: boolean = false) => {
     // Only initialize if not already done or forced
     if (!force && starsInitializedRef.current && layersRef.current.length > 0) {
       return;
@@ -213,7 +219,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
     };
     
     // Create layers based on mode
-    const isLS = warpMode === WARP_MODE.LIGHT_SPEED;
+    const isLS = warpMode === WARP_MODE.LIGHT_SPEED && isSessionActive;
     if (isLS) {
       // LIGHT_SPEED Frozen Drift: 3 layers with specific counts by quality
       const q = starfieldQuality;
@@ -276,7 +282,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
     }
     
     starsInitializedRef.current = true;
-  }, [starfieldQuality, warpMode]);
+  }, [starfieldQuality, warpMode, isSessionActive]);
   
   // React to quality changes - reinitialize stars
   useEffect(() => {
@@ -284,6 +290,13 @@ export const StarfieldCanvas: React.FC = memo(() => {
       initStars(true);  // Force reinitialize when quality changes
     }
   }, [starfieldQuality, initStars]);
+
+  // Reinitialize stars when session state changes under LIGHT_SPEED so prelaunch stays regular and launch switches to LS
+  useEffect(() => {
+    if (warpMode === WARP_MODE.LIGHT_SPEED) {
+      initStars(true);
+    }
+  }, [isSessionActive, warpMode, initStars]);
 
   // Detect prefers-reduced-motion once
   useEffect(() => {
@@ -650,13 +663,54 @@ export const StarfieldCanvas: React.FC = memo(() => {
       const quality = qualityRef.current;
       const isEco = quality === 'eco' || quality === 'off';
 
-      // (removed) prior bg block
+      // Engage progression (shake + reveal from center to edges)
+      const engage = lsEngageRef.current;
+      let reveal = 1;         // 0..1 fraction of long streak revealed from center outward
+      let shakeX = 0, shakeY = 0; // camera shake offsets
+      if (lsActive) {
+        const minDim = Math.min(w, viewportH);
+        const maxShake = reduce ? 0 : minDim * 0.008; // up to ~0.8% of min dimension
+        if (engage.phase === 'shake') {
+          const dur = 0.55; // slower entry
+          const p = Math.min(1, Math.max(0, (t - engage.t0) / dur));
+          const env = Math.sin(p * Math.PI); // 0->1->0
+          const amp = maxShake * env;
+          shakeX = amp * Math.sin(t * 22.0);
+          shakeY = amp * Math.cos(t * 17.0);
+          reveal = 0.10 + 0.20 * p; // faint/short reveal during shake
+          if (p >= 1) {
+            engage.phase = 'extend';
+            engage.t0 = t;
+          }
+        }
+        if (engage.phase === 'extend') {
+          const dur = reduce ? 1.0 : 1.6;
+          const p = Math.min(1, Math.max(0, (t - engage.t0) / dur));
+          const easeInOutCubic = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+          reveal = Math.min(1, 0.15 + 0.85 * easeInOutCubic);
+          const amp = maxShake * 0.25 * (1 - easeInOutCubic);
+          shakeX = amp * Math.sin(t * 20.0);
+          shakeY = amp * Math.cos(t * 15.0);
+          if (p >= 1) {
+            engage.phase = 'settle';
+            engage.t0 = t;
+          }
+        }
+        if (engage.phase === 'settle') {
+          reveal = 1;
+          shakeX = 0;
+          shakeY = 0;
+        }
+      }
 
+      // Use shaken center for cohesive camera shake
+      const cX_bg = centerX + shakeX;
+      const cY_bg = centerY + shakeY;
       ctx.save();
       // Background: deep space gradient (no flat black)
       if (!isEco) {
         const maxR = Math.hypot(w * 0.5, viewportH * 0.5) * 1.25;
-        const bg = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, maxR);
+        const bg = ctx.createRadialGradient(cX_bg, cY_bg, 0, cX_bg, cY_bg, maxR);
         bg.addColorStop(0.0, '#060A18');
         bg.addColorStop(0.6, '#050516');
         bg.addColorStop(1.0, '#05060A');
@@ -677,12 +731,40 @@ export const StarfieldCanvas: React.FC = memo(() => {
         lsLayerRotRef.current[i] += (omegaBase[i] * omegaMult * omegaReduce + wobble) * dt;
       }
 
+      // Helper: compute the distance t from (x,y) along (dx,dy) to the first rectangle boundary in that direction (sign = +1 or -1)
+      const rectRayToEdge = (x: number, y: number, dx: number, dy: number, sign: 1 | -1) => {
+        const eps = 1e-6;
+        let bestT = sign > 0 ? Infinity : -Infinity;
+        // x = 0
+        if (Math.abs(dx) > eps) {
+          const t0 = (0 - x) / dx;
+          const yy = y + t0 * dy;
+          if ((sign > 0 ? t0 > 0 : t0 < 0) && yy >= 0 && yy <= h) bestT = sign > 0 ? Math.min(bestT, t0) : Math.max(bestT, t0);
+          const t1 = (w - x) / dx; // x = w
+          const yy1 = y + t1 * dy;
+          if ((sign > 0 ? t1 > 0 : t1 < 0) && yy1 >= 0 && yy1 <= h) bestT = sign > 0 ? Math.min(bestT, t1) : Math.max(bestT, t1);
+        }
+        if (Math.abs(dy) > eps) {
+          const t2 = (0 - y) / dy; // y = 0
+          const xx2 = x + t2 * dx;
+          if ((sign > 0 ? t2 > 0 : t2 < 0) && xx2 >= 0 && xx2 <= w) bestT = sign > 0 ? Math.min(bestT, t2) : Math.max(bestT, t2);
+          const t3 = (h - y) / dy; // y = h
+          const xx3 = x + t3 * dx;
+          if ((sign > 0 ? t3 > 0 : t3 < 0) && xx3 >= 0 && xx3 <= w) bestT = sign > 0 ? Math.min(bestT, t3) : Math.max(bestT, t3);
+        }
+        if (!isFinite(bestT)) return 0; // fallback
+        return bestT;
+      };
+
       // Draw back-to-front for depth consistency using current LS layer count
       for (let layerIdx = (layersRef.current.length - 1); layerIdx >= 0; layerIdx--) {
         const layer = layersRef.current[layerIdx];
         if (!layer) continue;
         const minDim = Math.min(w, viewportH);
         const voidR = 0.10 * minDim;
+        // Center adjusted by engage shake
+        const cX = centerX + shakeX;
+        const cY = centerY + shakeY;
 
         for (let i = 0; i < layer.length; i++) {
           const s = layer[i];
@@ -695,19 +777,26 @@ export const StarfieldCanvas: React.FC = memo(() => {
           const dn2 = Math.sin(driftT * 0.9 + s.seedB * 0.017) * 0.5 + Math.sin((driftT * 1.113) + s.seedB * 0.029) * 0.5;
           const ox = dn1 * driftAmp * (layerIdx === 2 ? 0.9 : layerIdx === 1 ? 0.7 : 0.6);
           const oy = dn2 * driftAmp * (layerIdx === 2 ? 0.9 : layerIdx === 1 ? 0.7 : 0.6);
-          const cx = centerX + Math.cos(ang) * s.lsRadius + ox;
-          const cy = centerY + Math.sin(ang) * s.lsRadius + oy;
-          if (Math.hypot(cx - centerX, cy - centerY) < voidR) continue;
+          const cx = cX + Math.cos(ang) * s.lsRadius + ox;
+          const cy = cY + Math.sin(ang) * s.lsRadius + oy;
+          if (Math.hypot(cx - cX, cy - cY) < voidR) continue;
 
-          // Streak orientation: radial (anchored look)
+          // Streak orientation: radial, full length spans from near center outward to screen edge.
           const ux = Math.cos(ang);
           const uy = Math.sin(ang);
-          const L = s.lsLen;
-          const W = s.lsThickness * layerThicknessScale[layerIdx];
-          const tx = cx - ux * L * 0.5;
-          const ty = cy - uy * L * 0.5;
-          const hx = cx + ux * L * 0.5;
-          const hy = cy + uy * L * 0.5;
+          const W = s.lsThickness * layerThicknessScale[layerIdx] * (0.95 + 0.20 * reveal);
+          // Inner anchor just outside the center void
+          const pinX = cX + ux * (voidR + 0.5);
+          const pinY = cY + uy * (voidR + 0.5);
+          // Outward endpoint at rectangle edge from inner anchor
+          const tOut = rectRayToEdge(pinX, pinY, ux, uy, 1);
+          const fullHX = pinX + ux * tOut;
+          const fullHY = pinY + uy * tOut;
+          // Reveal head grows from inner anchor toward the outward edge
+          const hx = pinX + (fullHX - pinX) * reveal;
+          const hy = pinY + (fullHY - pinY) * reveal;
+          const tx = pinX; // tail locked near center
+          const ty = pinY;
 
           // HSL by normalized radius with breathing and inverse vignette
           const rn = Math.min(s.lsRadius / (minDim * 0.5), 1);
@@ -729,9 +818,10 @@ export const StarfieldCanvas: React.FC = memo(() => {
           const lmod = Math.min(100, baseLight * breathFactor * vignette);
           const hsl = (h:number,s:number,l:number,a:number) => `hsla(${Math.round(h)}, ${Math.round(s)}%, ${Math.round(l)}%, ${a})`;
           const grad = ctx.createLinearGradient(tx, ty, hx, hy);
-          grad.addColorStop(0.00, hsl(hue, sat, lmod, layerOpacity[layerIdx]));
-          grad.addColorStop(0.78, hsl(hue, Math.max(45, sat-10), Math.max(50, lmod-18), layerOpacity[layerIdx] * 0.9));
-          grad.addColorStop(1.00, 'rgba(255,255,255,0.06)');
+          const layerAlpha = layerOpacity[layerIdx] * (0.85 + 0.15 * reveal);
+          grad.addColorStop(0.00, hsl(hue, sat, lmod, layerAlpha));
+          grad.addColorStop(0.85, hsl(hue, Math.max(45, sat-10), Math.max(50, lmod-18), layerAlpha * 0.75));
+          grad.addColorStop(1.00, 'rgba(255,255,255,0.03)');
 
           // Twinkle: only hero layer, disabled when reduced motion
           let alphaBoost = 1.0;
@@ -782,7 +872,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
         const minDim = Math.min(w, viewportH);
         const voidR = 0.10 * minDim;
         const feather = 0.06 * minDim;
-        const g = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, voidR + feather);
+        const g = ctx.createRadialGradient(cX_bg, cY_bg, 0, cX_bg, cY_bg, voidR + feather);
         g.addColorStop(0, `rgba(0,0,0,${cfg.tunnelDarkness})`);
         g.addColorStop(Math.max(0, (voidR - 1) / (voidR + feather)), `rgba(0,0,0,${cfg.tunnelDarkness})`);
         g.addColorStop(1, 'rgba(0,0,0,0)');
@@ -795,7 +885,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
         ctx.save();
         ctx.globalCompositeOperation = 'lighter';
         const minDim = Math.min(w, viewportH);
-        const rg = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, minDim * 0.95);
+        const rg = ctx.createRadialGradient(cX_bg, cY_bg, 0, cX_bg, cY_bg, minDim * 0.95);
         rg.addColorStop(0.0, 'rgba(255,255,255,0.00)');
         rg.addColorStop(0.7, 'rgba(255,255,255,0.00)');
         rg.addColorStop(0.9, 'rgba(255,255,255,0.08)');
@@ -1090,11 +1180,26 @@ export const StarfieldCanvas: React.FC = memo(() => {
     }
   }, [warpMode, speedMultiplier, isSessionActive]);
 
-  // LIGHT_SPEED_EXPERIMENT: update LS active ref when mode or flag changes (log once on activation)
+  // LIGHT_SPEED_EXPERIMENT: update LS active ref only during active session (prelaunch stays regular)
   useEffect(() => {
-    const active = Boolean(EXPERIMENT_LIGHT_SPEED && warpMode === WARP_MODE.LIGHT_SPEED);
+    const active = EXPERIMENT_LIGHT_SPEED && warpMode === WARP_MODE.LIGHT_SPEED && isSessionActive;
     isLightSpeedRef.current = active;
-  }, [warpMode]);
+    const wasActive = lsEngageRef.current.lastActive;
+    if (active && !wasActive) {
+      // Start engage sequence on launch
+      lsEngageRef.current.phase = reduceMotionRef.current ? 'extend' : 'shake';
+      lsEngageRef.current.t0 = performance.now() * 0.001; // seconds
+      lsEngageRef.current.lastActive = true;
+    } else if (!active && wasActive) {
+      // Reset when exiting LS or ending session
+      lsEngageRef.current.phase = 'idle';
+      lsEngageRef.current.t0 = 0;
+      lsEngageRef.current.lastActive = false;
+    } else {
+      // Keep in sync
+      lsEngageRef.current.lastActive = active;
+    }
+  }, [warpMode, isSessionActive]);
 
   // Track if current warp mode is FULL for tunnel overlay decisions inside rAF
   useEffect(() => {
