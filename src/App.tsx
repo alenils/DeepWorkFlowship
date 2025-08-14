@@ -174,11 +174,11 @@ function App() {
         case 'w':
           if (e.ctrlKey || e.metaKey) break; // Skip browser shortcuts
           
-          // LIGHT_SPEED_EXPERIMENT: cycle through modes including LIGHT_SPEED when enabled
+          // LIGHT_SPEED_EXPERIMENT: cycle OFF → SPACEX (BACKGROUND) → LIGHT SPEED (exclude FULL)
           const { setWarpMode } = useWarpStore.getState();
           const cycle = EXPERIMENT_LIGHT_SPEED
-            ? [WARP_MODE.NONE, WARP_MODE.BACKGROUND, WARP_MODE.FULL, WARP_MODE.LIGHT_SPEED]
-            : [WARP_MODE.NONE, WARP_MODE.BACKGROUND, WARP_MODE.FULL];
+            ? [WARP_MODE.NONE, WARP_MODE.BACKGROUND, WARP_MODE.LIGHT_SPEED]
+            : [WARP_MODE.NONE, WARP_MODE.BACKGROUND];
           const currentIdx = cycle.indexOf(warpMode as typeof cycle[number]);
           const nextMode = currentIdx === -1
             ? cycle[0]
@@ -353,7 +353,6 @@ return (
           <aside className="self-start flex flex-col gap-6">
             <ActionsList />
             <Notepad />
-            <StarfieldControls />
           </aside>
           
           {/* Middle Column: The components inside here MUST have their own opaque backgrounds. */}
@@ -510,6 +509,7 @@ return (
             <MusicPlayer 
               isSessionActive={isSessionActive} 
             />
+            <StarfieldControls />
           </aside>
         </div>
       </main>

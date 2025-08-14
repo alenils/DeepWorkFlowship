@@ -96,23 +96,17 @@ export const StarfieldControls: React.FC = () => {
     return `${percentValue}%`;
   };
 
+  // Overlay active when FULL warp, or LS with fullscreen toggle
+  const overlayActive = warpMode === WARP_MODE.FULL || (warpMode === WARP_MODE.LIGHT_SPEED && !!lightSpeedFullscreen);
+
   return (
     <PanelContainer className="p-4 mb-4">
-      <h3 className="text-lg text-gray-900 dark:text-white mb-3">Stars Settings</h3>
+      <h3 className="text-lg text-gray-900 dark:text-white mb-3">Environment</h3>
       
       <div className="space-y-4">
-        {/* Warp Mode Selection */}
+        {/* Environment Controls */}
         <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => handleWarpModeChange(WARP_MODE.NONE)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              warpMode === WARP_MODE.NONE
-                ? 'bg-deep-purple-600 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-          >
-            No Warp
-          </button>
+          {/* SPACEX (maps to BACKGROUND) */}
           <button
             onClick={() => handleWarpModeChange(WARP_MODE.BACKGROUND)}
             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
@@ -121,48 +115,61 @@ export const StarfieldControls: React.FC = () => {
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
             }`}
           >
-            Background Warp
+            SPACEX
           </button>
-          <button
-            onClick={() => handleWarpModeChange(WARP_MODE.FULL)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              warpMode === WARP_MODE.FULL
-                ? 'bg-deep-purple-600 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-          >
-            Full Warp
-          </button>
-          {/* LIGHT_SPEED_EXPERIMENT: gated LIGHT SPEED button */}
+
+          {/* LIGHT SPEED (gated by experiment flag) */}
           {EXPERIMENT_LIGHT_SPEED && (
             <button
               onClick={() => handleWarpModeChange(WARP_MODE.LIGHT_SPEED)}
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors light-speed-btn ${
                 warpMode === WARP_MODE.LIGHT_SPEED
-                  ? 'bg-deep-purple-600 text-white ls-active'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  ? 'ls-active'
+                  : ''
               }`}
               title="Experimental light speed mode"
             >
               LIGHT SPEED
             </button>
           )}
+
+          {/* FULL SCREEN toggles overlay for current mode */}
+          <button
+            onClick={() => {
+              if (warpMode === WARP_MODE.LIGHT_SPEED) {
+                setLightSpeedFullscreen(!lightSpeedFullscreen);
+              } else if (warpMode === WARP_MODE.BACKGROUND) {
+                setWarpMode(WARP_MODE.FULL);
+              } else if (warpMode === WARP_MODE.FULL) {
+                setWarpMode(WARP_MODE.BACKGROUND);
+              }
+            }}
+            disabled={warpMode === WARP_MODE.NONE}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              warpMode === WARP_MODE.NONE
+                ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 opacity-60 cursor-not-allowed'
+                : overlayActive
+                  ? 'bg-deep-purple-600 text-white'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
+          >
+            FULL SCREEN
+          </button>
+
+          {/* OFF */}
+          <button
+            onClick={() => handleWarpModeChange(WARP_MODE.NONE)}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              warpMode === WARP_MODE.NONE
+                ? 'bg-deep-purple-600 text-white'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
+          >
+            OFF
+          </button>
         </div>
 
-        {/* LIGHT SPEED Fullscreen toggle - only visible in LIGHT SPEED */}
-        {EXPERIMENT_LIGHT_SPEED && warpMode === WARP_MODE.LIGHT_SPEED && (
-          <div className="flex items-center gap-3">
-            <label className="text-sm text-gray-700 dark:text-gray-300">Fullscreen</label>
-            <input
-              type="checkbox"
-              checked={!!lightSpeedFullscreen}
-              onChange={(e) => setLightSpeedFullscreen(e.target.checked)}
-              disabled={false}
-              title={''}
-              className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-deep-purple-600 focus:ring-deep-purple-500 disabled:opacity-50"
-            />
-          </div>
-        )}
+        {/* Removed LS-only fullscreen checkbox; use button above */}
 
         {/* Speed Multiplier Slider */}
         <div className="space-y-1">
@@ -180,7 +187,7 @@ export const StarfieldControls: React.FC = () => {
             value={multiplierToSliderValue(speedMultiplier)}
             onChange={handleSpeedMultiplierChange}
             disabled={warpMode === WARP_MODE.NONE}
-            className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
+            className="star-slider w-full h-2 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
           />
           <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
             <span>10%</span>
@@ -210,12 +217,12 @@ export const StarfieldControls: React.FC = () => {
           {EXPERIMENT_LIGHT_SPEED ? (
             <p>
               Press <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">W</kbd>
-              {' '}to cycle: None → Background → Full → Light Speed
+              {' '}to cycle: OFF → SPACEX → LIGHT SPEED
             </p>
           ) : (
             <p>
               Press <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">W</kbd>
-              {' '}to cycle: None → Background → Full
+              {' '}to cycle: OFF → SPACEX
             </p>
           )}
         </div>

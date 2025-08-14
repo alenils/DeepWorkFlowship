@@ -237,7 +237,7 @@ export const FocusSessionTimer = ({
               tabIndex={4}
               onClick={handleStart}
               disabled={!isInfinite && !minutes}
-              className="btn-violet shadow-none hover:shadow-none focus:shadow-none active:shadow-none w-28 h-10 text-white font-semibold rounded-full disabled:opacity-60 disabled:cursor-not-allowed"
+              className="light-speed-btn ls-active shadow-none hover:shadow-none focus:shadow-none active:shadow-none w-28 h-10 text-white font-semibold rounded-full disabled:opacity-60 disabled:cursor-not-allowed"
               title={`Streak sessions: ${streakCount}`}
             >
               LAUNCH

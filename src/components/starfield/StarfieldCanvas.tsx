@@ -225,9 +225,9 @@ export const StarfieldCanvas: React.FC = memo(() => {
       const q = starfieldQuality;
       // Target totals: Ultra 2260, Standard 950, Eco 600
       let back = 0, mid = 0, hero = 0;
-      if (q === 'ultra') { back = 1200; mid = 900; hero = 160; }
-      else if (q === 'standard') { const t=950; back=Math.floor(t*0.52); mid=Math.floor(t*0.38); hero=t-(back+mid); }
-      else if (q === 'eco') { const t=600; back=Math.floor(t*0.53); mid=Math.floor(t*0.37); hero=t-(back+mid); }
+      if (q === 'ultra') { back = 480; mid = 320; hero = 64; }
+      else if (q === 'standard') { const t=360; back=Math.floor(t*0.52); mid=Math.floor(t*0.38); hero=t-(back+mid); }
+      else if (q === 'eco') { const t=220; back=Math.floor(t*0.53); mid=Math.floor(t*0.37); hero=t-(back+mid); }
       else { back = mid = hero = 0; }
 
       const minDim = Math.min(w, h);
@@ -657,9 +657,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
       const TAU = Math.PI * 2;
       const cfg = getLightSpeedSessionConfig();
       const reduce = reduceMotionRef.current;
-      // Breathing ±4% over 12s (disable if reduced motion)
-      const breathPeriod = 12;
-      const breathLight = reduce ? 1 : (1 + 0.04 * Math.sin((t / breathPeriod) * Math.PI * 2));
+      // Breathing placeholder removed (was ±4% over 12s) — cleaned up to avoid unused locals
       const quality = qualityRef.current;
       const isEco = quality === 'eco' || quality === 'off';
 
@@ -731,37 +729,16 @@ export const StarfieldCanvas: React.FC = memo(() => {
         lsLayerRotRef.current[i] += (omegaBase[i] * omegaMult * omegaReduce + wobble) * dt;
       }
 
-      // Helper: compute the distance t from (x,y) along (dx,dy) to the first rectangle boundary in that direction (sign = +1 or -1)
-      const rectRayToEdge = (x: number, y: number, dx: number, dy: number, sign: 1 | -1) => {
-        const eps = 1e-6;
-        let bestT = sign > 0 ? Infinity : -Infinity;
-        // x = 0
-        if (Math.abs(dx) > eps) {
-          const t0 = (0 - x) / dx;
-          const yy = y + t0 * dy;
-          if ((sign > 0 ? t0 > 0 : t0 < 0) && yy >= 0 && yy <= h) bestT = sign > 0 ? Math.min(bestT, t0) : Math.max(bestT, t0);
-          const t1 = (w - x) / dx; // x = w
-          const yy1 = y + t1 * dy;
-          if ((sign > 0 ? t1 > 0 : t1 < 0) && yy1 >= 0 && yy1 <= h) bestT = sign > 0 ? Math.min(bestT, t1) : Math.max(bestT, t1);
-        }
-        if (Math.abs(dy) > eps) {
-          const t2 = (0 - y) / dy; // y = 0
-          const xx2 = x + t2 * dx;
-          if ((sign > 0 ? t2 > 0 : t2 < 0) && xx2 >= 0 && xx2 <= w) bestT = sign > 0 ? Math.min(bestT, t2) : Math.max(bestT, t2);
-          const t3 = (h - y) / dy; // y = h
-          const xx3 = x + t3 * dx;
-          if ((sign > 0 ? t3 > 0 : t3 < 0) && xx3 >= 0 && xx3 <= w) bestT = sign > 0 ? Math.min(bestT, t3) : Math.max(bestT, t3);
-        }
-        if (!isFinite(bestT)) return 0; // fallback
-        return bestT;
-      };
+      // Lightweight bound radius (circle approximation) to avoid per-star ray-rectangle intersection
+      const boundR = Math.hypot(w, viewportH);
 
       // Draw back-to-front for depth consistency using current LS layer count
       for (let layerIdx = (layersRef.current.length - 1); layerIdx >= 0; layerIdx--) {
         const layer = layersRef.current[layerIdx];
         if (!layer) continue;
         const minDim = Math.min(w, viewportH);
-        const voidR = 0.10 * minDim;
+        const coreR = 0.03 * minDim; // tiny central core
+        const softR = 0.11 * minDim; // soft falloff radius (less defined than a hard hole)
         // Center adjusted by engage shake
         const cX = centerX + shakeX;
         const cY = centerY + shakeY;
@@ -773,25 +750,37 @@ export const StarfieldCanvas: React.FC = memo(() => {
           const ang = s.lsAngle + lsLayerRotRef.current[layerIdx];
           const driftAmp = (reduce ? 0.0115 * 0.7 : 0.0115) * minDim; // slightly more organic movement
           const driftT = t / (s.lsDriftPeriod || 12);
-          const dn1 = Math.sin(driftT + s.seedA * 0.013) * 0.5 + Math.sin((driftT * 1.618) + s.seedA * 0.031) * 0.5;
-          const dn2 = Math.sin(driftT * 0.9 + s.seedB * 0.017) * 0.5 + Math.sin((driftT * 1.113) + s.seedB * 0.029) * 0.5;
+          const dn1 = Math.sin(driftT + s.seedA * 0.013);
+          const dn2 = Math.sin(driftT * 0.9 + s.seedB * 0.017);
           const ox = dn1 * driftAmp * (layerIdx === 2 ? 0.9 : layerIdx === 1 ? 0.7 : 0.6);
           const oy = dn2 * driftAmp * (layerIdx === 2 ? 0.9 : layerIdx === 1 ? 0.7 : 0.6);
           const cx = cX + Math.cos(ang) * s.lsRadius + ox;
           const cy = cY + Math.sin(ang) * s.lsRadius + oy;
-          if (Math.hypot(cx - cX, cy - cY) < voidR) continue;
+          const rToCenter = Math.hypot(cx - cX, cy - cY);
+          const centerFalloff = Math.max(0, Math.min(1, (rToCenter - coreR) / Math.max(1, (softR - coreR))));
+
+          // Density thinning near center: reduce strokes close to the core to avoid a dense ring and lower draw cost
+          if (centerFalloff < 0.35) {
+            const randB = s.seedB - Math.floor(s.seedB);
+            if (randB < 0.55) continue; // ~55% culled very near center
+          } else if (centerFalloff < 0.6) {
+            const randB = s.seedB - Math.floor(s.seedB);
+            if (randB < 0.25) continue; // ~25% culled in mid falloff
+          }
 
           // Streak orientation: radial, full length spans from near center outward to screen edge.
           const ux = Math.cos(ang);
           const uy = Math.sin(ang);
-          const W = s.lsThickness * layerThicknessScale[layerIdx] * (0.95 + 0.20 * reveal);
-          // Inner anchor just outside the center void
-          const pinX = cX + ux * (voidR + 0.5);
-          const pinY = cY + uy * (voidR + 0.5);
-          // Outward endpoint at rectangle edge from inner anchor
-          const tOut = rectRayToEdge(pinX, pinY, ux, uy, 1);
-          const fullHX = pinX + ux * tOut;
-          const fullHY = pinY + uy * tOut;
+          // Slightly thinner near the core and thicken as falloff increases
+          const W = s.lsThickness * layerThicknessScale[layerIdx] * (0.85 + 0.25 * reveal) * (0.85 + 0.15 * centerFalloff);
+          // Inner anchor near the very center with per-star jitter (not a perfect ring)
+          const randA = s.seedA - Math.floor(s.seedA);
+          const pinRad = Math.max(0.5, softR * (0.18 + 0.24 * randA));
+          const pinX = cX + ux * pinRad;
+          const pinY = cY + uy * pinRad;
+          // Outward endpoint approximated by circle bound (cheap)
+          const fullHX = cX + ux * boundR;
+          const fullHY = cY + uy * boundR;
           // Reveal head grows from inner anchor toward the outward edge
           const hx = pinX + (fullHX - pinX) * reveal;
           const hy = pinY + (fullHY - pinY) * reveal;
@@ -817,83 +806,38 @@ export const StarfieldCanvas: React.FC = memo(() => {
           const baseLight = rn < 0.25 ? (78 + 4 * (rn / 0.25)) : rn < 0.7 ? (72 + 6 * ((rn - 0.25) / 0.45)) : (68 + 4 * ((rn - 0.7) / 0.3));
           const lmod = Math.min(100, baseLight * breathFactor * vignette);
           const hsl = (h:number,s:number,l:number,a:number) => `hsla(${Math.round(h)}, ${Math.round(s)}%, ${Math.round(l)}%, ${a})`;
-          const grad = ctx.createLinearGradient(tx, ty, hx, hy);
-          const layerAlpha = layerOpacity[layerIdx] * (0.85 + 0.15 * reveal);
-          grad.addColorStop(0.00, hsl(hue, sat, lmod, layerAlpha));
-          grad.addColorStop(0.85, hsl(hue, Math.max(45, sat-10), Math.max(50, lmod-18), layerAlpha * 0.75));
-          grad.addColorStop(1.00, 'rgba(255,255,255,0.03)');
-
-          // Twinkle: only hero layer, disabled when reduced motion
-          let alphaBoost = 1.0;
-          if (!reduce && layerIdx === 2) {
-            const nowS = t;
-            const active = nowS < s.twinkleUntil;
-            if (!active) {
-              // Maintain ~1.5% active with mean duration 0.325s
-              const desiredRatio = 0.015;
-              const meanDur = 0.325;
-              const p = (desiredRatio / meanDur) * dt;
-              if (Math.random() < p) {
-                const dMs = 250 + Math.random() * 150;
-                s.twinkleUntil = nowS + dMs / 1000;
-              }
-            }
-            if (nowS < s.twinkleUntil) {
-              alphaBoost = 1 + 0.12 * (0.5 + 0.5 * Math.sin((s.twinkleUntil - nowS) * 40));
-            }
-          }
-
-          ctx.strokeStyle = grad;
+          const coreAlpha = 0.2 + 0.8 * (centerFalloff * centerFalloff);
+          const layerAlpha = layerOpacity[layerIdx] * (0.85 + 0.15 * reveal) * coreAlpha;
+          const stroke = hsl(hue, sat, lmod, layerAlpha);
+          ctx.strokeStyle = stroke;
           ctx.lineCap = 'round';
           ctx.lineWidth = W;
-          ctx.globalAlpha = alphaBoost;
+          ctx.globalAlpha = 1;
           ctx.beginPath();
           ctx.moveTo(tx, ty);
           ctx.lineTo(hx, hy);
           ctx.stroke();
-
-          // Subtle cyan halo near outer region
-          if (rn > 0.7) {
-            ctx.save();
-            ctx.globalAlpha = 0.3;
-            ctx.fillStyle = 'rgba(34, 211, 238, 0.3)';
-            ctx.beginPath();
-            ctx.arc(hx, hy, Math.max(0.6, W * 0.9), 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-          }
+          // Halo removed for performance
         }
       }
 
       ctx.restore();
 
-      // Center void: dark tunnel with soft feather (20% lighter than previous)
+      // Center core: smaller, less-defined darkening with wide feather
       if (!isEco) {
         const minDim = Math.min(w, viewportH);
-        const voidR = 0.10 * minDim;
-        const feather = 0.06 * minDim;
-        const g = ctx.createRadialGradient(cX_bg, cY_bg, 0, cX_bg, cY_bg, voidR + feather);
-        g.addColorStop(0, `rgba(0,0,0,${cfg.tunnelDarkness})`);
-        g.addColorStop(Math.max(0, (voidR - 1) / (voidR + feather)), `rgba(0,0,0,${cfg.tunnelDarkness})`);
-        g.addColorStop(1, 'rgba(0,0,0,0)');
+        const coreR = 0.035 * minDim;
+        const feather = 0.12 * minDim;
+        const g = ctx.createRadialGradient(cX_bg, cY_bg, 0, cX_bg, cY_bg, coreR + feather);
+        const dark = Math.max(0, Math.min(1, cfg.tunnelDarkness * 0.6));
+        g.addColorStop(0.0, `rgba(0,0,0,${dark})`);
+        g.addColorStop(0.35, `rgba(0,0,0,${dark * 0.65})`);
+        g.addColorStop(1.0, 'rgba(0,0,0,0)');
         ctx.fillStyle = g;
         ctx.fillRect(0, 0, w, h);
       }
 
-      // Inverse vignette: slight edge brightening (max +8% at 90% radius)
-      if (!isEco) {
-        ctx.save();
-        ctx.globalCompositeOperation = 'lighter';
-        const minDim = Math.min(w, viewportH);
-        const rg = ctx.createRadialGradient(cX_bg, cY_bg, 0, cX_bg, cY_bg, minDim * 0.95);
-        rg.addColorStop(0.0, 'rgba(255,255,255,0.00)');
-        rg.addColorStop(0.7, 'rgba(255,255,255,0.00)');
-        rg.addColorStop(0.9, 'rgba(255,255,255,0.08)');
-        rg.addColorStop(1.0, 'rgba(255,255,255,0.05)');
-        ctx.fillStyle = rg;
-        ctx.fillRect(0, 0, w, h);
-        ctx.restore();
-      }
+      // Inverse vignette removed for performance
 
       // Continue animation and early return to avoid FULL logic
       if (isAnimatingRef.current) {
