@@ -359,9 +359,9 @@ return (
           <div className="self-start space-y-6 min-w-0">
             {/* Center Column Content */}
             {/* Focus Input and Timer Section */}
-            <div ref={heroPanelRef} className={`panel-glass ${getHeroGlowClass()} rounded-2xl px-6 pb-6 pt-16 md:pt-20 relative overflow-visible`}>
+            <div ref={heroPanelRef} className={`panel-glass ${getHeroGlowClass()} rounded-2xl px-6 pb-3 pt-14 md:pt-16 relative overflow-visible`}>
               {/* Title positioned above the hero panel, outside the box */}
-              <div className="absolute -top-8 left-1/2 -translate-x-1/2">
+              <div className="absolute -top-16 md:-top-20 left-1/2 -translate-x-1/2 pointer-events-none">
                 <h1 className="text-4xl font-bold tracking-tight" style={{ color: 'white', textShadow: '0 0 1px white', letterSpacing: '-0.05em', WebkitTextStroke: '1px white' }}>FLOWSHIP.</h1>
               </div>
               {/* Streak badge */}
@@ -374,7 +374,7 @@ return (
                 </div>
               )}
               
-              <div className="flex flex-col md:flex-row items-start md:items-start gap-4 md:gap-6 mb-6">
+              <div className="flex flex-col md:flex-row items-start md:items-start gap-2 md:gap-3 mb-3">
                 {/* Goal Input */} 
                 <div className="flex-grow w-full md:w-auto">
                   <DeepFocusInput 
