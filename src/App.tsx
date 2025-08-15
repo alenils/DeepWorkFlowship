@@ -12,6 +12,8 @@ import { msToClock, formatTotalDuration } from './utils/time'
 import { SystemLog } from './components/SystemLog'
 import { MissionBoard } from './components/MissionBoard'
 import { PostureView } from './components/PostureView'
+import Ladder from './components/Ladder'
+import DeckB from './components/DeckB'
 import { Toast } from './components/Toast'
 import { useSound } from './features/audio/useSound'
 import { MusicPlayer } from './features/audio/MusicPlayer'
@@ -497,6 +499,9 @@ return (
                 </div>
               )}
             </div>
+            {/* Ladder and Deck B Sections */}
+            <Ladder />
+            <DeckB />
           </div>
           
           {/* Right Column: The components inside here MUST have their own opaque backgrounds. */}

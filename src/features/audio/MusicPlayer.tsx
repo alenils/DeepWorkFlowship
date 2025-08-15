@@ -188,14 +188,8 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ isSessionActive = fals
       subtitle={<span className="opacity-80">{currentTrack ? currentTrack.name : (songs.length > 0 ? 'Select a track' : 'Loading albums...')}</span>}
       helpTitle="Shuffle • Loop • EQ"
       onHelpClick={() => {}}
-      collapsed={collapsed}
-      onToggleCollapse={toggle}
-      className="p-0 mt-6"
-      contentClassName="p-4"
-    >
-      <audio ref={audioElementRef} loop={isLoopEnabled} />
-      <div className="flex justify-end items-center mb-3">
-        <div className="flex items-center space-x-2">
+      headerRight={
+        <div className="flex items-center gap-2">
           <button onClick={toggleShuffle} className={`p-1.5 rounded ${isShuffleActive ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`} title={isShuffleActive ? "Disable Shuffle" : "Enable Shuffle"}>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
               <path fillRule="evenodd" d="M0 3.5A.5.5 0 0 1 .5 3H1c2.202 0 3.827 1.24 4.874 2.418.49.552.865 1.102 1.126 1.532.26-.43.636-.98 1.126-1.532C9.173 4.24 10.798 3 13 3v1c-1.798 0-3.173 1.01-4.126 2.082A9.624 9.624 0 0 0 7.556 8a9.624 9.624 0 0 0 1.317 1.918C9.828 10.99 11.204 12 13 12v1c-2.202 0-3.827-1.24-4.874-2.418A10.595 10.595 0 0 1 7 9.05c-.26.43-.636.98-1.126 1.532C4.827 11.76 3.202 13 1 13H.5a.5.5 0 0 1 0-1H1c1.798 0 3.173-1.01 4.126-2.082A9.624 9.624 0 0 0 6.444 8a9.624 9.624 0 0 0-1.317-1.918C4.172 5.01 2.796 4 1 4H.5a.5.5 0 0 1-.5-.5z"/>
@@ -219,7 +213,13 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ isSessionActive = fals
             </svg>
           </button>
         </div>
-      </div>
+      }
+      collapsed={collapsed}
+      onToggleCollapse={toggle}
+      className="p-0"
+      contentClassName="p-4"
+    >
+      <audio ref={audioElementRef} loop={isLoopEnabled} />
 
       <div className="mb-1">
         <select onChange={handleAlbumChange} value={selectedAlbum} className="w-full p-2 mb-2 text-sm bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md border border-gray-300 dark:border-gray-600 focus:ring-deep-purple-500 focus:border-deep-purple-500">

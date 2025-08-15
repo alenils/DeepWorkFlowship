@@ -162,7 +162,7 @@ export const StarfieldControls: FC = () => {
       onToggleFullscreen={toggleFullscreen}
       collapsed={collapsed}
       onToggleCollapse={toggle}
-      className="p-0 w-[360px] rounded-2xl"
+      className="p-0 rounded-2xl"
       contentClassName="px-3 pb-3 space-y-4"
     >
       {/* Mode segmented control */}

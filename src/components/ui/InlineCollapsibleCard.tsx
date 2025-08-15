@@ -12,6 +12,7 @@ interface InlineCollapsibleCardProps {
   canFullscreen?: boolean;
   fullscreenActive?: boolean;
   onToggleFullscreen?: () => void;
+  headerRight?: React.ReactNode;
   collapsed: boolean;
   onToggleCollapse: () => void;
   children: React.ReactNode;
@@ -33,6 +34,7 @@ const InlineCollapsibleCard: React.FC<InlineCollapsibleCardProps> = ({
   canFullscreen = false,
   fullscreenActive = false,
   onToggleFullscreen,
+  headerRight,
   collapsed,
   onToggleCollapse,
   children,
@@ -50,6 +52,8 @@ const InlineCollapsibleCard: React.FC<InlineCollapsibleCardProps> = ({
           )}
         </div>
         <div className="flex items-center gap-2">
+          {/* Custom header actions (panel-specific) */}
+          {headerRight}
           {/* Fullscreen (optional) */}
           {canFullscreen && (
             <button

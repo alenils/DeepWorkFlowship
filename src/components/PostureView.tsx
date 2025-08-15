@@ -217,37 +217,44 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
     <InlineCollapsibleCard
       id="posture-tracker"
       title="Posture Tracker"
+      subtitle={
+        <span className="opacity-70">
+          {isDetecting ? 'Camera ON' : 'Camera OFF'} • {isCalibrated ? 'Calibrated' : 'Not calibrated'} • {postureStatus.isGood ? 'Good' : 'Bad'}
+        </span>
+      }
       helpTitle="M: collapse"
       onHelpClick={() => {}}
+      headerRight={
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleToggleDetection}
+            disabled={isLoadingDetector || !!cameraError || isCalibrating}
+            className="flex items-center gap-2 px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title={isDetecting ? 'Turn OFF camera' : 'Turn ON camera'}
+            aria-pressed={isDetecting}
+          >
+            <span className="text-[11px] font-semibold min-w-[22px] text-center">{isDetecting ? 'ON' : 'OFF'}</span>
+            <span className={`inline-block w-9 h-5 rounded-full relative transition-colors ${isDetecting ? 'bg-green-500/80' : 'bg-gray-400/70'}`}>
+              <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${isDetecting ? 'translate-x-4' : ''}`}></span>
+            </span>
+          </button>
+
+          <button
+            onClick={handleCalibration}
+            disabled={isLoadingDetector || !!cameraError || isCalibrating || !isDetecting}
+            className="px-3 py-1 rounded font-semibold text-sm bg-white/80 dark:bg-gray-800/60 text-gray-800 dark:text-gray-100 border border-deep-purple-500/30 hover:border-deep-purple-500/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title={!isDetecting ? 'Start camera to calibrate' : 'Recalibrate baseline'}
+          >
+            {isCalibrating ? `Calibrating (${countdown ?? ''}...)` : 'Calibrate'}
+          </button>
+        </div>
+      }
       collapsed={collapsed}
       onToggleCollapse={toggle}
-      className="p-0 overflow-hidden max-w-[640px] mx-auto"
+      className="p-0 overflow-hidden"
       contentClassName="p-3"
     >
-      {/* Controls row (top-right): ON/OFF toggle + Calibrate with subtle purple frame */}
-      <div className="flex justify-end items-center mb-2 gap-2">
-        <button
-          onClick={handleToggleDetection}
-          disabled={isLoadingDetector || !!cameraError || isCalibrating}
-          className="flex items-center gap-2 px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title={isDetecting ? 'Turn OFF camera' : 'Turn ON camera'}
-          aria-pressed={isDetecting}
-        >
-          <span className="text-[11px] font-semibold min-w-[22px] text-center">{isDetecting ? 'ON' : 'OFF'}</span>
-          <span className={`inline-block w-9 h-5 rounded-full relative transition-colors ${isDetecting ? 'bg-green-500/80' : 'bg-gray-400/70'}`}>
-            <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${isDetecting ? 'translate-x-4' : ''}`}></span>
-          </span>
-        </button>
-
-        <button
-          onClick={handleCalibration}
-          disabled={isLoadingDetector || !!cameraError || isCalibrating || !isDetecting}
-          className="px-3 py-1 rounded font-semibold text-sm bg-white/80 dark:bg-gray-800/60 text-gray-800 dark:text-gray-100 border border-deep-purple-500/30 hover:border-deep-purple-500/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title={!isDetecting ? 'Start camera to calibrate' : 'Recalibrate baseline'}
-        >
-          {isCalibrating ? `Calibrating (${countdown ?? ''}...)` : 'Calibrate'}
-        </button>
-      </div>
+      {/* Controls moved to headerRight */}
 
       <div className="relative w-full bg-black">
         {isLoadingDetector && (
