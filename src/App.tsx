@@ -21,6 +21,8 @@ import { useHistoryStore, SessionData, BreakData, HistoryItem } from './store/hi
 import { useWarpStore } from './store/warpSlice'
 import { StarfieldCanvas } from './components/starfield/StarfieldCanvas'
 import { StarfieldControls } from './components/starfield/StarfieldControls'
+import InlineCollapsibleCard from './components/ui/InlineCollapsibleCard'
+import { useInlineMinimize } from './hooks/useInlineMinimize'
 import { FocusBooster } from './components/focusBooster/FocusBooster'
 import { 
   SOUND_FILES, 
@@ -102,6 +104,8 @@ function App() {
   const warpMode = useWarpStore((state) => state.warpMode);
   const isThrusting = useWarpStore((state) => state.isThrusting);
   const lightSpeedFullscreen = useWarpStore((state) => state.lightSpeedFullscreen);
+  // Collapsible state for Session History
+  const { collapsed: shCollapsed, toggle: shToggle } = useInlineMinimize('session-history', false);
   
   // Toast state
   const [toast, setToast] = useState({ show: false, message: '' });
@@ -449,8 +453,31 @@ return (
               )}
             </div>
 
-            {/* Session History Section */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700 relative">
+            {/* Ladder Section — placed immediately after hero panel */}
+            <Ladder />
+
+            {/* Session History Section (static hover) */}
+            <InlineCollapsibleCard
+              id="session-history"
+              title="Session History"
+              subtitle={<span className="opacity-70">Recent focus and breaks</span>}
+              collapsed={shCollapsed}
+              onToggleCollapse={shToggle}
+              headerRight={
+                history.length > 0 ? (
+                  <button
+                    onClick={handleClearHistory}
+                    className="h-7 px-2 rounded-md text-xs bg-white/40 dark:bg-gray-700/60 hover:bg-white/60 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-500 text-gray-800 dark:text-gray-200"
+                    title="Clear all history and notes"
+                    aria-label="Clear all history"
+                  >
+                    🧹
+                  </button>
+                ) : null
+              }
+              className="panel-static p-0"
+              contentClassName="p-6"
+            >
               {/* Totals Section - Redesigned to keep box shape with underlying bar */}
               <div className="grid grid-cols-2 gap-3 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg mb-4">
                 <div className="text-center p-2 bg-white dark:bg-gray-800 rounded shadow-sm relative overflow-hidden">
@@ -487,20 +514,9 @@ return (
                 onBreakNoteSave={handleBreakNoteSave}
               /> 
 
-              {history.length > 0 && ( 
-                <div className="flex justify-center mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <button
-                    onClick={handleClearHistory}
-                    className="bg-deep-purple-600 text-white hover:bg-deep-purple-700 dark:bg-deep-purple-700 dark:hover:bg-deep-purple-800 px-3 py-1 rounded font-semibold transition-opacity dark:opacity-90 dark:hover:opacity-100 text-xs"
-                    title="Clear all history and notes"
-                  >
-                    Clear All History
-                  </button>
-                </div>
-              )}
-            </div>
-            {/* Ladder and Deck B Sections */}
-            <Ladder />
+
+            </InlineCollapsibleCard>
+            {/* Deck B Section */}
             <DeckB />
           </div>
           

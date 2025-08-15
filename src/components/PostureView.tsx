@@ -229,14 +229,16 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
           <button
             onClick={handleToggleDetection}
             disabled={isLoadingDetector || !!cameraError || isCalibrating}
-            className="flex items-center gap-2 px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`relative h-8 w-8 flex items-center justify-center rounded-md border border-white/15 bg-white/40 dark:bg-gray-700/60 hover:bg-white/60 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isDetecting ? 'text-green-400' : 'text-gray-300'}`}
             title={isDetecting ? 'Turn OFF camera' : 'Turn ON camera'}
+            aria-label={isDetecting ? 'Turn OFF camera' : 'Turn ON camera'}
             aria-pressed={isDetecting}
           >
-            <span className="text-[11px] font-semibold min-w-[22px] text-center">{isDetecting ? 'ON' : 'OFF'}</span>
-            <span className={`inline-block w-9 h-5 rounded-full relative transition-colors ${isDetecting ? 'bg-green-500/80' : 'bg-gray-400/70'}`}>
-              <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${isDetecting ? 'translate-x-4' : ''}`}></span>
-            </span>
+            <span aria-hidden="true" className="text-base">📷</span>
+            <span
+              aria-hidden="true"
+              className={`absolute top-0.5 right-0.5 w-2 h-2 rounded-full ${isDetecting ? 'bg-green-500' : 'bg-gray-400/70'}`}
+            />
           </button>
 
           <button
@@ -256,7 +258,7 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
     >
       {/* Controls moved to headerRight */}
 
-      <div className="relative w-full bg-black">
+      <div className="relative w-full bg-black rounded-md border border-white/10 overflow-hidden">
         {isLoadingDetector && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-20">
             <div className="text-white text-lg">Loading posture detector...</div>

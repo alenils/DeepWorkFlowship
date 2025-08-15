@@ -49,11 +49,6 @@ export const SessionHistory = ({
 
   return (
     <>
-      {/* Title only - Total Focus removed to avoid duplication */}
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Session History</h2>
-      </div>
-
       {/* Render all history items in order - newest first */}
       <div className="space-y-1">
         {history.map((item) => {
