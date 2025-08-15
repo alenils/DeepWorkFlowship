@@ -24,6 +24,7 @@ import { StarfieldControls } from './components/starfield/StarfieldControls'
 import InlineCollapsibleCard from './components/ui/InlineCollapsibleCard'
 import { useInlineMinimize } from './hooks/useInlineMinimize'
 import { FocusBooster } from './components/focusBooster/FocusBooster'
+import { FortyHzButton } from '@/components/FortyHzButton'
 import { 
   SOUND_FILES, 
   WARP_MODE, 
@@ -417,6 +418,8 @@ return (
                       ⚡
                     </span>
                   </button>
+                  {/* 40 Hz Overlay Button */}
+                  <FortyHzButton />
                 </div>
               </div>
 
