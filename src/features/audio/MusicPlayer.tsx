@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { msToClock } from '../../utils/time';
 import { useAudio, AlbumId } from './AudioProvider'; // Import useAudio
-import PanelContainer from '../../components/ui/PanelContainer';
+import InlineCollapsibleCard from '../../components/ui/InlineCollapsibleCard';
+import { useInlineMinimize } from '../../hooks/useInlineMinimize';
 
 interface MusicPlayerProps {
   isSessionActive?: boolean; // This prop might still be useful for UI elements specific to session state
@@ -23,6 +24,9 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ isSessionActive = fals
     isShuffleActive,
     audioElementRef, // Use the ref from context
   } = useAudio();
+
+  // Collapsible state
+  const { collapsed, toggle } = useInlineMinimize('flow-music', false);
 
   // Refs for UI elements specific to MusicPlayer
   const progressRef = useRef<HTMLDivElement>(null);
@@ -177,19 +181,20 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ isSessionActive = fals
     selectAlbum(event.target.value as AlbumId);
   };
 
-  if (!currentTrack && songs.length === 0) {
-      return (
-        <PanelContainer className="p-4 mt-6 text-center">
-            <p className="text-gray-500 dark:text-gray-400">Loading audio albums...</p>
-        </PanelContainer>
-      )
-  }
-  
   return (
-    <PanelContainer className="p-4 mt-6">
+    <InlineCollapsibleCard
+      id="flow-music"
+      title="Flow Music"
+      subtitle={<span className="opacity-80">{currentTrack ? currentTrack.name : (songs.length > 0 ? 'Select a track' : 'Loading albums...')}</span>}
+      helpTitle="Shuffle • Loop • EQ"
+      onHelpClick={() => {}}
+      collapsed={collapsed}
+      onToggleCollapse={toggle}
+      className="p-0 mt-6"
+      contentClassName="p-4"
+    >
       <audio ref={audioElementRef} loop={isLoopEnabled} />
-      <div className="flex justify-between items-center mb-3">
-        <h2 className="text-lg text-gray-800 dark:text-white">Flow Music</h2>
+      <div className="flex justify-end items-center mb-3">
         <div className="flex items-center space-x-2">
           <button onClick={toggleShuffle} className={`p-1.5 rounded ${isShuffleActive ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`} title={isShuffleActive ? "Disable Shuffle" : "Enable Shuffle"}>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -220,6 +225,7 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ isSessionActive = fals
         <select onChange={handleAlbumChange} value={selectedAlbum} className="w-full p-2 mb-2 text-sm bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md border border-gray-300 dark:border-gray-600 focus:ring-deep-purple-500 focus:border-deep-purple-500">
             <option value="album1">Album 1</option>
             <option value="album2">Album 2</option>
+            <option value="album3">Album 3</option>
         </select>
       </div>
 
@@ -275,8 +281,6 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ isSessionActive = fals
           </svg>
         </button>
       </div>
-    </PanelContainer>
+    </InlineCollapsibleCard>
   );
-};
-
-// Removed export { MusicPlayer }; as it's default export or named as per file. Re-export if needed from an index.ts 
+}

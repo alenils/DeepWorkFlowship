@@ -3,7 +3,6 @@ import { useStablePosture } from '../hooks/useStablePosture';
 import { PoseLandmarksRenderer } from './PoseLandmarksRenderer';
 import { PoseOverlay } from './PoseOverlay';
 import PostureView from "./PostureView";
-import PostureControls from "./PostureControls";
 import PostureStatusDisplay from "./PostureStatusDisplay";
 
 interface PostureTrackerProps {
@@ -137,32 +136,10 @@ const PostureTrackerComponent = ({
         )}
         
         {/* Camera controls moved to top-right and made smaller */}
-        {posture.isActive && (
-          <div className="absolute top-2 right-2 flex gap-2 text-[10px] z-20">
-            <button
-              onClick={posture.toggleActive}
-              className={`px-2 py-1 rounded-md font-semibold ${
-                posture.isActive 
-                  ? 'bg-blue-500/80 hover:bg-blue-600 text-white' 
-                  : 'bg-gray-500/80 hover:bg-gray-600 text-white'
-              }`}
-              title="Toggle posture tracking"
-            >
-              {posture.isActive ? 'On' : 'Off'}
-            </button>
-            <button
-              onClick={posture.calibrate}
-              className="bg-gray-700/80 hover:bg-gray-600 text-white px-2 py-1 rounded-md font-semibold"
-              title="Recalibrate baseline"
-            >
-              Calibrate
-            </button>
-          </div>
-        )}
+        {/* Top-right controls moved into PostureView's header to centralize UI */}
 
       </div>
       <PostureStatusDisplay /> 
-      <PostureControls />      
     </div>
   );
 };

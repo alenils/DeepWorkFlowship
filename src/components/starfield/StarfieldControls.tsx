@@ -199,8 +199,10 @@ export const StarfieldControls: FC = () => {
             role="tab"
             aria-selected={warpMode === WARP_MODE.LIGHT_SPEED}
             onClick={selectLightSpeed}
-            className={`w-full px-3 py-2 rounded-md text-xs font-medium focus:outline-none focus:ring-2 focus:ring-violet-500 light-speed-btn ${
-              warpMode === WARP_MODE.LIGHT_SPEED ? 'ls-active bg-violet-600 text-white' : 'bg-transparent text-gray-800 dark:text-gray-200 hover:bg-white/40 dark:hover:bg-gray-600'
+            className={`w-full px-3 py-2 rounded-md text-xs font-medium focus:outline-none focus:ring-2 focus:ring-violet-500 ${
+              warpMode === WARP_MODE.LIGHT_SPEED
+                ? 'light-speed-btn ls-active bg-violet-600 text-white'
+                : 'bg-transparent text-gray-800 dark:text-gray-200 hover:bg-white/40 dark:hover:bg-gray-600'
             }`}
           >
             Light Speed

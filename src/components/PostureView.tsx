@@ -4,7 +4,8 @@ import { usePosture } from "@/context/PostureContext";
 import { POSE_LANDMARKS } from "@/utils/postureDetect";
 import PostureControls from './PostureControls';
 import { BaselineMetrics, usePostureStore } from "@/store/postureSlice";
-import PanelContainer from './ui/PanelContainer';
+import InlineCollapsibleCard from './ui/InlineCollapsibleCard';
+import { useInlineMinimize } from '../hooks/useInlineMinimize';
 
 /**
  * PostureView.tsx
@@ -182,7 +183,8 @@ const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
 };
 
 export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPostureChange }) => {
-  const { videoRef, handleCalibration } = usePosture();
+  const { videoRef, handleCalibration, startPostureDetection, stopPostureDetection } = usePosture();
+  const { collapsed, toggle } = useInlineMinimize('posture-tracker', false);
 
   // Select only slow-changing UI fields individually (avoids equality typing issues)
   const isCalibrated = usePostureStore((s) => s.isCalibrated);
@@ -192,6 +194,14 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
   const isCalibrating = usePostureStore((s) => s.isCalibrating);
   const countdown = usePostureStore((s) => s.countdown);
   const isDetecting = usePostureStore((s) => s.isDetecting);
+
+  const handleToggleDetection = () => {
+    if (isDetecting) {
+      stopPostureDetection();
+    } else {
+      startPostureDetection();
+    }
+  };
 
   useEffect(() => {
     if (isSessionActive && onPostureChange) {
@@ -204,24 +214,41 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
   // console.log("UI RENDER: PostureView received postureStatus:", postureStatus); 
 
   return (
-    <PanelContainer className="overflow-hidden max-w-[640px] mx-auto">
-      <div className="p-3 pb-1 flex justify-between items-center">
-        <h2 className="text-lg text-gray-800 dark:text-white">
-          Posture Tracker
-        </h2>
-        {!isDetecting && (
-          <div className="flex space-x-2">
-            <button 
-              onClick={handleCalibration} 
-              disabled={isLoadingDetector || !!cameraError || isCalibrating} 
-              className="bg-deep-purple-600 text-white hover:bg-deep-purple-700 dark:bg-deep-purple-700 dark:hover:bg-deep-purple-800 px-3 py-1 rounded font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isCalibrating ? `Calibrating (${countdown ?? ''}...)` : "Calibrate"} 
-            </button>
-          </div>
-        )}
+    <InlineCollapsibleCard
+      id="posture-tracker"
+      title="Posture Tracker"
+      helpTitle="M: collapse"
+      onHelpClick={() => {}}
+      collapsed={collapsed}
+      onToggleCollapse={toggle}
+      className="p-0 overflow-hidden max-w-[640px] mx-auto"
+      contentClassName="p-3"
+    >
+      {/* Controls row (top-right): ON/OFF toggle + Calibrate with subtle purple frame */}
+      <div className="flex justify-end items-center mb-2 gap-2">
+        <button
+          onClick={handleToggleDetection}
+          disabled={isLoadingDetector || !!cameraError || isCalibrating}
+          className="flex items-center gap-2 px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title={isDetecting ? 'Turn OFF camera' : 'Turn ON camera'}
+          aria-pressed={isDetecting}
+        >
+          <span className="text-[11px] font-semibold min-w-[22px] text-center">{isDetecting ? 'ON' : 'OFF'}</span>
+          <span className={`inline-block w-9 h-5 rounded-full relative transition-colors ${isDetecting ? 'bg-green-500/80' : 'bg-gray-400/70'}`}>
+            <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${isDetecting ? 'translate-x-4' : ''}`}></span>
+          </span>
+        </button>
+
+        <button
+          onClick={handleCalibration}
+          disabled={isLoadingDetector || !!cameraError || isCalibrating || !isDetecting}
+          className="px-3 py-1 rounded font-semibold text-sm bg-white/80 dark:bg-gray-800/60 text-gray-800 dark:text-gray-100 border border-deep-purple-500/30 hover:border-deep-purple-500/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title={!isDetecting ? 'Start camera to calibrate' : 'Recalibrate baseline'}
+        >
+          {isCalibrating ? `Calibrating (${countdown ?? ''}...)` : 'Calibrate'}
+        </button>
       </div>
-      
+
       <div className="relative w-full bg-black">
         {isLoadingDetector && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-20">
@@ -277,7 +304,7 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
         )}
       </div>
       <PostureControls />
-    </PanelContainer>
+    </InlineCollapsibleCard>
   );
 };
 
