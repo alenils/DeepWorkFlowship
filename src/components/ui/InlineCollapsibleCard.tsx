@@ -28,8 +28,8 @@ const InlineCollapsibleCard: React.FC<InlineCollapsibleCardProps> = ({
   subtitle,
   className = '',
   contentClassName = '',
-  helpTitle,
-  onHelpClick,
+  helpTitle: _helpTitle,
+  onHelpClick: _onHelpClick,
   canFullscreen = false,
   fullscreenActive = false,
   onToggleFullscreen,
@@ -50,16 +50,6 @@ const InlineCollapsibleCard: React.FC<InlineCollapsibleCardProps> = ({
           )}
         </div>
         <div className="flex items-center gap-2">
-          {/* Help */}
-          <button
-            type="button"
-            title={helpTitle || 'Help'}
-            aria-label="Help"
-            onClick={onHelpClick}
-            className="px-2 py-1 rounded-md text-xs text-gray-800 dark:text-gray-200 bg-white/40 dark:bg-gray-700/60 hover:bg-white/60 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-500"
-          >
-            ?
-          </button>
           {/* Fullscreen (optional) */}
           {canFullscreen && (
             <button

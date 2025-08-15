@@ -348,7 +348,7 @@ return (
         {(warpMode !== WARP_MODE.FULL) && <DarkModeToggle />}
 
         {/* Grid Container */}
-        <div className="grid gap-6 grid-cols-1 md:grid-cols-[clamp(300px,26vw,320px)_minmax(0,1fr)_clamp(300px,26vw,320px)] lg:grid-cols-[320px_minmax(640px,1fr)_320px] items-start flex-grow">
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-[clamp(300px,26vw,320px)_minmax(0,1fr)_clamp(300px,26vw,320px)] lg:grid-cols-[320px_minmax(640px,1fr)_320px] items-start flex-grow mt-10 md:mt-16">
           {/* Left Column: The components inside here MUST have their own opaque backgrounds. */}
           <aside className="self-start flex flex-col gap-6">
             <MissionBoard />
@@ -357,24 +357,24 @@ return (
           
           {/* Middle Column: The components inside here MUST have their own opaque backgrounds. */}
           <div className="self-start space-y-6 min-w-0">
-            {/* Title centered over timer within middle column */}
-            <div className="flex justify-center pb-2 relative">
-              <h1 className="text-4xl font-bold tracking-tight" style={{ color: 'white', textShadow: '0 0 1px white', letterSpacing: '-0.05em', WebkitTextStroke: '1px white' }}>FLOWSHIP.</h1>
-            </div>
             {/* Center Column Content */}
             {/* Focus Input and Timer Section */}
-            <div ref={heroPanelRef} className={`panel-glass ${getHeroGlowClass()} rounded-2xl p-6 relative overflow-visible`}>
+            <div ref={heroPanelRef} className={`panel-glass ${getHeroGlowClass()} rounded-2xl px-6 pb-6 pt-16 md:pt-20 relative overflow-visible`}>
+              {/* Title positioned above the hero panel, outside the box */}
+              <div className="absolute -top-8 left-1/2 -translate-x-1/2">
+                <h1 className="text-4xl font-bold tracking-tight" style={{ color: 'white', textShadow: '0 0 1px white', letterSpacing: '-0.05em', WebkitTextStroke: '1px white' }}>FLOWSHIP.</h1>
+              </div>
               {/* Streak badge */}
               {totalStreakSessions > 0 && (
                 <div 
-                  className="absolute -top-2 -right-2 bg-[color:var(--accent-green)] text-white text-xs font-bold px-2 py-1 rounded-full shadow-md" 
+                  className="absolute top-0 right-0 bg-gradient-to-br from-violet-500 via-fuchsia-500 to-indigo-500 text-white text-[11px] font-semibold px-2.5 py-1 rounded-bl-lg rounded-tr-2xl shadow-[0_0_12px_rgba(139,92,246,0.55)] ring-1 ring-violet-300/60 backdrop-blur-sm" 
                   title="Keep it under 3 distractions to grow your focus streak"
                 >
                   🔥 x{totalStreakSessions}
                 </div>
               )}
               
-              <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6 mb-6">
+              <div className="flex flex-col md:flex-row items-start md:items-start gap-4 md:gap-6 mb-6">
                 {/* Goal Input */} 
                 <div className="flex-grow w-full md:w-auto">
                   <DeepFocusInput 
