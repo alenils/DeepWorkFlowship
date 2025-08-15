@@ -9,8 +9,8 @@ import { DarkModeToggle } from './components/DarkModeToggle'
 import { TimerProgressBar } from './components/TimerProgressBar'
 import { useTimerHook, useTimerStore } from './store/timerSlice'
 import { msToClock, formatTotalDuration } from './utils/time'
-import { Notepad } from './components/Notepad'
-import { ActionsList } from './components/ActionsList'
+import { SystemLog } from './components/SystemLog'
+import { MissionBoard } from './components/MissionBoard'
 import { PostureView } from './components/PostureView'
 import { Toast } from './components/Toast'
 import { useSound } from './features/audio/useSound'
@@ -351,8 +351,8 @@ return (
         <div className="grid gap-6 grid-cols-1 md:grid-cols-[clamp(300px,26vw,320px)_minmax(0,1fr)_clamp(300px,26vw,320px)] lg:grid-cols-[320px_minmax(640px,1fr)_320px] items-start flex-grow">
           {/* Left Column: The components inside here MUST have their own opaque backgrounds. */}
           <aside className="self-start flex flex-col gap-6">
-            <ActionsList />
-            <Notepad />
+            <MissionBoard />
+            <SystemLog />
           </aside>
           
           {/* Middle Column: The components inside here MUST have their own opaque backgrounds. */}
