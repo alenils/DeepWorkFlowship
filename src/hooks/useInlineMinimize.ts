@@ -26,5 +26,15 @@ export function useInlineMinimize(id: string, defaultCollapsed = false) {
 
   const toggle = useCallback(() => setCollapsed((c) => !c), []);
 
+  // Listen for a global collapse-all event to minimize all inline cards on session start
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handler = () => setCollapsed(true);
+    window.addEventListener('inline-collapse:all', handler);
+    return () => {
+      window.removeEventListener('inline-collapse:all', handler);
+    };
+  }, [setCollapsed]);
+
   return { collapsed, setCollapsed, toggle } as const;
 }

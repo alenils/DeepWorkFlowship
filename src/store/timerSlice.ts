@@ -303,6 +303,15 @@ export const useTimerStore = create<TimerState>()(
           isSessionActive: true,
           isRunning: true
         });
+
+        // Dispatch global collapse event to minimize all inline cards
+        try {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('inline-collapse:all'));
+          }
+        } catch (e) {
+          console.warn('[TimerStore] Failed to dispatch inline-collapse:all event', e);
+        }
       },
       
       pauseTimer: () => {
