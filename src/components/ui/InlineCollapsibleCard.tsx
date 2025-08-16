@@ -42,7 +42,12 @@ const InlineCollapsibleCard: React.FC<InlineCollapsibleCardProps> = ({
   const contentId = `${id}__content`;
 
   return (
-    <PanelContainer className={`overflow-hidden ${className}`}>
+    <PanelContainer
+      className={`overflow-hidden ${className}`}
+      data-panel-id={id}
+      data-collapsed={collapsed ? 'true' : 'false'}
+      aria-expanded={!collapsed}
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2">
         <div className="min-w-0">

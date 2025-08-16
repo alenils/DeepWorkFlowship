@@ -137,36 +137,48 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const currentTrack = currentTracklist[currentTrackIndex] || null;
 
-  // Initialize AudioContext and handle resume on first user interaction (Suggestion C)
+  // Initialize/Resume AudioContext on first gesture and when tab becomes visible
   useEffect(() => {
-    const resume = () => {
-      if (!audioContextRef.current && window.AudioContext) {
-        try {
-          audioContextRef.current = new window.AudioContext();
-        } catch (e) {
-          console.error("Failed to create AudioContext:", e);
-          return;
+    const resumeIfNeeded = async () => {
+      try {
+        let ctx = audioContextRef.current;
+        if (!ctx) {
+          const Ctx = (window as any).AudioContext || (window as any).webkitAudioContext;
+          if (Ctx) {
+            ctx = new Ctx();
+            audioContextRef.current = ctx; // ensure ref holds the instance
+          }
         }
+        if (ctx && ctx.state !== 'running') {
+          await ctx.resume();
+          if (__DEV__) console.debug('[AudioProvider] Resumed AudioContext');
+        }
+      } catch (e) {
+        if (__DEV__) console.debug('[AudioProvider] resumeIfNeeded error', e);
       }
-      if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
-        audioContextRef.current.resume().catch(e => console.error("AudioContext resume failed:", e));
-      }
-      // Clean up listeners once resumed or attempt failed
-      window.removeEventListener('pointerdown', resume);
-      window.removeEventListener('keydown', resume);
     };
 
-    // Only add listeners if context is not yet running
-    // This also handles the case where AudioContext might not be supported
-    if (window.AudioContext && (!audioContextRef.current || audioContextRef.current.state !== 'running')) {
-      window.addEventListener('pointerdown', resume, { once: true });
-      window.addEventListener('keydown', resume, { once: true });
+    const onPointer = () => { void resumeIfNeeded(); cleanupPointers(); };
+    const onKey = () => { void resumeIfNeeded(); cleanupPointers(); };
+    const onTouch = () => { void resumeIfNeeded(); cleanupPointers(); };
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void resumeIfNeeded();
+    };
+
+    function cleanupPointers() {
+      window.removeEventListener('pointerdown', onPointer);
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('touchstart', onTouch);
     }
 
+    window.addEventListener('pointerdown', onPointer, { passive: true });
+    window.addEventListener('keydown', onKey, { passive: true });
+    window.addEventListener('touchstart', onTouch, { passive: true });
+    document.addEventListener('visibilitychange', onVisible);
+
     return () => {
-      // Ensure listeners are cleaned up on component unmount if they haven't fired
-      window.removeEventListener('pointerdown', resume);
-      window.removeEventListener('keydown', resume);
+      cleanupPointers();
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, []);
 

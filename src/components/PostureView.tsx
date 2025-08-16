@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useCallback } from "react";
 import { NormalizedLandmark } from "@mediapipe/tasks-vision";
 import { usePosture } from "@/context/PostureContext";
 import { POSE_LANDMARKS } from "@/utils/postureDetect";
@@ -186,6 +186,11 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
   const { videoRef, handleCalibration, startPostureDetection, stopPostureDetection } = usePosture();
   const { collapsed, toggle } = useInlineMinimize('posture-tracker', false);
 
+  const DEV = import.meta?.env?.DEV ?? false;
+  const renderCountRef = useRef(0);
+  renderCountRef.current += 1;
+  const wasDetectingRef = useRef(false);
+
   // Select only slow-changing UI fields individually (avoids equality typing issues)
   const isCalibrated = usePostureStore((s) => s.isCalibrated);
   const cameraError = usePostureStore((s) => s.cameraError);
@@ -195,13 +200,13 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
   const countdown = usePostureStore((s) => s.countdown);
   const isDetecting = usePostureStore((s) => s.isDetecting);
 
-  const handleToggleDetection = () => {
+  const handleToggleDetection = useCallback(() => {
     if (isDetecting) {
       stopPostureDetection();
     } else {
       startPostureDetection();
     }
-  };
+  }, [isDetecting, startPostureDetection, stopPostureDetection]);
 
   useEffect(() => {
     if (isSessionActive && onPostureChange) {
@@ -209,9 +214,28 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
     }
   }, [postureStatus.isGood, isSessionActive, onPostureChange]);
 
-  // Add UI Debug Log for Status
-  console.count("PostureView render");
-  // console.log("UI RENDER: PostureView received postureStatus:", postureStatus); 
+  // Pause posture detection when tab hidden, resume if it was active before when visible again
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') {
+        wasDetectingRef.current = usePostureStore.getState().isDetecting;
+        if (wasDetectingRef.current) {
+          if (DEV) console.debug('[PostureView] Pausing detection (tab hidden)');
+          stopPostureDetection();
+        }
+      } else {
+        if (wasDetectingRef.current) {
+          if (DEV) console.debug('[PostureView] Resuming detection (tab visible)');
+          startPostureDetection();
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, [startPostureDetection, stopPostureDetection, DEV]);
+
+  // Add UI Debug Log for Status (DEV only)
+  if (DEV) console.debug('PostureView render:', renderCountRef.current);
 
   return (
     <InlineCollapsibleCard
@@ -304,7 +328,7 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
               <span>
                 {(() => {
                     const msg = postureStatus.message;
-                    console.log("UI RENDER - Rendering status message:", msg);
+                    if (DEV) console.debug('UI RENDER - Rendering status message:', msg);
                     return `${postureStatus.isGood ? 'Good' : 'Bad'} | ${msg}`;
                 })()}
               </span>
@@ -317,4 +341,4 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
   );
 };
 
-export default PostureView; 
+export default React.memo(PostureView);

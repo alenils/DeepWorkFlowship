@@ -22,6 +22,7 @@ import { StarfieldCanvas as LegacyStarfieldCanvas } from './components/starfield
 import { StarfieldControls } from './components/starfield/StarfieldControls'
 import InlineCollapsibleCard from './components/ui/InlineCollapsibleCard'
 import { useInlineMinimize } from './hooks/useInlineMinimize'
+import { useInlineMinimizeSnapshot } from './hooks/useInlineMinimize'
 import { FocusBooster } from './components/focusBooster/FocusBooster'
 import { FortyHzButton } from '@/components/FortyHzButton'
 import { 
@@ -42,6 +43,8 @@ const isSessionData = (item: HistoryItem): item is SessionData => item.type === 
 const isBreakData = (item: HistoryItem): item is BreakData => item.type === SESSION_TYPE.BREAK;
 
 function App() {
+  // Mount snapshot handler to support capture/restore of inline-collapsible panels
+  useInlineMinimizeSnapshot();
   // Sound effects
   const playStartSound = useSound(SOUND_FILES.START);
   const playPauseSound = useSound(SOUND_FILES.PAUSE);
@@ -62,30 +65,31 @@ function App() {
     addDistraction
   } = useTimerStore();
   
-  // Update browser tab title based on session status and remaining time
+  // DEV flag and last title signature for throttling title updates
+  const DEV = import.meta?.env?.DEV ?? false;
+  const lastTitleSigRef = useRef<string>('');
+
+  // Update browser tab title (throttled to minute granularity)
   useEffect(() => {
-    const DEFAULT_TITLE = "FLOWSHIP.";
-    
+    const base = 'FLOWSHIP.';
+    const mins = Math.max(0, Math.floor((remainingTime ?? 0) / 60000));
+    const sig = `${mins}|${isSessionActive ? 1 : 0}`;
+    if (sig === lastTitleSigRef.current) return;
+    lastTitleSigRef.current = sig;
+
     if (isSessionActive && remainingTime > 0) {
-      // Calculate minutes and seconds from remaining milliseconds
-      const totalSeconds = Math.floor(remainingTime / 1000);
-      const minutes = Math.floor(totalSeconds / 60);
-      const seconds = totalSeconds % 60;
-      
-      // Format as MM:SS
-      const newTitle = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} - FLOWSHIP.`;
-      console.log(`[App] Updating tab title: ${newTitle} (remainingTime: ${remainingTime}ms)`);
-      document.title = newTitle;
+      // Keep formatting consistent, but throttle to once per minute
+      document.title = `${String(mins).padStart(2, '0')}:${'00'} - ${base}`;
+      if (DEV) console.debug('[App] Throttled tab title update:', document.title);
     } else {
-      console.log(`[App] Resetting tab title to default (isSessionActive: ${isSessionActive}, remainingTime: ${remainingTime}ms)`);
-      document.title = DEFAULT_TITLE;
+      document.title = base;
+      if (DEV) console.debug('[App] Reset tab title to default');
     }
-    
-    // Cleanup function to reset title when component unmounts
+
     return () => {
-      document.title = DEFAULT_TITLE;
+      document.title = base;
     };
-  }, [isSessionActive, remainingTime]);
+  }, [remainingTime, isSessionActive]);
   
   // Get history state from store
   const {

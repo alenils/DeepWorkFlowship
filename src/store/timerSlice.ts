@@ -304,13 +304,16 @@ export const useTimerStore = create<TimerState>()(
           isRunning: true
         });
 
-        // Dispatch global collapse event to minimize all inline cards
+        // Dispatch capture+collapse events for inline cards
         try {
           if (typeof window !== 'undefined') {
+            // snapshot current expanded state BEFORE collapsing
+            window.dispatchEvent(new Event('inline-collapse:capture'));
+            // existing minimize-all
             window.dispatchEvent(new Event('inline-collapse:all'));
           }
         } catch (e) {
-          console.warn('[TimerStore] Failed to dispatch inline-collapse:all event', e);
+          console.warn('[TimerStore] Failed to dispatch inline-collapse events', e);
         }
       },
       
@@ -422,6 +425,15 @@ export const useTimerStore = create<TimerState>()(
         // Set last session and show summary
         historyStore.setLastSession(sessionData);
         historyStore.setShowSummary(true);
+
+        // Restore panels to their pre-session expanded state
+        try {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('inline-collapse:restore'));
+          }
+        } catch (e) {
+          console.warn('[TimerStore] Failed to dispatch inline-collapse:restore event', e);
+        }
       },
       
       // Reset function for testing
