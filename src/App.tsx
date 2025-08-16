@@ -19,7 +19,9 @@ import { useSound } from './features/audio/useSound'
 import { MusicPlayer } from './features/audio/MusicPlayer'
 import { useHistoryStore, SessionData, BreakData, HistoryItem } from './store/historySlice'
 import { useWarpStore } from './store/warpSlice'
-import { StarfieldCanvas } from './components/starfield/StarfieldCanvas'
+import { StarfieldCanvas as LegacyStarfieldCanvas } from './components/starfield/StarfieldCanvas'
+import { StarfieldCanvas as NewStarfieldCanvas } from './ui/StarfieldCanvas'
+import type { StarfieldMode as NewStarfieldMode } from './ui/StarfieldCanvas'
 import { StarfieldControls } from './components/starfield/StarfieldControls'
 import InlineCollapsibleCard from './components/ui/InlineCollapsibleCard'
 import { useInlineMinimize } from './hooks/useInlineMinimize'
@@ -105,6 +107,38 @@ function App() {
   const warpMode = useWarpStore((state) => state.warpMode);
   const isThrusting = useWarpStore((state) => state.isThrusting);
   const lightSpeedFullscreen = useWarpStore((state) => state.lightSpeedFullscreen);
+  const effectiveSpeed = useWarpStore((state) => state.effectiveSpeed);
+
+  // Developer toggle: switch between legacy and new StarfieldCanvas implementations
+  const [useNewStarfield, setUseNewStarfield] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('useNewStarfield') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('useNewStarfield', useNewStarfield ? 'true' : 'false');
+    } catch {}
+  }, [useNewStarfield]);
+
+  // Overlay active when FULL or LIGHT_SPEED with fullscreen enabled
+  const overlayActive = useMemo(() => (
+    warpMode === WARP_MODE.FULL || (warpMode === WARP_MODE.LIGHT_SPEED && lightSpeedFullscreen)
+  ), [warpMode, lightSpeedFullscreen]);
+
+  // Map warp store mode to new starfield's mode prop
+  const newSfMode = useMemo<NewStarfieldMode>(() => {
+    switch (warpMode) {
+      case WARP_MODE.NONE:
+        return 'off';
+      case WARP_MODE.LIGHT_SPEED:
+        return 'light';
+      default:
+        return 'spacex';
+    }
+  }, [warpMode]);
   // Collapsible state for Session History
   const { collapsed: shCollapsed, toggle: shToggle } = useInlineMinimize('session-history', false);
   
@@ -345,14 +379,31 @@ return (
 <div className={`relative isolate min-h-screen w-full h-full bg-gray-900 dark:bg-black ${isThrusting ? 'thrust-shake' : ''}`} 
       style={{ minHeight: '100vh' }}>
       
-      {/* 2. Starfield Canvas is rendered first and always mounted. It sits behind the UI. */}
-      <StarfieldCanvas />
+      {/* 2. Starfield Canvas is rendered first and sits behind the UI. */}
+      {useNewStarfield ? (
+        <NewStarfieldCanvas mode={newSfMode} speed={effectiveSpeed} overlay={overlayActive} />
+      ) : (
+        <LegacyStarfieldCanvas />
+      )}
 
       {/* 3. Main UI Content Wrapper. It must have a HIGHER z-index and a TRANSPARENT background. */}
       <main className="relative z-10 mx-auto max-w-[1360px] p-6 min-h-screen flex flex-col bg-transparent">
         
         {/* DarkModeToggle (hide only in FULL overlay; show in BACKGROUND and LIGHT_SPEED) */}
         {(warpMode !== WARP_MODE.FULL) && <DarkModeToggle />}
+
+        {/* Dev: Toggle between legacy and new StarfieldCanvas */}
+        <div className="fixed top-2 right-2 z-50 opacity-70 hover:opacity-100">
+          <label className="flex items-center gap-2 text-[11px] px-2 py-1 rounded-md bg-gray-800/60 text-white border border-gray-700/60 shadow-sm">
+            <input
+              type="checkbox"
+              className="accent-violet-500"
+              checked={useNewStarfield}
+              onChange={(e) => setUseNewStarfield(e.target.checked)}
+            />
+            <span>New Starfield</span>
+          </label>
+        </div>
 
         {/* Grid Container */}
         <div className="grid gap-6 grid-cols-1 md:grid-cols-[clamp(300px,26vw,320px)_minmax(0,1fr)_clamp(300px,26vw,320px)] lg:grid-cols-[320px_minmax(640px,1fr)_320px] items-start flex-grow mt-10 md:mt-16">
@@ -539,7 +590,7 @@ return (
       </main>
 
       {/* Floating Action Buttons - Visible when overlaying (FULL or LIGHT_SPEED fullscreen) */}
-      {(warpMode === WARP_MODE.FULL || (warpMode === WARP_MODE.LIGHT_SPEED && lightSpeedFullscreen)) && (
+      {overlayActive && (
         <div id={ELEMENT_IDS.WARP_CONTROLS} className="absolute bottom-4 right-4 z-[10000] flex gap-3 items-center">
           <button
             id={ELEMENT_IDS.WARP_DISTRACT}
@@ -549,7 +600,7 @@ return (
           >
             DISTRACTED
           </button>
-          
+
           <button
             id={ELEMENT_IDS.EXIT_WARP}
             onClick={handleExitWarp}
