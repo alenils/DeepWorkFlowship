@@ -47,6 +47,8 @@ export const StarfieldCanvas: React.FC<StarfieldCanvasProps> = ({ mode, speed, o
   const centerRef = useRef({ x: 0, y: 0 });
   // Overlay z-index flag
   const overlayRef = useRef<boolean>(!!overlay);
+  // Reduced motion preference
+  const reduceMotionRef = useRef(false);
 
   // Compute initial target star count based on viewport area
   const initialTarget = useMemo(() => {
@@ -105,6 +107,17 @@ export const StarfieldCanvas: React.FC<StarfieldCanvasProps> = ({ mode, speed, o
     starTargetRef.current = Math.max(180, Math.min(900, Math.round(area * 0.00022)));
   };
 
+  // Detect prefers-reduced-motion once and on changes
+  useEffect(() => {
+    try {
+      const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+      reduceMotionRef.current = !!mq.matches;
+      const handler = () => { reduceMotionRef.current = !!mq.matches; };
+      mq.addEventListener?.('change', handler);
+      return () => mq.removeEventListener?.('change', handler);
+    } catch {}
+  }, []);
+
   // Initialize a single star
   const makeStar = (w: number, h: number, modeKey: StarfieldMode): Star => {
     const z = Math.random();
@@ -162,7 +175,8 @@ export const StarfieldCanvas: React.FC<StarfieldCanvasProps> = ({ mode, speed, o
     if (!ctx) return;
 
     const ns = normalizedSpeed; // 0..1
-    const baseSpeed = 25 + 320 * ns; // px/s
+    const rm = reduceMotionRef.current ? 0.5 : 1;
+    const baseSpeed = (25 + 320 * ns) * rm; // px/s scaled for reduced motion
 
     for (let i = 0; i < starsRef.current.length; i++) {
       const s = starsRef.current[i];
@@ -200,7 +214,8 @@ export const StarfieldCanvas: React.FC<StarfieldCanvasProps> = ({ mode, speed, o
     const cy = centerRef.current.y;
 
     const ns = normalizedSpeed;
-    const radialSpeed = 80 + 1400 * ns; // px/s
+    const rm = reduceMotionRef.current ? 0.5 : 1;
+    const radialSpeed = (80 + 1400 * ns) * rm; // px/s scaled for reduced motion
     const streakLen = 8 + 260 * ns; // px
 
     ctx.save();

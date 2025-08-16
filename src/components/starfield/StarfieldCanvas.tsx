@@ -529,13 +529,15 @@ export const StarfieldCanvas: React.FC = memo(() => {
     // LIGHT_SPEED_EXPERIMENT: global swirl disabled for near-still radial look
     
     // Update speed with smoother easing for seamless transition
-    const speedDiff = targetSpeedRef.current - speedRef.current;
+    // Apply prefers-reduced-motion by scaling velocity only
+    const targetSpeed = (reduceMotionRef.current ? 0.5 : 1) * targetSpeedRef.current;
+    const speedDiff = targetSpeed - speedRef.current;
     if (Math.abs(speedDiff) > 0.01) {
       // Use smoother easing for more gradual acceleration
       const easing = speedDiff > 0 ? 0.04 : 0.08; // Slower acceleration, faster deceleration
       speedRef.current += speedDiff * easing;
     } else {
-      speedRef.current = targetSpeedRef.current;
+      speedRef.current = targetSpeed;
     }
     
     // Update camera rotation (global), very subtle in LIGHT SPEED
@@ -1149,6 +1151,28 @@ export const StarfieldCanvas: React.FC = memo(() => {
   useEffect(() => {
     isFullWarpRef.current = warpMode === WARP_MODE.FULL;
   }, [warpMode]);
+
+  // Pause/resume animation when document is hidden/visible
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.hidden) {
+        // Stop requesting frames while hidden
+        isAnimatingRef.current = false;
+        if (animIdRef.current) {
+          cancelAnimationFrame(animIdRef.current);
+          animIdRef.current = null;
+        }
+      } else {
+        // Resume only if a warp mode is active
+        if (warpMode !== WARP_MODE.NONE && !isAnimatingRef.current) {
+          isAnimatingRef.current = true;
+          animIdRef.current = requestAnimationFrame(animate);
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [warpMode, animate]);
 
   // Determine canvas visibility and z-index based on warp mode
   const canvasStyle = React.useMemo(() => {
