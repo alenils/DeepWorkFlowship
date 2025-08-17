@@ -384,6 +384,19 @@ export const useTimerStore = create<TimerState>()(
         const actualSessionStartTime = state.sessionStartTime || Date.now() - state.sessionDurationMs;
         const actualSessionDuration = state.sessionEndTime ? state.sessionDurationMs - state.remainingTime : Date.now() - actualSessionStartTime;
         
+        // Emit custom event for Mission Goal accumulation
+        try {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(
+              new CustomEvent('goal:session-progress', {
+                detail: { durationMs: actualSessionDuration },
+              })
+            );
+          }
+        } catch (e) {
+          console.warn('[TimerStore] Failed to dispatch goal:session-progress event', e);
+        }
+
         // Create session data for history with actual duration
         const sessionData: SessionData = {
           type: SESSION_TYPE.FOCUS,

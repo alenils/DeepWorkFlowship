@@ -11,6 +11,7 @@ import { useTimerHook, useTimerStore } from './store/timerSlice'
 import { msToClock, formatTotalDuration } from './utils/time'
 import { SystemLog } from './components/SystemLog'
 import { MissionBoard } from './components/MissionBoard'
+import { GoalPanel } from './components/GoalPanel'
 import { PostureView } from './components/PostureView'
 import DeckB from './components/DeckB'
 import { Toast } from './components/Toast'
@@ -121,7 +122,8 @@ function App() {
   const overlayActive = useMemo(() => (
     warpMode === WARP_MODE.FULL || (warpMode === WARP_MODE.LIGHT_SPEED && lightSpeedFullscreen)
   ), [warpMode, lightSpeedFullscreen]);
-  // Collapsible state for Session History
+  // Collapsible state for Mission Goal and Session History
+  const { collapsed: goalCollapsed, toggle: goalToggle } = useInlineMinimize('goal', false);
   const { collapsed: shCollapsed, toggle: shToggle } = useInlineMinimize('session-history', false);
   
   // Toast state
@@ -473,6 +475,19 @@ return (
                 </div>
               )}
             </div>
+
+            {/* Mission Goal Section */}
+            <InlineCollapsibleCard
+              id="goal"
+              title="Mission Goal"
+              subtitle={<span className="opacity-70">Define your mission and track progress</span>}
+              collapsed={goalCollapsed}
+              onToggleCollapse={goalToggle}
+              className="p-0"
+              contentClassName="p-6"
+            >
+              <GoalPanel />
+            </InlineCollapsibleCard>
 
             {/* Session History Section (static hover) */}
             <InlineCollapsibleCard
