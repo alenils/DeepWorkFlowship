@@ -67,15 +67,15 @@ export const SystemLog: React.FC = () => {
       onHelpClick={() => {}}
       collapsed={collapsed}
       onToggleCollapse={toggle}
-      className="panel-cockpit p-0 rounded-2xl"
+      className="panel-cockpit p-0 rounded-2xl panel-v2"
       contentClassName="p-3"
     >
       <div className="relative">
-        <div className="relative bg-black/60 border border-[rgba(0,224,211,0.25)] rounded-md overflow-hidden">
+        <div className="terminal">
           <header className="px-3 py-1.5 font-mono text-[11px] text-emerald-400 border-b border-emerald-500/20 bg-black/40">
             System Log
           </header>
-          <div className="relative terminal-gridlines">
+          <div className="relative">
             <textarea
               ref={textareaRef}
               value={note}

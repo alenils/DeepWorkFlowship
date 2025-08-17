@@ -181,32 +181,14 @@ export const GoalPanel: React.FC = () => {
             </div>
 
             {/* Track */}
-            <div className="relative h-2 rounded bg-slate-800/80 border border-slate-700/60 shadow-inner overflow-hidden">
+            <div className="flight-track">
+              <div className="flight-track__fill" style={{ ['--pct' as any]: `${pct}%` }} />
               <div
-                className="h-full transition-[width] duration-500 ease-out bg-gradient-to-r from-emerald-500 to-teal-500 shadow-[0_0_8px_rgba(16,185,129,0.35)]"
-                style={{ width: `${pct}%` }}
-              />
-              {/* Rocket */}
-              <div
-                className="absolute -top-4 will-change-transform"
-                style={{ left: `calc(${pct}% - 14px)`, transition: 'left 300ms ease' }}
+                className="flight-rocket absolute -top-4 select-none"
+                style={{ left: `calc(${pct}% - 14px)` }}
+                aria-hidden
               >
-                <span
-                  className="select-none"
-                  style={{ fontSize: 24, filter: 'drop-shadow(0 0 8px rgba(139,92,246,0.5))' }}
-                  aria-hidden
-                >
-                  🚀
-                </span>
-                <div
-                  className="mx-auto -mt-1 h-1 w-10 rounded-full"
-                  style={{
-                    background:
-                      'linear-gradient(90deg, rgba(255,255,255,0.0), rgba(16,185,129,0.6), rgba(59,130,246,0.0))',
-                    filter: 'blur(2px)',
-                    opacity: 0.7,
-                  }}
-                />
+                🚀
               </div>
             </div>
 

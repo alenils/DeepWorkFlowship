@@ -483,7 +483,7 @@ return (
               subtitle={<span className="opacity-70">Define your mission and track progress</span>}
               collapsed={goalCollapsed}
               onToggleCollapse={goalToggle}
-              className="p-0"
+              className="p-0 panel-v2"
               contentClassName="p-6"
             >
               <GoalPanel />

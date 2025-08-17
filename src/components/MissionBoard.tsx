@@ -82,7 +82,7 @@ export const MissionBoard: React.FC = () => {
       onHelpClick={() => {}}
       collapsed={collapsed}
       onToggleCollapse={toggle}
-      className="panel-cockpit p-0 rounded-2xl"
+      className="panel-cockpit p-0 rounded-2xl panel-v2 panel-v2--hoverable"
       contentClassName="p-3"
     >
       {/* Add new */}
@@ -96,7 +96,7 @@ export const MissionBoard: React.FC = () => {
         />
         <button
           type="submit"
-          className="relative overflow-hidden btn-shimmer bg-gradient-to-r from-violet-500 to-indigo-500 text-white font-semibold rounded-r-md rounded-l-none px-3.5 py-2.5 shadow-md hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-violet-400"
+          className="relative overflow-hidden btn-shimmer btn-primary text-white font-semibold rounded-r-md rounded-l-none px-3.5 py-2.5 shadow-md hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-violet-400"
         >
           Add
         </button>
@@ -110,7 +110,7 @@ export const MissionBoard: React.FC = () => {
           items.map(item => (
             <div
               key={item.id}
-              className={`flex items-center gap-2 rounded-r border-l-2 pl-3 pr-2 py-2 text-[13px] font-mono transition-colors bg-[linear-gradient(90deg,rgba(139,135,255,0.02),rgba(139,135,255,0.05))] hover:bg-[rgba(139,135,255,0.08)] border-l-[rgba(139,135,255,0.25)] hover:border-l-violet-400 group`}
+              className={`mission-row flex items-center gap-2 rounded-r border-l-2 pl-3 pr-2 py-2 text-[13px] font-mono transition-colors bg-[linear-gradient(90deg,rgba(139,135,255,0.02),rgba(139,135,255,0.05))] hover:bg-[rgba(139,135,255,0.08)] border-l-[rgba(139,135,255,0.25)] hover:border-l-violet-400 group`}
             >
               <label className="flex items-center gap-3 min-w-0 cursor-pointer flex-1">
                 <input

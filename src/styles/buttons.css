@@ -1,0 +1,14 @@
+.btn-primary{
+  background: var(--accent-grad);
+  color:#fff; padding:8px 16px; border-radius:8px; font-weight:600;
+  box-shadow: 0 2px 12px rgba(147, 51, 234, .35);
+}
+.btn-ghost{
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--card-border);
+  color: var(--text-primary);
+  padding: 8px 14px; border-radius:10px;
+}
+.btn-primary:focus-visible, .btn-ghost:focus-visible{
+  outline: 2px solid var(--glow-purple); outline-offset: 2px;
+}

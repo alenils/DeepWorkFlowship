@@ -1,0 +1,37 @@
+:root{
+  /* Radii / Spacing */
+  --radius-12: 12px;
+  --pad-16: 16px;
+
+  /* Base / Panels (slate glass) */
+  --bg-base: #070B14;
+  --card-bg-1: rgba(17, 24, 39, 0.86);      /* #111827 */
+  --card-bg-2: rgba(15, 23, 42, 0.72);      /* #0F172A */
+  --card-bg-grad: linear-gradient(135deg, var(--card-bg-1), var(--card-bg-2));
+  --card-border: rgba(255, 255, 255, 0.07);
+  --card-hover-border: rgba(147, 51, 234, 0.35);
+  --card-shadow:
+      0 6px 24px rgba(0,0,0,.45),
+      0 0 32px rgba(147, 51, 234, .15),
+      0 0 28px rgba(59, 130, 246, .15);
+
+  /* Brand / Accents */
+  --purple-600: #9333EA;
+  --purple-500: #A855F7;
+  --blue-500:   #3B82F6;
+  --accent-grad: linear-gradient(45deg, var(--purple-600), var(--blue-500));
+  --glow-purple: rgba(147, 51, 234, 0.40);
+
+  /* Text */
+  --text-primary: #E2E8F0;
+  --text-muted: rgba(226, 232, 240, 0.66);
+
+  /* Terminal (System Log) */
+  --green-terminal: #10B981;
+  --terminal-border: rgba(16, 185, 129, 0.22);
+  --terminal-scanline: rgba(16, 185, 129, 0.06);
+
+  /* Progress / Rocket “flight path” */
+  --track-bg: rgba(148, 163, 184, 0.18);
+  --track-grad: linear-gradient(90deg, var(--purple-600), var(--blue-500));
+}

@@ -1,0 +1,38 @@
+/* Mission rows */
+.mission-row{
+  display:flex; align-items:center; gap:10px; padding:10px 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Courier New", monospace;
+  background: linear-gradient(90deg, rgba(139,135,255,.03), rgba(139,135,255,.06));
+  border-left: 2px solid rgba(147, 51, 234, .18);
+  border-radius: 0 6px 6px 0;
+  transition: transform .15s ease, border-color .15s ease;
+  color: var(--text-primary);
+}
+.mission-row:hover{ transform: translateY(-1px); border-left-color: var(--purple-600); }
+
+/* System Log */
+.terminal{
+  position:relative; background: rgba(0,0,0,.60);
+  color: var(--green-terminal);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Courier New", monospace;
+  border: 1px solid var(--terminal-border); border-radius: 8px; padding: 12px;
+}
+.terminal::before{
+  content: ''; position: absolute; inset: 0; border-radius: 8px;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 2px, var(--terminal-scanline) 2px, var(--terminal-scanline) 4px
+  );
+  pointer-events: none;
+}
+
+/* Goal “flight path” */
+.flight-track{
+  height: 6px; border-radius: 9999px;
+  background: var(--track-bg); position: relative; overflow: hidden;
+}
+.flight-track__fill{
+  position:absolute; top:0; bottom:0; left:0; width: var(--pct, 0%);
+  background: var(--track-grad);
+  border-radius: 9999px;
+}
+.flight-rocket{ transform: translateY(-8px); font-size: 20px; } /* ~25–30% larger */
