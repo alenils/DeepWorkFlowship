@@ -103,7 +103,7 @@ export const GoalPanel: React.FC = () => {
           <div className="flex flex-col gap-2">
             <label className="text-xs text-gray-600 dark:text-gray-300">WHAT</label>
             <input
-              className="goalInput"
+              className="mission-input"
               placeholder="Define your mission"
               value={what}
               onChange={(e) => setWhat(e.target.value)}
@@ -112,7 +112,7 @@ export const GoalPanel: React.FC = () => {
           <div className="flex flex-col gap-2">
             <label className="text-xs text-gray-600 dark:text-gray-300">WHY</label>
             <input
-              className="goalInput"
+              className="mission-input"
               placeholder="Why this matters"
               value={why}
               onChange={(e) => setWhy(e.target.value)}
@@ -121,7 +121,7 @@ export const GoalPanel: React.FC = () => {
           <div className="flex flex-col gap-2">
             <label className="text-xs text-gray-600 dark:text-gray-300">HOW</label>
             <input
-              className="goalInput"
+              className="mission-input"
               placeholder="Your approach"
               value={how}
               onChange={(e) => setHow(e.target.value)}
@@ -130,7 +130,7 @@ export const GoalPanel: React.FC = () => {
           <div className="flex flex-col gap-2">
             <label className="text-xs text-gray-600 dark:text-gray-300">TIME DEDICATED (minutes)</label>
             <input
-              className="goalInput"
+              className="mission-input"
               type="number"
               min={1}
               value={target}
@@ -141,7 +141,7 @@ export const GoalPanel: React.FC = () => {
             <button
               type="button"
               onClick={handleStart}
-              className="px-4 py-2 rounded-md text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              className="relative overflow-hidden btn-shimmer px-4 py-2 rounded-md text-sm font-semibold text-white bg-gradient-to-r from-violet-500 to-indigo-500 shadow-md hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-violet-400"
             >
               Start Goal
             </button>
@@ -155,19 +155,19 @@ export const GoalPanel: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="flex flex-col gap-1">
               <div className="text-xs text-gray-600 dark:text-gray-300">WHAT</div>
-              <input className="goalInput" value={goal.what} disabled />
+              <input className="mission-input" value={goal.what} disabled />
             </div>
             <div className="flex flex-col gap-1">
               <div className="text-xs text-gray-600 dark:text-gray-300">WHY</div>
-              <input className="goalInput" value={goal.why} disabled />
+              <input className="mission-input" value={goal.why} disabled />
             </div>
             <div className="flex flex-col gap-1">
               <div className="text-xs text-gray-600 dark:text-gray-300">HOW</div>
-              <input className="goalInput" value={goal.how} disabled />
+              <input className="mission-input" value={goal.how} disabled />
             </div>
             <div className="flex flex-col gap-1">
               <div className="text-xs text-gray-600 dark:text-gray-300">TIME DEDICATED</div>
-              <input className="goalInput" value={`${goal.targetMinutes} min`} disabled />
+              <input className="mission-input" value={`${goal.targetMinutes} min`} disabled />
             </div>
           </div>
 
@@ -181,9 +181,9 @@ export const GoalPanel: React.FC = () => {
             </div>
 
             {/* Track */}
-            <div className="relative h-2.5 rounded-full bg-slate-900/50 ring-1 ring-white/10 overflow-hidden">
+            <div className="relative h-2 rounded bg-slate-800/80 border border-slate-700/60 shadow-inner overflow-hidden">
               <div
-                className="h-full transition-[width] duration-500 ease-out bg-gradient-to-r from-violet-500 via-fuchsia-500 to-emerald-400 shadow-[0_0_12px_rgba(168,85,247,.35)]"
+                className="h-full transition-[width] duration-500 ease-out bg-gradient-to-r from-emerald-500 to-teal-500 shadow-[0_0_8px_rgba(16,185,129,0.35)]"
                 style={{ width: `${pct}%` }}
               />
               {/* Rocket */}
@@ -193,7 +193,7 @@ export const GoalPanel: React.FC = () => {
               >
                 <span
                   className="select-none"
-                  style={{ fontSize: 24, filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.6))' }}
+                  style={{ fontSize: 24, filter: 'drop-shadow(0 0 8px rgba(139,92,246,0.5))' }}
                   aria-hidden
                 >
                   🚀
@@ -202,7 +202,7 @@ export const GoalPanel: React.FC = () => {
                   className="mx-auto -mt-1 h-1 w-10 rounded-full"
                   style={{
                     background:
-                      'linear-gradient(90deg, rgba(255,255,255,0.0), rgba(168,85,247,0.5), rgba(59,130,246,0.0))',
+                      'linear-gradient(90deg, rgba(255,255,255,0.0), rgba(16,185,129,0.6), rgba(59,130,246,0.0))',
                     filter: 'blur(2px)',
                     opacity: 0.7,
                   }}

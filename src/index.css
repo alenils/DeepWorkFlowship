@@ -73,6 +73,16 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       disabled:text-gray-500 dark:disabled:text-gray-400;
   }
 
+  /* Unified mission input styling (used by Mission Board and Goal Panel) */
+  .mission-input {
+    @apply text-[0.85rem] px-3.5 py-2.5 rounded-md border 
+      bg-white/70 dark:bg-gray-700/60 
+      border-[rgba(139,135,255,0.30)] dark:border-[rgba(139,135,255,0.28)]
+      text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400
+      focus:outline-none focus:ring-2 focus:ring-violet-400 dark:focus:ring-violet-300
+      disabled:opacity-60 disabled:cursor-not-allowed;
+  }
+
 
   /* Neon glow variant for timer controls (keeps glass bg, removes border) */
   .panel-glass--neon {
@@ -133,6 +143,16 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       transition: none;
       transform: none;
     }
+  }
+  
+  /* Lower Deck / Engine Bay headers - subtle neon header bar */
+  .panel-cockpit[data-panel-id="environment"] > div:first-child,
+  .panel-cockpit[data-panel-id="posture-tracker"] > div:first-child,
+  .panel-cockpit[data-panel-id="flow-music"] > div:first-child,
+  .panel-cockpit[data-panel-id="deck-b"] > div:first-child {
+    background: linear-gradient(90deg, rgba(var(--primary-purple-rgb), 0.10), rgba(16,185,129,0.06) 40%, rgba(59,130,246,0.05));
+    border-bottom: 1px solid rgba(var(--primary-purple-rgb), 0.14);
+    box-shadow: inset 4px 0 0 rgba(var(--primary-purple-rgb), 0.25);
   }
 
   /* Neon glow pulse animation */
@@ -284,4 +304,30 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     overflow: hidden; /* Hide any overflow during animation */
     outline: 1px solid black; /* Add outline to prevent edge artifacts */
   }
-} 
+
+  /* Subtle terminal scanlines (used on System Log scroll area) */
+  .terminal-gridlines::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(16,185,129,0.035) 2px,
+      rgba(16,185,129,0.035) 4px
+    );
+    pointer-events: none;
+  }
+
+  /* Optional shimmer for primary buttons (used by Add / Start Goal) */
+  .btn-shimmer::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+    transform: translateX(-100%);
+    transition: transform 300ms ease-out;
+  }
+  .btn-shimmer:hover::before { transform: translateX(100%); }
+}

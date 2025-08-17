@@ -82,7 +82,7 @@ export const MissionBoard: React.FC = () => {
       onHelpClick={() => {}}
       collapsed={collapsed}
       onToggleCollapse={toggle}
-      className="p-0"
+      className="panel-cockpit p-0 rounded-2xl"
       contentClassName="p-3"
     >
       {/* Add new */}
@@ -92,11 +92,11 @@ export const MissionBoard: React.FC = () => {
           value={newItemText}
           onChange={e => setNewItemText(e.target.value)}
           placeholder="New mission..."
-          className="flex-grow min-w-0 p-2 text-sm border rounded-l focus:outline-none focus:ring-2 focus:ring-deep-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          className="mission-input flex-grow min-w-0 rounded-l-md rounded-r-none border-r-0"
         />
         <button
           type="submit"
-          className="px-3 py-2 text-sm bg-deep-purple-600 text-white rounded-r font-medium hover:bg-deep-purple-700 dark:bg-deep-purple-700 dark:hover:bg-deep-purple-800"
+          className="relative overflow-hidden btn-shimmer bg-gradient-to-r from-violet-500 to-indigo-500 text-white font-semibold rounded-r-md rounded-l-none px-3.5 py-2.5 shadow-md hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-violet-400"
         >
           Add
         </button>
@@ -110,16 +110,14 @@ export const MissionBoard: React.FC = () => {
           items.map(item => (
             <div
               key={item.id}
-              className={`px-3 py-2 rounded flex items-center justify-between group transition-colors duration-150 ${
-                item.done ? 'bg-green-100 dark:bg-green-900/30 line-through' : 'bg-gray-100 dark:bg-gray-700/50'
-              }`}
+              className={`flex items-center gap-2 rounded-r border-l-2 pl-3 pr-2 py-2 text-[13px] font-mono transition-colors bg-[linear-gradient(90deg,rgba(139,135,255,0.02),rgba(139,135,255,0.05))] hover:bg-[rgba(139,135,255,0.08)] border-l-[rgba(139,135,255,0.25)] hover:border-l-violet-400 group`}
             >
-              <label className="flex items-center gap-3 min-w-0 cursor-pointer">
+              <label className="flex items-center gap-3 min-w-0 cursor-pointer flex-1">
                 <input
                   type="checkbox"
                   checked={item.done}
                   onChange={() => toggleItem(item.id)}
-                  className="h-4 w-4 rounded border-gray-300 text-deep-purple-600 focus:ring-deep-purple-500 dark:border-gray-600 dark:bg-gray-700"
+                  className="h-[14px] w-[14px] rounded-[3px] border border-[rgba(139,135,255,0.4)] bg-transparent accent-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.35)] focus:ring-1 focus:ring-emerald-400 dark:border-[rgba(139,135,255,0.35)] dark:bg-gray-800"
                 />
                 {/* Purple star for Mission Goal-originated items */}
                 {item.fromGoal && (
@@ -130,7 +128,7 @@ export const MissionBoard: React.FC = () => {
                     </svg>
                   </span>
                 )}
-                <span className={`text-sm truncate ${item.done ? 'text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-gray-200'}`}>
+                <span className={`truncate ${item.done ? 'line-through text-gray-400 dark:text-gray-400' : 'text-gray-800 dark:text-gray-100'}`}>
                   {item.text}
                 </span>
               </label>
@@ -150,6 +148,7 @@ export const MissionBoard: React.FC = () => {
       </div>
     </InlineCollapsibleCard>
   );
-};
+}
+;
 
 export default MissionBoard;

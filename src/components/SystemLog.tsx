@@ -67,28 +67,35 @@ export const SystemLog: React.FC = () => {
       onHelpClick={() => {}}
       collapsed={collapsed}
       onToggleCollapse={toggle}
-      className="p-0"
+      className="panel-cockpit p-0 rounded-2xl"
       contentClassName="p-3"
     >
       <div className="relative">
-        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-amber-50/30 dark:bg-gray-800/60">
-          <textarea
-            ref={textareaRef}
-            value={note}
-            onChange={handleNoteChange}
-            onBlur={handleBlur}
-            onKeyDown={handleKeyDown}
-            placeholder="Log notes, thoughts, and events..."
-            className="w-full font-mono text-[12px] leading-5 text-gray-800 dark:text-gray-200 bg-transparent outline-none resize-none p-3 h-[300px] md:h-[360px] overflow-auto pr-3 pb-8"
-          />
-          {/* Sticky hint row overlay (kept visible at bottom) */}
-          <div className="pointer-events-none absolute bottom-0 left-0 right-0 px-3 py-1 text-[10px] italic text-center text-gray-700 dark:text-gray-300/80 bg-gradient-to-t from-amber-100/70 dark:from-gray-900/80 to-transparent">
-            Alt + Shift + T inserts timestamp
+        <div className="relative bg-black/60 border border-[rgba(0,224,211,0.25)] rounded-md overflow-hidden">
+          <header className="px-3 py-1.5 font-mono text-[11px] text-emerald-400 border-b border-emerald-500/20 bg-black/40">
+            System Log
+          </header>
+          <div className="relative terminal-gridlines">
+            <textarea
+              ref={textareaRef}
+              value={note}
+              onChange={handleNoteChange}
+              onBlur={handleBlur}
+              onKeyDown={handleKeyDown}
+              placeholder="Log notes, thoughts, and events..."
+              className="w-full font-mono text-[12px] leading-5 text-emerald-300/95 placeholder-emerald-500/50 bg-transparent outline-none resize-none px-3 py-3 h-[260px] md:h-[320px] overflow-auto pr-3"
+            />
+          </div>
+          <div className="flex items-center px-3 py-1.5 border-t border-emerald-500/20 bg-black/40">
+            <span className="font-mono text-emerald-400 mr-2">&gt;</span>
+            <span className="inline-block w-[8px] h-[14px] bg-emerald-400 motion-safe:animate-pulse" aria-hidden />
+            <span className="ml-auto text-[10px] text-emerald-300/60 font-mono">Alt+Shift+T → timestamp</span>
           </div>
         </div>
       </div>
     </InlineCollapsibleCard>
   );
-};
+}
+;
 
 export default SystemLog;
