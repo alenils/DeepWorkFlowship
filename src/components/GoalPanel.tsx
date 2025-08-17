@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useGoalStore } from '@/store/goalSlice';
+import { useTimerStore } from '@/store/timerSlice';
 
 const mmFmt = (mins: number) => `${Math.floor((mins || 0) / 60)}h ${String(Math.max(0, Math.floor(mins || 0)) % 60).padStart(2, '0')}m`;
 
@@ -31,11 +32,37 @@ export const GoalPanel: React.FC = () => {
     return () => window.removeEventListener('goal:session-progress', onProgress as EventListener);
   }, [addProgress]);
 
+  // Live timer state for continuous progress rendering (select primitives to avoid unstable snapshots)
+  const isSessionActive = useTimerStore((s) => s.isSessionActive);
+  const isPaused = useTimerStore((s) => s.isPaused);
+  const isInfinite = useTimerStore((s) => s.isInfinite);
+  const sessionDurationMs = useTimerStore((s) => s.sessionDurationMs);
+  const remainingTime = useTimerStore((s) => s.remainingTime);
+  const sessionStartTime = useTimerStore((s) => s.sessionStartTime);
+
+  // Compute live in-session elapsed ms for display only (accumulation still happens on session end)
+  const liveElapsedMs = useMemo(() => {
+    if (!isSessionActive || isPaused) return 0;
+    if (isInfinite) return Math.max(0, Date.now() - (sessionStartTime || Date.now()));
+    const planned = Math.max(0, sessionDurationMs || 0);
+    const rem = Math.max(0, remainingTime || 0);
+    return Math.max(0, planned - rem);
+  }, [isSessionActive, isPaused, isInfinite, sessionDurationMs, remainingTime, sessionStartTime]);
+
   const pct = useMemo(() => {
     if (!goal) return 0;
-    if (goal.targetMinutes <= 0) return 0;
-    return Math.max(0, Math.min(100, (goal.accumulatedMinutes / goal.targetMinutes) * 100));
-  }, [goal]);
+    const targetMs = Math.max(1, goal.targetMinutes) * 60000;
+    const accumulatedMs = Math.max(0, goal.accumulatedMinutes) * 60000;
+    const totalMsForDisplay = Math.min(targetMs, accumulatedMs + liveElapsedMs);
+    return Math.max(0, Math.min(100, (totalMsForDisplay / targetMs) * 100));
+  }, [goal, liveElapsedMs]);
+
+  // Live accumulated minutes for display (does not mutate store)
+  const displayAccumulatedMinutes = useMemo(() => {
+    if (!goal) return 0;
+    const liveMins = Math.floor(liveElapsedMs / 60000);
+    return Math.min(goal.targetMinutes, goal.accumulatedMinutes + liveMins);
+  }, [goal, liveElapsedMs]);
 
   const handleStart = () => {
     const t = Math.max(1, Math.floor(Number(target) || 0));
@@ -149,7 +176,7 @@ export const GoalPanel: React.FC = () => {
             {/* Labels */}
             <div className="flex justify-between text-xs text-slate-400 mb-1">
               <span>0 min</span>
-              <span>{mmFmt(goal.accumulatedMinutes)} / {mmFmt(goal.targetMinutes)}</span>
+              <span>{mmFmt(displayAccumulatedMinutes)} / {mmFmt(goal.targetMinutes)}</span>
               <span>{mmFmt(goal.targetMinutes)}</span>
             </div>
 
