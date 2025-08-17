@@ -111,12 +111,13 @@ const STARS_PER_LAYER = [30, 50, 75, 100];          // Stars per layer (front to
 const LAYER_SPEED = [0.8, 0.6, 0.4, 0.2];           // Parallax speed multipliers
 const LAYER_STREAK = [3.75, 3.125, 2.5, 1.875];     // Streak length multipliers in warp (+25%)
 
-// Visual parameters
+// Visual parameters (global palette for non-LIGHT_SPEED modes)
+// Adjusted for SpaceX (FULL/BACKGROUND): warmer yellow with a hint of violet; no red cast
 const COLOR_PALETTE = [
-  '#ffffff', '#ffffff', '#ffffff', '#ffffff',        // 50% white
+  '#ffffff', '#ffffff', '#ffffff', '#e9d5ff',        // ~37.5% white, 12.5% pale violet
   '#c8e6ff', '#c8e6ff',                             // 25% pale blue  
   '#ffe8c8',                                        // 12.5% pale gold
-  '#ffc8c8'                                         // 12.5% pale red
+  '#fff0b3'                                         // 12.5% warm pale yellow (replaces pale red)
 ];
 
 // Animation constants
@@ -240,7 +241,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
         const dpr = window.devicePixelRatio || 1;
         const thicknessBase = 0.6 + (2.2 - 0.6) * rNorm; // px pre-DPR
         const thickness = thicknessBase * dpr;
-        // HSL hue by radius mapping
+        // HSL hue by radius mapping (original: bluish range)
         let hue = 195; // default
         if (rNorm < 0.25) hue = 195 + (200 - 195) * (rNorm / 0.25);
         else if (rNorm < 0.7) hue = 190 + (195 - 190) * ((rNorm - 0.25) / 0.45);
@@ -791,7 +792,7 @@ export const StarfieldCanvas: React.FC = memo(() => {
 
           // HSL by normalized radius with breathing and inverse vignette
           const rn = Math.min(s.lsRadius / (minDim * 0.5), 1);
-          // Subtle continuous hue drift (±24–28° over ~32s) toward light violet/blue "cosmic" vibes
+          // Original LIGHT_SPEED hue scheme (blue/violet band with visible drift)
           const huePeriod = reduce ? 80 : 32;
           const hueAmplitude = reduce ? 8 : 26;
           const perLayerHue = (layerIdx === 2 ? 20 : layerIdx === 1 ? 12 : 0);
