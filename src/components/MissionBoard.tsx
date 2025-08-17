@@ -43,6 +43,21 @@ export const MissionBoard: React.FC = () => {
     setNewItemText('');
   };
 
+  // Listen for mission additions from Goal Panel
+  useEffect(() => {
+    const onAdd = (e: Event) => {
+      try {
+        const { title } = (e as CustomEvent<{ title?: string }>).detail ?? {};
+        if (!title || !title.trim()) return;
+        setItems(prev => [{ id: generateId(), text: title.trim(), done: false }, ...prev]);
+      } catch (err) {
+        console.warn('[MissionBoard] Failed to handle mission:add', err);
+      }
+    };
+    window.addEventListener('mission:add', onAdd as EventListener);
+    return () => window.removeEventListener('mission:add', onAdd as EventListener);
+  }, []);
+
   const toggleItem = (id: string) => {
     setItems(prev => prev.map(it => {
       if (it.id === id) {

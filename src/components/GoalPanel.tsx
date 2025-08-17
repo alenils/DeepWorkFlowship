@@ -1,15 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useGoalStore } from '@/store/goalSlice';
 
-function formatMinutesPretty(totalMinutes: number) {
-  const m = Math.max(0, Math.floor(totalMinutes || 0));
-  const h = Math.floor(m / 60);
-  const mm = m % 60;
-  const hPart = h > 0 ? `${h}h` : '';
-  const mmStr = h > 0 ? String(mm).padStart(2, '0') : String(mm);
-  const mPart = `${mmStr}m`;
-  return hPart ? `${hPart} ${mPart}` : mPart;
-}
+const mmFmt = (mins: number) => `${Math.floor((mins || 0) / 60)}h ${String(Math.max(0, Math.floor(mins || 0)) % 60).padStart(2, '0')}m`;
 
 export const GoalPanel: React.FC = () => {
   const { goal, startGoal, addProgress, resetGoal, hydrate } = useGoalStore();
@@ -49,6 +41,14 @@ export const GoalPanel: React.FC = () => {
     const t = Math.max(1, Math.floor(Number(target) || 0));
     if (!what.trim() || t <= 0) return;
     startGoal({ what, why, how, targetMinutes: t });
+    // Emit Mission Board add event (decoupled)
+    try {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('mission:add', { detail: { title: what.trim(), source: 'goal-panel' } })
+        );
+      }
+    } catch {}
   };
 
   const handleReset = () => {
@@ -144,28 +144,47 @@ export const GoalPanel: React.FC = () => {
             </div>
           </div>
 
-          {/* Progress bar with rocket */}
-          <div className="space-y-2">
-            <div className="relative h-3 rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden">
+          {/* Progress visuals */}
+          <div className="space-y-1.5">
+            {/* Labels */}
+            <div className="flex justify-between text-xs text-slate-400 mb-1">
+              <span>0 min</span>
+              <span>{mmFmt(goal.accumulatedMinutes)} / {mmFmt(goal.targetMinutes)}</span>
+              <span>{mmFmt(goal.targetMinutes)}</span>
+            </div>
+
+            {/* Track */}
+            <div className="relative h-2.5 rounded-full bg-slate-900/50 ring-1 ring-white/10 overflow-hidden">
               <div
-                className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-400 to-emerald-500"
+                className="h-full transition-[width] duration-500 ease-out bg-gradient-to-r from-violet-500 via-fuchsia-500 to-emerald-400 shadow-[0_0_12px_rgba(168,85,247,.35)]"
                 style={{ width: `${pct}%` }}
               />
+              {/* Rocket */}
               <div
-                className="absolute -top-2 text-lg select-none"
-                style={{ left: `${pct}%`, transform: 'translateX(-50%)' }}
-                aria-hidden="true"
+                className="absolute -top-4 will-change-transform"
+                style={{ left: `calc(${pct}% - 14px)`, transition: 'left 300ms ease' }}
               >
-                <span style={{ filter: 'drop-shadow(0 0 4px rgba(16,185,129,0.8))' }}>🚀</span>
+                <span
+                  className="select-none"
+                  style={{ fontSize: 24, filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.6))' }}
+                  aria-hidden
+                >
+                  🚀
+                </span>
+                <div
+                  className="mx-auto -mt-1 h-1 w-10 rounded-full"
+                  style={{
+                    background:
+                      'linear-gradient(90deg, rgba(255,255,255,0.0), rgba(168,85,247,0.5), rgba(59,130,246,0.0))',
+                    filter: 'blur(2px)',
+                    opacity: 0.7,
+                  }}
+                />
               </div>
             </div>
-            <div className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">
-              <div>
-                {formatMinutesPretty(goal.accumulatedMinutes)} / {formatMinutesPretty(goal.targetMinutes)}
-              </div>
-              <div className={`font-medium ${goal.completed ? 'text-emerald-600' : 'text-gray-600 dark:text-gray-400'}`}>
-                {goal.completed ? 'Completed' : 'In progress'}
-              </div>
+
+            <div className="mt-2 text-xs text-slate-500">
+              Status: {goal.completed ? 'Completed' : 'In progress'}
             </div>
           </div>
 
