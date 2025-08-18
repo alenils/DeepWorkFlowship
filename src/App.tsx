@@ -479,7 +479,6 @@ return (
             <InlineCollapsibleCard
               id="goal"
               title="Mission Goal"
-              subtitle={<span className="opacity-70">Define your mission and track progress</span>}
               collapsed={goalCollapsed}
               onToggleCollapse={goalToggle}
               variant="v2"
@@ -493,7 +492,6 @@ return (
             <InlineCollapsibleCard
               id="session-history"
               title="Session History"
-              subtitle={<span className="opacity-70">Recent focus and breaks</span>}
               collapsed={shCollapsed}
               onToggleCollapse={shToggle}
               headerRight={

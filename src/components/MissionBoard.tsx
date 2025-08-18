@@ -92,7 +92,7 @@ export const MissionBoard: React.FC = () => {
           value={newItemText}
           onChange={e => setNewItemText(e.target.value)}
           placeholder="New mission..."
-          className="mission-input font-mono flex-grow min-w-0 rounded-l-md rounded-r-none border-r-0"
+          className="mission-input flex-grow min-w-0 rounded-l-md rounded-r-none border-r-0"
         />
         <button
           type="submit"
@@ -110,7 +110,7 @@ export const MissionBoard: React.FC = () => {
           items.map(item => (
             <div
               key={item.id}
-              className={`mission-row flex items-center gap-2 rounded-r border-l-2 pl-3 pr-2 py-2 text-[13px] font-mono transition-colors bg-[linear-gradient(90deg,rgba(139,135,255,0.02),rgba(139,135,255,0.05))] hover:bg-[rgba(139,135,255,0.08)] border-l-[rgba(139,135,255,0.25)] hover:border-l-violet-400 group`}
+              className={`mission-row flex items-center gap-2 rounded-r border-l-2 pl-3 pr-2 py-2 text-[13px] transition-colors bg-[linear-gradient(90deg,rgba(139,135,255,0.02),rgba(139,135,255,0.05))] hover:bg-[rgba(139,135,255,0.08)] border-l-[rgba(139,135,255,0.25)] hover:border-l-violet-400 group`}
             >
               <label className="flex items-center gap-3 min-w-0 cursor-pointer flex-1">
                 <input

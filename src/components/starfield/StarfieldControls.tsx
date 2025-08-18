@@ -153,7 +153,6 @@ export const StarfieldControls: FC = () => {
     <InlineCollapsibleCard
       id="environment"
       title="Environment"
-      subtitle={<span>{modeLabel} • {speedPercent}% • {qualityHeaderLabel}{overlayActive ? ' • Fullscreen' : ''}</span>}
       helpTitle="Shortcuts: W cycle • F fullscreen • M collapse"
       onHelpClick={() => {}}
       canFullscreen={warpMode !== WARP_MODE.NONE}

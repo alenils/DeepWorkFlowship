@@ -241,11 +241,6 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
     <InlineCollapsibleCard
       id="posture-tracker"
       title="Posture Tracker"
-      subtitle={
-        <span className="opacity-70">
-          {isDetecting ? 'Camera ON' : 'Camera OFF'} • {isCalibrated ? 'Calibrated' : 'Not calibrated'} • {postureStatus.isGood ? 'Good' : 'Bad'}
-        </span>
-      }
       helpTitle="M: collapse"
       onHelpClick={() => {}}
       variant="v2"

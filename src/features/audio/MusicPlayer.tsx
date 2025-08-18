@@ -185,7 +185,6 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ isSessionActive = fals
     <InlineCollapsibleCard
       id="flow-music"
       title="Flow Music"
-      subtitle={<span className="opacity-80">{currentTrack ? currentTrack.name : (songs.length > 0 ? 'Select a track' : 'Loading albums...')}</span>}
       helpTitle="Shuffle • Loop • EQ"
       onHelpClick={() => {}}
       variant="v2"
