@@ -13,7 +13,6 @@ import { SystemLog } from './components/SystemLog'
 import { MissionBoard } from './components/MissionBoard'
 import { GoalPanel } from './components/GoalPanel'
 import { PostureView } from './components/PostureView'
-import DeckB from './components/DeckB'
 import { Toast } from './components/Toast'
 import { useSound } from './features/audio/useSound'
 import { MusicPlayer } from './features/audio/MusicPlayer'
@@ -483,7 +482,7 @@ return (
               subtitle={<span className="opacity-70">Define your mission and track progress</span>}
               collapsed={goalCollapsed}
               onToggleCollapse={goalToggle}
-              className="p-0 panel-v2"
+              className="p-0 panel-tight"
               contentClassName="p-6"
             >
               <GoalPanel />
@@ -508,7 +507,7 @@ return (
                   </button>
                 ) : null
               }
-              className="panel-static p-0"
+              className="panel-tight"
               contentClassName="p-6"
             >
               {/* Totals Section - Redesigned to keep box shape with underlying bar */}
@@ -549,8 +548,6 @@ return (
 
 
             </InlineCollapsibleCard>
-            {/* Deck B Section */}
-            <DeckB />
           </div>
           
           {/* Right Column: The components inside here MUST have their own opaque backgrounds. */}

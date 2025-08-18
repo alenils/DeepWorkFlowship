@@ -10,3 +10,13 @@
 .panel-v2--hoverable:hover{ border-color: var(--card-hover-border); }
 .panel-v2__title{ font-weight:600; color:var(--text-primary); }
 .panel-v2__subtitle{ font-size:12px; color:var(--text-muted); }
+
+.panel-tight{
+  background: var(--card-bg-grad);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-12);
+  padding: calc(var(--pad-16) - 6px);
+  box-shadow: var(--card-shadow);
+  backdrop-filter: blur(10px);
+  color: var(--text-primary);
+}
