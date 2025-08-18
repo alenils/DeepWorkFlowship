@@ -92,7 +92,7 @@ export const MissionBoard: React.FC = () => {
           value={newItemText}
           onChange={e => setNewItemText(e.target.value)}
           placeholder="New mission..."
-          className="mission-input flex-grow min-w-0 rounded-l-md rounded-r-none border-r-0"
+          className="mission-input font-mono flex-grow min-w-0 rounded-l-md rounded-r-none border-r-0"
         />
         <button
           type="submit"

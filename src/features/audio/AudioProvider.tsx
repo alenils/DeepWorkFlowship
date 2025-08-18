@@ -136,6 +136,11 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }
 
   const currentTrack = currentTracklist[currentTrackIndex] || null;
+  // Snapshot currentTrack in a ref so we can use it in effects without causing dependency cascades
+  const currentTrackRef = useRef<Song | null>(null);
+  useEffect(() => {
+    currentTrackRef.current = currentTrack;
+  }, [currentTrack]);
 
   // Initialize/Resume AudioContext on first gesture and when tab becomes visible
   useEffect(() => {
@@ -193,26 +198,29 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, [selectedAlbum]); // Only depends on selectedAlbum
 
   // Effect 2: Re-shuffle the list when isShuffleActive changes, WITHOUT resetting index
+  // Note: intentionally NOT depending on currentTrack to avoid a cascade: including it would
+  // re-run this effect after setCurrentTrackIndex changes, causing repeated reshuffles.
   useEffect(() => {
     if (__DEV__) console.log(`[AudioProvider useEffect Shuffle] Shuffle toggled: ${isShuffleActive}`);
     // Get the currently loaded tracks (which should be for the correct selectedAlbum due to Effect 1)
-    const currentAlbumTracks = allLoadedTracks[selectedAlbum] || []; 
+    const currentAlbumTracks = allLoadedTracks[selectedAlbum] || [];
     const newTracklist = isShuffleActive ? shuffleArray(currentAlbumTracks) : currentAlbumTracks;
-    
+
     // Find the index of the currently playing track *within the newly shuffled/unshuffled list*
     let newIndex = 0; // Default to 0 if track not found or list empty
-    if(currentTrack && newTracklist.length > 0) {
-      const foundIndex = newTracklist.findIndex(t => t.url === currentTrack.url);
+    const snapshot = currentTrackRef.current;
+    if (snapshot && newTracklist.length > 0) {
+      const foundIndex = newTracklist.findIndex(t => t.url === snapshot.url);
       if (foundIndex !== -1) {
         newIndex = foundIndex;
       }
     }
-    
+
     if (__DEV__) console.log(`[AudioProvider useEffect Shuffle] Updating tracklist (shuffled: ${isShuffleActive}). Current track index will be: ${newIndex}`, newTracklist.map(t=>t.name));
-    setCurrentTracklist(newTracklist); 
+    setCurrentTracklist(newTracklist);
     setCurrentTrackIndex(newIndex); // Set index to current track's new position, or 0
 
-  }, [isShuffleActive, selectedAlbum, currentTrack]);
+  }, [isShuffleActive, selectedAlbum]);
     // Including currentTrack might cause loops if not careful, but needed to find its new index.
     // Let's refine dependency if needed, but selectedAlbum is necessary to get the right base list.
     // Re-evaluating dependency array: maybe just depend on isShuffleActive and selectedAlbum?
