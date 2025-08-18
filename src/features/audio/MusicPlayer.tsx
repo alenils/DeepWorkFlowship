@@ -188,6 +188,7 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ isSessionActive = fals
       subtitle={<span className="opacity-80">{currentTrack ? currentTrack.name : (songs.length > 0 ? 'Select a track' : 'Loading albums...')}</span>}
       helpTitle="Shuffle • Loop • EQ"
       onHelpClick={() => {}}
+      variant="v2"
       headerRight={
         <div className="flex items-center gap-2">
           <button onClick={toggleShuffle} className={`p-1.5 rounded ${isShuffleActive ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`} title={isShuffleActive ? "Disable Shuffle" : "Enable Shuffle"}>
@@ -216,7 +217,7 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ isSessionActive = fals
       }
       collapsed={collapsed}
       onToggleCollapse={toggle}
-      className="p-0"
+      className="panel--no-pad"
       contentClassName="p-4"
     >
       <audio ref={audioElementRef} loop={isLoopEnabled} />

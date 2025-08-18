@@ -67,7 +67,8 @@ export const SystemLog: React.FC = () => {
       onHelpClick={() => {}}
       collapsed={collapsed}
       onToggleCollapse={toggle}
-      className="panel-cockpit p-0 rounded-2xl panel-v2"
+      variant="v2"
+      className="panel--no-pad"
       contentClassName="p-3"
     >
       <div className="relative">

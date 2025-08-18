@@ -14,7 +14,8 @@ export const Ladder: React.FC = () => {
       onHelpClick={() => {}}
       collapsed={collapsed}
       onToggleCollapse={toggle}
-      className="p-0 rounded-2xl"
+      variant="v2"
+      className="panel--no-pad"
       contentClassName="p-3"
     >
       {/* Vertical "space ladder" big picture */}

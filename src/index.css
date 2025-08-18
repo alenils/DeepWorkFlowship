@@ -147,9 +147,13 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   
   /* Lower Deck / Engine Bay headers - subtle neon header bar */
   .panel-cockpit[data-panel-id="environment"] > div:first-child,
+  .panel-v2[data-panel-id="environment"] > div:first-child,
   .panel-cockpit[data-panel-id="posture-tracker"] > div:first-child,
+  .panel-v2[data-panel-id="posture-tracker"] > div:first-child,
   .panel-cockpit[data-panel-id="flow-music"] > div:first-child,
-  .panel-cockpit[data-panel-id="deck-b"] > div:first-child {
+  .panel-v2[data-panel-id="flow-music"] > div:first-child,
+  .panel-cockpit[data-panel-id="deck-b"] > div:first-child,
+  .panel-v2[data-panel-id="deck-b"] > div:first-child {
     background: linear-gradient(90deg, rgba(var(--primary-purple-rgb), 0.10), rgba(16,185,129,0.06) 40%, rgba(59,130,246,0.05));
     border-bottom: 1px solid rgba(var(--primary-purple-rgb), 0.14);
     box-shadow: inset 4px 0 0 rgba(var(--primary-purple-rgb), 0.25);

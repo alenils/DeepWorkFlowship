@@ -482,7 +482,8 @@ return (
               subtitle={<span className="opacity-70">Define your mission and track progress</span>}
               collapsed={goalCollapsed}
               onToggleCollapse={goalToggle}
-              className="p-0 panel-tight"
+              variant="v2"
+              className="panel--no-pad"
               contentClassName="p-6"
             >
               <GoalPanel />
@@ -507,7 +508,8 @@ return (
                   </button>
                 ) : null
               }
-              className="panel-tight"
+              variant="v2"
+              className="panel--no-pad"
               contentClassName="p-6"
             >
               {/* Totals Section - Redesigned to keep box shape with underlying bar */}

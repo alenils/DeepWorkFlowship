@@ -16,6 +16,7 @@ interface InlineCollapsibleCardProps {
   collapsed: boolean;
   onToggleCollapse: () => void;
   children: React.ReactNode;
+  variant?: 'cockpit' | 'v2' | 'none';
 }
 
 /**
@@ -38,11 +39,13 @@ const InlineCollapsibleCard: React.FC<InlineCollapsibleCardProps> = ({
   collapsed,
   onToggleCollapse,
   children,
+  variant = 'cockpit',
 }) => {
   const contentId = `${id}__content`;
 
   return (
     <PanelContainer
+      variant={variant}
       className={`overflow-hidden ${className}`}
       data-panel-id={id}
       data-collapsed={collapsed ? 'true' : 'false'}

@@ -248,6 +248,7 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
       }
       helpTitle="M: collapse"
       onHelpClick={() => {}}
+      variant="v2"
       headerRight={
         <div className="flex items-center gap-2">
           <button
@@ -277,7 +278,7 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
       }
       collapsed={collapsed}
       onToggleCollapse={toggle}
-      className="p-0 overflow-hidden"
+      className="panel--no-pad overflow-hidden"
       contentClassName="p-3"
     >
       {/* Controls moved to headerRight */}

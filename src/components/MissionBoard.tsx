@@ -82,7 +82,8 @@ export const MissionBoard: React.FC = () => {
       onHelpClick={() => {}}
       collapsed={collapsed}
       onToggleCollapse={toggle}
-      className="panel-cockpit p-0 rounded-2xl panel-v2 panel-v2--hoverable"
+      variant="v2"
+      className="panel--no-pad panel-v2--hoverable"
       contentClassName="p-3"
     >
       {/* Add new */}
