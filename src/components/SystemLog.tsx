@@ -62,7 +62,6 @@ export const SystemLog: React.FC = () => {
     <InlineCollapsibleCard
       id="system-log"
       title="System Log"
-      subtitle={<span className="opacity-70">Monospace • Autosaves</span>}
       helpTitle="Hint: Alt + Shift + T inserts timestamp"
       onHelpClick={() => {}}
       collapsed={collapsed}

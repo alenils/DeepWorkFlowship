@@ -77,7 +77,6 @@ export const MissionBoard: React.FC = () => {
     <InlineCollapsibleCard
       id="mission-board"
       title="Mission Board"
-      subtitle={<span className="opacity-70">Plan and execute</span>}
       helpTitle="Add, check, and delete tasks"
       onHelpClick={() => {}}
       collapsed={collapsed}
@@ -97,7 +96,7 @@ export const MissionBoard: React.FC = () => {
         />
         <button
           type="submit"
-          className="relative overflow-hidden btn-shimmer btn-primary text-white font-semibold rounded-r-md rounded-l-none px-3.5 py-2.5 shadow-md hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-violet-400"
+          className="relative overflow-hidden btn-shimmer btn-primary text-white font-semibold btn--condensed-text rounded-r-md rounded-l-none px-3.5 py-2.5 shadow-md hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-violet-400"
         >
           Add
         </button>

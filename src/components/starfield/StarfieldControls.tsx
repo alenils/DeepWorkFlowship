@@ -2,8 +2,7 @@ import { useEffect, useMemo, type FC } from 'react';
 import { useWarpStore } from '../../store/warpSlice';
 import { 
   WARP_MODE, 
-  STARFIELD_QUALITY, 
-  STAR_COUNTS_BY_QUALITY,
+  STARFIELD_QUALITY,
   // LIGHT_SPEED_EXPERIMENT: flag controls exposure of LIGHT_SPEED mode
   EXPERIMENT_LIGHT_SPEED
 } from '../../constants';
@@ -99,13 +98,13 @@ export const StarfieldControls: FC = () => {
   const qualityHeaderLabel = useMemo(() => {
     switch (starfieldQuality) {
       case STARFIELD_QUALITY.ECO:
-        return 'Eco • 200';
+        return 'Eco';
       case STARFIELD_QUALITY.STANDARD:
-        return 'Balanced • 500';
+        return 'Balanced';
       case STARFIELD_QUALITY.ULTRA:
-        return 'Ultra • 1000';
+        return 'Ultra';
       default:
-        return 'Eco • 200';
+        return 'Eco';
     }
   }, [starfieldQuality]);
 
@@ -163,7 +162,7 @@ export const StarfieldControls: FC = () => {
       collapsed={collapsed}
       onToggleCollapse={toggle}
       variant="v2"
-      className="panel--no-pad"
+      className="panel--no-pad panel-no-rail"
       contentClassName="px-3 pb-3 space-y-4"
     >
       {/* Mode segmented control */}
@@ -248,9 +247,9 @@ export const StarfieldControls: FC = () => {
           className="mt-1 w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500 disabled:opacity-50"
           aria-label="Starfield quality"
         >
-          <option value={STARFIELD_QUALITY.ECO}>Eco • {STAR_COUNTS_BY_QUALITY[STARFIELD_QUALITY.ECO]}</option>
-          <option value={STARFIELD_QUALITY.STANDARD}>Balanced • {STAR_COUNTS_BY_QUALITY[STARFIELD_QUALITY.STANDARD]}</option>
-          <option value={STARFIELD_QUALITY.ULTRA}>Ultra • {STAR_COUNTS_BY_QUALITY[STARFIELD_QUALITY.ULTRA]}</option>
+          <option value={STARFIELD_QUALITY.ECO}>Eco</option>
+          <option value={STARFIELD_QUALITY.STANDARD}>Balanced</option>
+          <option value={STARFIELD_QUALITY.ULTRA}>Ultra</option>
         </select>
       </div>
 

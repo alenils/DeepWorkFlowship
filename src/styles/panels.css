@@ -1,13 +1,31 @@
 .panel-v2{
-  background: var(--card-bg-grad);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-12);
-  padding: var(--pad-16);
-  box-shadow: var(--card-shadow);
-  backdrop-filter: blur(10px);
+  background: linear-gradient(135deg, rgba(31,41,55,0.85), rgba(17,24,39,0.75));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-16);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(var(--glass-blur));
   color: var(--text-primary);
 }
 .panel-v2.panel--no-pad{ padding: 0; }
 .panel-v2--hoverable:hover{ border-color: var(--card-hover-border); }
 .panel-v2__title{ font-weight:600; color:var(--text-primary); }
 .panel-v2__subtitle{ font-size:12px; color:var(--text-muted); }
+
+:root{
+  /* keep existing tokens; append or update these */
+  --space-12: 12px; --space-16: 16px;
+  --glass-bg: rgba(17,24,39,0.72);
+  --glass-border: rgba(255,255,255,0.08);
+  /* ↓ soften glow ~30% */
+  --glass-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  --glass-blur: 12px;
+  --radius-12: 12px; --radius-16: 16px;
+}
+
+/* remove decorative “rail”/stripe some RHS panels show */
+.panel-no-rail [data-rail],
+.panel-no-rail .panel-rail,
+.panel-no-rail .top-rail{ display:none !important; }
+
+/* Add button: only reduce text size, keep padding */
+.btn--condensed-text{ font-size: 0.875rem; } /* 14px-ish */

@@ -217,7 +217,7 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({ isSessionActive = fals
       }
       collapsed={collapsed}
       onToggleCollapse={toggle}
-      className="panel--no-pad"
+      className="panel--no-pad panel-no-rail"
       contentClassName="p-4"
     >
       <audio ref={audioElementRef} loop={isLoopEnabled} />
