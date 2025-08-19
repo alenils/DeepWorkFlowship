@@ -3,7 +3,6 @@ import { useWarpStore } from '../../store/warpSlice';
 import { 
   WARP_MODE, 
   STARFIELD_QUALITY,
-  // LIGHT_SPEED_EXPERIMENT: flag controls exposure of LIGHT_SPEED mode
   EXPERIMENT_LIGHT_SPEED
 } from '../../constants';
 import InlineCollapsibleCard from '../ui/InlineCollapsibleCard';
@@ -87,26 +86,7 @@ export const StarfieldControls: FC = () => {
     const quality = e.target.value as typeof STARFIELD_QUALITY[keyof typeof STARFIELD_QUALITY];
     setStarfieldQuality(quality);
   };
-  // Derived UI labels
-  const modeLabel = useMemo(() => {
-    if (warpMode === WARP_MODE.NONE) return 'Off';
-    if (warpMode === WARP_MODE.LIGHT_SPEED) return 'Light Speed';
-    // Treat FULL as SpaceX for display/selection
-    return 'SpaceX';
-  }, [warpMode]);
-
-  const qualityHeaderLabel = useMemo(() => {
-    switch (starfieldQuality) {
-      case STARFIELD_QUALITY.ECO:
-        return 'Eco';
-      case STARFIELD_QUALITY.STANDARD:
-        return 'Balanced';
-      case STARFIELD_QUALITY.ULTRA:
-        return 'Ultra';
-      default:
-        return 'Eco';
-    }
-  }, [starfieldQuality]);
+  // (UI header labels removed; no longer shown in subtitle)
 
   const speedPercent = useMemo(() => Math.max(10, Math.round(speedMultiplier * 100)), [speedMultiplier]);
 
@@ -161,7 +141,7 @@ export const StarfieldControls: FC = () => {
       collapsed={collapsed}
       onToggleCollapse={toggle}
       variant="v2"
-      className="panel--no-pad panel-no-rail"
+      className="panel--no-pad panel-no-rail panel-hover"
       contentClassName="px-3 pb-3 space-y-4"
     >
       {/* Mode segmented control */}

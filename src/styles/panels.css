@@ -7,7 +7,6 @@
   color: var(--text-primary);
 }
 .panel-v2.panel--no-pad{ padding: 0; }
-.panel-v2--hoverable:hover{ border-color: var(--card-hover-border); }
 .panel-v2__title{ font-weight:600; color:var(--text-primary); }
 .panel-v2__subtitle{ font-size:12px; color:var(--text-muted); }
 
@@ -29,3 +28,29 @@
 
 /* Add button: only reduce text size, keep padding */
 .btn--condensed-text{ font-size: 0.875rem; } /* 14px-ish */
+
+/* ========== Lift-on-hover utility ========== */
+:root{
+  --hover-scale: 1.01;
+  --hover-translate-y: -2px;
+}
+
+/* Ensure transforms animate smoothly on v2 panels */
+.panel-v2{
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+  will-change: transform;
+}
+
+/* Opt-in micro-interaction */
+.panel-hover:hover{
+  transform: translateY(var(--hover-translate-y)) scale(var(--hover-scale));
+  box-shadow: 0 12px 36px rgba(0,0,0,0.40);
+}
+
+/* Motion safety */
+@media (prefers-reduced-motion: reduce){
+  .panel-hover:hover{
+    transform: none !important;
+    box-shadow: inherit !important;
+  }
+}

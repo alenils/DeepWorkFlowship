@@ -273,7 +273,7 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
       }
       collapsed={collapsed}
       onToggleCollapse={toggle}
-      className="panel--no-pad panel-no-rail overflow-hidden"
+      className="panel--no-pad panel-no-rail overflow-hidden panel-hover"
       contentClassName="p-3"
     >
       {/* Controls moved to headerRight */}

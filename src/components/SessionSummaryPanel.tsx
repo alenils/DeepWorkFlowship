@@ -99,7 +99,7 @@ export const SessionSummaryPanel = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 transition-opacity duration-300 ease-in-out">
-      <div className="panel-v2 panel-no-rail rounded-2xl p-6 max-w-md w-full mx-4 transform transition-all duration-300 ease-in-out scale-95 animate-fade-in-scale">
+      <div className="panel-v2 panel-no-rail panel-hover rounded-2xl p-6 max-w-md w-full mx-4 transform transition-all duration-300 ease-in-out scale-95 animate-fade-in-scale">
         <div className="flex justify-start items-center mb-4">
           <h2 className="text-xl font-semibold flex items-center">
             <span className="mr-2 text-yellow-500">💡</span> Session Summary

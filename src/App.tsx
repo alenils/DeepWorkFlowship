@@ -482,7 +482,7 @@ return (
               collapsed={goalCollapsed}
               onToggleCollapse={goalToggle}
               variant="v2"
-              className="panel--no-pad"
+              className="panel--no-pad panel-hover"
               contentClassName="p-6"
             >
               <GoalPanel />
@@ -494,6 +494,7 @@ return (
               title="Session History"
               collapsed={shCollapsed}
               onToggleCollapse={shToggle}
+              className="panel--no-pad panel-hover"
               headerRight={
                 history.length > 0 ? (
                   <button
@@ -507,7 +508,6 @@ return (
                 ) : null
               }
               variant="v2"
-              className="panel--no-pad"
               contentClassName="p-6"
             >
               {/* Totals Section - Redesigned to keep box shape with underlying bar */}

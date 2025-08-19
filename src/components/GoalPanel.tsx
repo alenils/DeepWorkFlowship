@@ -5,12 +5,13 @@ import { useTimerStore } from '@/store/timerSlice';
 const mmFmt = (mins: number) => `${Math.floor((mins || 0) / 60)}h ${String(Math.max(0, Math.floor(mins || 0)) % 60).padStart(2, '0')}m`;
 
 export const GoalPanel: React.FC = () => {
-  const { goal, startGoal, addProgress, resetGoal, hydrate } = useGoalStore();
+  const { goal, startGoal, addProgress, resetGoal, hydrate, updateGoal } = useGoalStore();
 
   const [what, setWhat] = useState('');
   const [why, setWhy] = useState('');
   const [how, setHow] = useState('');
   const [target, setTarget] = useState<number>(120);
+  const [editing, setEditing] = useState(false);
 
   // Hydrate goal state from localStorage on mount
   useEffect(() => {
@@ -86,6 +87,28 @@ export const GoalPanel: React.FC = () => {
     setTarget(120);
   };
 
+  const handleStartEdit = () => {
+    if (!goal) return;
+    // ensure local state mirrors current goal when entering edit mode
+    setWhat(goal.what || '');
+    setWhy(goal.why || '');
+    setHow(goal.how || '');
+    setTarget(goal.targetMinutes || 0);
+    setEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setEditing(false);
+    // leave local state as-is; read-only view uses goal values
+  };
+
+  const handleSaveEdit = () => {
+    const t = Math.max(1, Math.floor(Number(target) || 0));
+    if (!what.trim() || t <= 0 || !goal) return;
+    updateGoal({ what, why, how, targetMinutes: t });
+    setEditing(false);
+  };
+
   // Keep local form values in sync if a goal exists (read-only display)
   useEffect(() => {
     if (goal) {
@@ -149,25 +172,40 @@ export const GoalPanel: React.FC = () => {
         </div>
       )}
 
-      {goal && (
+      {goal && !editing && (
         <div className="space-y-4">
-          {/* Read-only summary */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="flex flex-col gap-1">
+          {/* Read-only summary - keep pre-start layout (2 columns) with taller fields for readability */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-2">
               <div className="text-xs text-gray-600 dark:text-gray-300">WHAT</div>
-              <input className="mission-input" value={goal.what} disabled />
+              <input
+                className="mission-input truncate"
+                value={goal.what}
+                title={goal.what}
+                readOnly
+              />
             </div>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-2">
               <div className="text-xs text-gray-600 dark:text-gray-300">WHY</div>
-              <input className="mission-input" value={goal.why} disabled />
+              <input
+                className="mission-input truncate"
+                value={goal.why}
+                title={goal.why}
+                readOnly
+              />
             </div>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-2">
               <div className="text-xs text-gray-600 dark:text-gray-300">HOW</div>
-              <input className="mission-input" value={goal.how} disabled />
+              <input
+                className="mission-input truncate"
+                value={goal.how}
+                title={goal.how}
+                readOnly
+              />
             </div>
-            <div className="flex flex-col gap-1">
-              <div className="text-xs text-gray-600 dark:text-gray-300">TIME DEDICATED</div>
-              <input className="mission-input" value={`${goal.targetMinutes} min`} disabled />
+            <div className="flex flex-col gap-2">
+              <div className="text-xs text-gray-600 dark:text-gray-300">TIME DEDICATED (minutes)</div>
+              <input className="mission-input" value={`${goal.targetMinutes} min`} readOnly />
             </div>
           </div>
 
@@ -197,13 +235,84 @@ export const GoalPanel: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex justify-between gap-2">
+            <button
+              type="button"
+              onClick={handleStartEdit}
+              className="px-3 py-2 rounded-md text-sm font-medium text-orange-800 dark:text-orange-100 bg-white/40 dark:bg-gray-700/60 hover:bg-white/60 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              title="Edit mission details without losing progress"
+            >
+              Mission Compromised
+            </button>
+
             <button
               type="button"
               onClick={handleReset}
               className="px-3 py-2 rounded-md text-sm font-medium text-gray-800 dark:text-gray-100 bg-white/40 dark:bg-gray-700/60 hover:bg-white/60 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-500"
             >
               Reset Goal
+            </button>
+          </div>
+        </div>
+      )}
+
+      {goal && editing && (
+        <div className="space-y-4">
+          {/* Editable form */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-xs text-gray-600 dark:text-gray-300">WHAT</label>
+              <input
+                className="mission-input"
+                placeholder="Define your mission"
+                value={what}
+                onChange={(e) => setWhat(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs text-gray-600 dark:text-gray-300">WHY</label>
+              <input
+                className="mission-input"
+                placeholder="Why this matters"
+                value={why}
+                onChange={(e) => setWhy(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs text-gray-600 dark:text-gray-300">HOW</label>
+              <input
+                className="mission-input"
+                placeholder="Your approach"
+                value={how}
+                onChange={(e) => setHow(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs text-gray-600 dark:text-gray-300">TIME DEDICATED (minutes)</label>
+              <input
+                className="mission-input"
+                type="number"
+                min={1}
+                value={target}
+                onChange={(e) => setTarget(parseInt(e.target.value || '0', 10))}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={handleCancelEdit}
+              className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 bg-white/40 dark:bg-gray-700/60 hover:bg-white/60 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveEdit}
+              className="relative overflow-hidden btn-shimmer px-4 py-2 rounded-md text-sm font-semibold text-white bg-gradient-to-r from-amber-500 to-orange-500 shadow-md hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-amber-400"
+            >
+              Save Changes
             </button>
           </div>
         </div>

@@ -16,6 +16,7 @@ interface GoalState {
   startGoal: (payload: { what: string; why: string; how: string; targetMinutes: number }) => void;
   addProgress: (minutes: number) => void;
   resetGoal: () => void;
+  updateGoal: (payload: { what: string; why: string; how: string; targetMinutes: number }) => void;
   hydrate: () => void;
 }
 
@@ -65,6 +66,25 @@ export const useGoalStore = create<GoalState>((set, get) => ({
   resetGoal: () => {
     set({ goal: null });
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
+  },
+
+  updateGoal: ({ what, why, how, targetMinutes }) => {
+    const s = get();
+    if (!s.goal) return;
+    const t = Math.max(1, Math.floor(targetMinutes || 0));
+    const clampedAccum = Math.min(Math.max(0, s.goal.accumulatedMinutes || 0), t);
+    const goal: Goal = {
+      ...s.goal,
+      what: (what || '').trim(),
+      why: (why || '').trim(),
+      how: (how || '').trim(),
+      targetMinutes: t,
+      accumulatedMinutes: clampedAccum,
+      completed: clampedAccum >= t,
+      // keep startedAt, locked as-is
+    };
+    set({ goal });
+    persistGoal(goal);
   },
 
   hydrate: () => {
