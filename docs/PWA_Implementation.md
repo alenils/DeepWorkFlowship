@@ -71,3 +71,47 @@ Potential future improvements include:
 3. Notification support for reminders
 4. Custom offline page with helpful messaging
 5. Professional icon design to replace generated placeholders 
+
+---
+
+## InlineCollapsibleCard v2 Usage Standard & State Persistence
+
+To keep UI consistent, all inline panels must follow this pattern:
+
+- **variant**: Always pass `variant="v2"` to `InlineCollapsibleCard`.
+- **container class**: Include `className="panel--no-pad"` on the container. Container padding is disabled for v2 panels.
+- **content padding**: Apply padding via `contentClassName` (e.g. `"p-3"`, `"p-6"`). Do not use deprecated classes.
+- **unique IDs**: Use `useInlineMinimize('<unique-id>')` and pass the same `id` prop to the card to persist collapsed state per panel.
+- **no deprecated styles**: Ensure there are no references to `panel-tight`.
+
+Example:
+
+```tsx
+<InlineCollapsibleCard
+  id="session-history"
+  title="Session History"
+  variant="v2"
+  className="panel--no-pad panel-hover"
+  contentClassName="p-6"
+  collapsed={collapsed}
+  onToggleCollapse={toggle}
+>
+  {/* content */}
+</InlineCollapsibleCard>
+```
+
+DEV-only guardrails:
+
+- The component logs a console warning if `variant="v2"` is used without `className` containing `panel--no-pad` or if `contentClassName` is missing.
+
+State persistence details:
+
+- `useInlineMinimize(id)` stores state under `localStorage` key `card-collapse:<id>` as `'1'` (collapsed) or `'0'` (expanded).
+- Global events supported:
+  - `inline-collapse:all` collapses all inline panels.
+  - `inline-collapse:set` on a target with `data-panel-id` sets a specific panel's collapse state via `CustomEvent<{ collapsed?: boolean }>`.
+
+Tests:
+
+- Vitest unit tests cover toggle and persistence (`test/vitest/useInlineMinimize.test.tsx`, `test/vitest/InlineCollapsibleCard.test.tsx`).
+- Playwright e2e test verifies state persistence across reloads (`test/playwright/panel-persist.spec.ts`).

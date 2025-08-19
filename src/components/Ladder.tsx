@@ -16,7 +16,7 @@ export const Ladder: React.FC = () => {
       onToggleCollapse={toggle}
       variant="v2"
       className="panel--no-pad"
-      contentClassName="p-3"
+      contentClassName="content-pad"
     >
       {/* Vertical "space ladder" big picture */}
       <div className="relative min-h-[60vh] rounded-md border border-white/10 bg-gradient-to-b from-gray-900/60 to-gray-800/30 p-6">

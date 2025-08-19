@@ -142,7 +142,7 @@ export const StarfieldControls: FC = () => {
       onToggleCollapse={toggle}
       variant="v2"
       className="panel--no-pad panel-no-rail panel-hover"
-      contentClassName="px-3 pb-3 space-y-4"
+      contentClassName="content-pad space-y-4"
     >
       {/* Mode segmented control */}
       <div role="tablist" aria-label="Environment mode" className="grid grid-cols-3 gap-1 rounded-lg p-1 bg-white/30 dark:bg-gray-700/50">

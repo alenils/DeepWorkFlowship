@@ -83,7 +83,7 @@ export const MissionBoard: React.FC = () => {
       onToggleCollapse={toggle}
       variant="v2"
       className="panel--no-pad panel-hover"
-      contentClassName="p-3"
+      contentClassName="content-pad"
     >
       {/* Add new */}
       <form onSubmit={addItem} className="mb-3 flex items-center gap-2">

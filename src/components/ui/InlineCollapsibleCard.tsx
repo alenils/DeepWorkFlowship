@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import PanelContainer from './PanelContainer';
 
 interface InlineCollapsibleCardProps {
@@ -42,6 +42,27 @@ const InlineCollapsibleCard: React.FC<InlineCollapsibleCardProps> = ({
   variant = 'cockpit',
 }) => {
   const contentId = `${id}__content`;
+
+  // DEV-only guardrails: ensure v2 panels follow the standardized usage pattern
+  useEffect(() => {
+    if (variant !== 'v2') return;
+    const isDev = typeof import.meta !== 'undefined' && !!(import.meta as any)?.env?.DEV;
+    if (!isDev) return;
+    const hasNoPad = className.split(/\s+/).includes('panel--no-pad');
+    const hasContentPad = !!contentClassName && contentClassName.trim().length > 0;
+    const missing: string[] = [];
+    if (!hasNoPad) missing.push('className="panel--no-pad"');
+    if (!hasContentPad) missing.push('contentClassName');
+    if (missing.length) {
+      // Intentionally a console.warn (not error) to nudge devs during development
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[InlineCollapsibleCard:${id}] For variant="v2", pass container className="panel--no-pad" and apply padding via contentClassName. Missing: ${missing.join(
+          ', '
+        )}`
+      );
+    }
+  }, [variant, className, contentClassName, id]);
 
   return (
     <PanelContainer

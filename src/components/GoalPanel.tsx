@@ -174,67 +174,46 @@ export const GoalPanel: React.FC = () => {
 
       {goal && !editing && (
         <div className="space-y-4">
-          {/* Read-only summary - keep pre-start layout (2 columns) with taller fields for readability */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex flex-col gap-2">
-              <div className="text-xs text-gray-600 dark:text-gray-300">WHAT</div>
-              <input
-                className="mission-input truncate"
-                value={goal.what}
-                title={goal.what}
-                readOnly
-              />
+          {/* Progress on top, styled like Environment/Posture sliders (size only) */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-gray-700 dark:text-gray-300">Progress</span>
+              <span className="text-xs text-slate-400">{mmFmt(displayAccumulatedMinutes)} / {mmFmt(goal.targetMinutes)}</span>
             </div>
-            <div className="flex flex-col gap-2">
-              <div className="text-xs text-gray-600 dark:text-gray-300">WHY</div>
-              <input
-                className="mission-input truncate"
-                value={goal.why}
-                title={goal.why}
-                readOnly
-              />
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={1}
+              value={Math.round(pct)}
+              readOnly
+              disabled
+              aria-label="Goal progress"
+              className="star-slider w-full h-2 rounded-lg appearance-none cursor-default disabled:opacity-100"
+            />
+          </div>
+
+          {/* Slim read-only summary (text only, no input boxes) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
+            <div>
+              <div className="text-[11px] text-gray-600 dark:text-gray-300">WHAT</div>
+              <div className="text-sm text-gray-900 dark:text-gray-100 truncate" title={goal.what}>{goal.what}</div>
             </div>
-            <div className="flex flex-col gap-2">
-              <div className="text-xs text-gray-600 dark:text-gray-300">HOW</div>
-              <input
-                className="mission-input truncate"
-                value={goal.how}
-                title={goal.how}
-                readOnly
-              />
+            <div>
+              <div className="text-[11px] text-gray-600 dark:text-gray-300">WHY</div>
+              <div className="text-sm text-gray-900 dark:text-gray-100 truncate" title={goal.why}>{goal.why}</div>
             </div>
-            <div className="flex flex-col gap-2">
-              <div className="text-xs text-gray-600 dark:text-gray-300">TIME DEDICATED (minutes)</div>
-              <input className="mission-input" value={`${goal.targetMinutes} min`} readOnly />
+            <div>
+              <div className="text-[11px] text-gray-600 dark:text-gray-300">HOW</div>
+              <div className="text-sm text-gray-900 dark:text-gray-100 truncate" title={goal.how}>{goal.how}</div>
+            </div>
+            <div>
+              <div className="text-[11px] text-gray-600 dark:text-gray-300">TIME DEDICATED</div>
+              <div className="text-sm text-gray-900 dark:text-gray-100">{goal.targetMinutes} min</div>
             </div>
           </div>
 
-          {/* Progress visuals */}
-          <div className="space-y-1.5">
-            {/* Labels */}
-            <div className="flex justify-between text-xs text-slate-400 mb-1">
-              <span>0 min</span>
-              <span>{mmFmt(displayAccumulatedMinutes)} / {mmFmt(goal.targetMinutes)}</span>
-              <span>{mmFmt(goal.targetMinutes)}</span>
-            </div>
-
-            {/* Track */}
-            <div className="flight-track">
-              <div className="flight-track__fill" style={{ ['--pct' as any]: `${pct}%` }} />
-              <div
-                className="flight-rocket absolute -top-4 select-none"
-                style={{ left: `calc(${pct}% - 14px)` }}
-                aria-hidden
-              >
-                🚀
-              </div>
-            </div>
-
-            <div className="mt-2 text-xs text-slate-500">
-              Status: {goal.completed ? 'Completed' : 'In progress'}
-            </div>
-          </div>
-
+          {/* Actions */}
           <div className="flex justify-between gap-2">
             <button
               type="button"

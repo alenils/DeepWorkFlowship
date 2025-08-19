@@ -54,3 +54,9 @@
     box-shadow: inherit !important;
   }
 }
+
+/* ========== Unified panel content padding utilities ========== */
+/* Base content padding */
+.content-pad{ padding: 12px; }
+/* ~15% more breathing room */
+.content-pad.content-pad-15{ padding: 14px; }

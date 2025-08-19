@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { STORAGE_KEYS } from '../constants';
 import InlineCollapsibleCard from './ui/InlineCollapsibleCard';
 import { useInlineMinimize } from '../hooks/useInlineMinimize';
@@ -7,6 +7,8 @@ export const SystemLog: React.FC = () => {
   const [note, setNote] = useState('');
   const saveTimeoutRef = useRef<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const [overlayScrollTop, setOverlayScrollTop] = useState(0);
   const { collapsed, toggle } = useInlineMinimize('system-log', false);
 
   // Load saved note from localStorage
@@ -58,6 +60,28 @@ export const SystemLog: React.FC = () => {
     }
   };
 
+  // Keep overlay scroll in sync with textarea
+  const handleScroll = () => {
+    if (textareaRef.current) {
+      setOverlayScrollTop(textareaRef.current.scrollTop);
+    }
+  };
+
+  // Escape HTML and wrap timestamps in a gray span
+  const highlightedHtml = useMemo(() => {
+    const escapeHtml = (str: string) =>
+      str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    const escaped = escapeHtml(note);
+    // Match times like 00:00 .. 23:59
+    const timeRegex = /\b(?:[01]?\d|2[0-3]):[0-5]\d\b/g;
+    return escaped.replace(timeRegex, (m) => `<span class=\"text-gray-400\">${m}</span>`);
+  }, [note]);
+
   return (
     <InlineCollapsibleCard
       id="system-log"
@@ -68,7 +92,7 @@ export const SystemLog: React.FC = () => {
       onToggleCollapse={toggle}
       variant="v2"
       className="panel--no-pad panel-hover"
-      contentClassName="p-3"
+      contentClassName="content-pad"
     >
       <div className="relative">
         <div className="terminal">
@@ -76,14 +100,27 @@ export const SystemLog: React.FC = () => {
             System Log
           </header>
           <div className="relative">
+            {/* Highlighting overlay */}
+            <div
+              ref={overlayRef}
+              className="absolute inset-0 pointer-events-none overflow-hidden px-3 py-3 pr-3"
+            >
+              <pre
+                className="whitespace-pre-wrap break-words font-mono text-[12px] leading-5 text-emerald-300/95"
+                style={{ transform: `translateY(-${overlayScrollTop}px)` }}
+                dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+              />
+            </div>
+            {/* Editable layer */}
             <textarea
               ref={textareaRef}
               value={note}
               onChange={handleNoteChange}
               onBlur={handleBlur}
               onKeyDown={handleKeyDown}
+              onScroll={handleScroll}
               placeholder="Log notes, thoughts, and events..."
-              className="w-full font-mono text-[12px] leading-5 text-emerald-300/95 placeholder-emerald-500/50 bg-transparent outline-none resize-none px-3 py-3 h-[260px] md:h-[320px] overflow-auto pr-3"
+              className="w-full font-mono text-[12px] leading-5 text-transparent caret-emerald-300 placeholder-emerald-500/50 bg-transparent outline-none resize-none px-3 py-3 h-[260px] md:h-[320px] overflow-auto pr-3"
             />
           </div>
           <div className="flex items-center px-3 py-1.5 border-t border-emerald-500/20 bg-black/40">

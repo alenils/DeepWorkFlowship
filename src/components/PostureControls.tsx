@@ -28,7 +28,7 @@ const PostureControls: React.FC = () => {
           step="1"
           value={sensitivityPercentage}
           onChange={(e) => setSensitivityPercentage(Number(e.target.value))}
-          className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-deep-purple-600 dark:accent-deep-purple-500"
+          className="star-slider w-full h-2 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
           disabled={isCalibrating || isLoadingDetector}
         />
       </div>
