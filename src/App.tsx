@@ -483,7 +483,7 @@ return (
               onToggleCollapse={goalToggle}
               variant="v2"
               className="panel--no-pad panel-hover"
-              contentClassName="content-pad content-pad-15"
+              contentClassName="content-pad-lg"
             >
               <GoalPanel />
             </InlineCollapsibleCard>
@@ -508,7 +508,7 @@ return (
                 ) : null
               }
               variant="v2"
-              contentClassName="content-pad content-pad-15"
+              contentClassName="content-pad-lg"
             >
               {/* Totals Section - Redesigned to keep box shape with underlying bar */}
               <div className="grid grid-cols-2 gap-3 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg mb-4">

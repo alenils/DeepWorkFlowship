@@ -92,7 +92,7 @@ export const SystemLog: React.FC = () => {
       onToggleCollapse={toggle}
       variant="v2"
       className="panel--no-pad panel-hover"
-      contentClassName="content-pad"
+      contentClassName="content-pad-lg"
     >
       <div className="relative">
         <div className="terminal">

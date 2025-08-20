@@ -55,8 +55,17 @@
   }
 }
 
-/* ========== Unified panel content padding utilities ========== */
-/* Base content padding */
-.content-pad{ padding: 12px; }
-/* ~15% more breathing room */
-.content-pad.content-pad-15{ padding: 14px; }
+:root{
+  /* baseline for all panels (reduced by an additional 15% from 19.8px) */
+  --panel-pad: 16.83px;
+}
+
+/* Standard content padding */
+.content-pad { padding: var(--panel-pad); }
+
+/* Larger breathing room when needed (~+20%) */
+.content-pad-lg { padding: calc(var(--panel-pad) * 1.2); } /* ≈20.196px -> ≈20.2px */
+
+/* Make sure body padding wins even if inner wrappers have p-* classes */
+.panel-v2 :is(.content-pad)   { padding: var(--panel-pad) !important; }
+.panel-v2 :is(.content-pad-lg){ padding: calc(var(--panel-pad) * 1.2) !important; }

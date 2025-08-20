@@ -15,7 +15,7 @@
   position:relative; background: rgba(0,0,0,.60);
   color: var(--green-terminal);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Courier New", monospace;
-  border: 1px solid var(--terminal-border); border-radius: 8px; padding: 12px;
+  border: 1px solid var(--terminal-border); border-radius: 8px; padding: 12px; /* restore CRT viewport inset */
 }
 .terminal::before{
   content: ''; position: absolute; inset: 0; border-radius: 8px;
@@ -23,6 +23,13 @@
     0deg, transparent, transparent 2px, var(--terminal-scanline) 2px, var(--terminal-scanline) 4px
   );
   pointer-events: none;
+}
+
+/* Subtle terminal outline (used for webcam container) */
+.terminal-outline{
+  position: relative;
+  border: 1px solid var(--terminal-border);
+  border-radius: 8px;
 }
 
 /* Goal “flight path” */

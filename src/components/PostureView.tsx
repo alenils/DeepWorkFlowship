@@ -274,11 +274,11 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
       collapsed={collapsed}
       onToggleCollapse={toggle}
       className="panel--no-pad panel-no-rail overflow-hidden panel-hover"
-      contentClassName="content-pad"
+      contentClassName="content-pad-lg"
     >
       {/* Controls moved to headerRight */}
 
-      <div className="relative w-full bg-black rounded-md border border-white/10 overflow-hidden">
+      <div className="relative w-full bg-black overflow-hidden terminal-outline">
         {isLoadingDetector && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-20">
             <div className="text-white text-lg">Loading posture detector...</div>
