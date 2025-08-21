@@ -402,7 +402,7 @@ return (
               )}
               
               {/* PRIMARY CONTROL HUD - Timer as main content */}
-              <div className="relative z-10 overflow-hidden rounded-2xl">
+              <div className="relative z-10 rounded-2xl overflow-visible">
                 <FocusSessionTimer
                   asPanel={false}           // embedded: no second frame
                   isCompact={true}          // match density to hero

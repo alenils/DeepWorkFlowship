@@ -1,9 +1,7 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useTimerStore } from '../store/timerSlice';
-import { Zap, Pause, StopCircle, BrainCircuit, ChevronUp, ChevronDown } from 'lucide-react';
+import { Zap, BrainCircuit, ChevronUp, ChevronDown } from 'lucide-react';
 import { msToClock } from '../utils/time';
-import { DistractionButton } from './DistractionButton';
-import { TimerProgressBar } from './TimerProgressBar';
 import { useFocusBoosterStore } from '../store/focusBoosterSlice';
 import { useFortyHz } from '@/features/audio/useFortyHz';
 
@@ -48,7 +46,8 @@ export const FocusSessionTimer = ({
     startSession,
     pauseTimer,
     resumeTimer,
-    endSession
+    endSession,
+    addDistraction
   } = useTimerStore();
   
   const [missionBrief, setMissionBrief] = useState('');
@@ -86,6 +85,46 @@ export const FocusSessionTimer = ({
       exitBooster();
     }
   }, [isSessionActive, boosterActive, exitBooster]);
+
+  // Compute progress percentage for active sessions
+  const progressPct = useMemo(() => {
+    if (!isSessionActive || !remainingTime) return 0;
+    const totalDuration = parseInt(minutes) * 60 * 1000; // minutes to ms
+    const elapsed = Math.max(0, totalDuration - remainingTime);
+    return Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+  }, [isSessionActive, remainingTime, minutes]);
+
+  // Format time as mm:ss
+  const formattedTime = useMemo(() => {
+    const ms = Math.max(0, remainingTime ?? 0);
+    const m = Math.floor(ms / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }, [remainingTime]);
+
+  // Keyboard shortcuts for active session
+  useEffect(() => {
+    if (!isSessionActive) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Skip if in an input field
+      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
+        return;
+      }
+      
+      if (e.code === 'Space') {
+        e.preventDefault();
+        isPaused ? resumeTimer() : pauseTimer();
+      } else if (e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        endSession();
+      } else if (e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        addDistraction();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSessionActive, isPaused, pauseTimer, resumeTimer, endSession, addDistraction]);
 
   const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 
@@ -303,83 +342,111 @@ export const FocusSessionTimer = ({
 
         {/* RUNNING STATE */}
         {isSessionActive && (
-          <>
-            {/* Current Goal Display */}
-            <div className="text-center space-y-2">
-              <div className="text-sm text-gray-400">Current Goal</div>
-              <div className="text-xl font-medium text-white">{currentGoal || missionBrief}</div>
-            </div>
+          <div className={`hero-active ${isSessionActive && !isPaused ? 'is-running' : ''}`}>
+            <div className="relative z-10 space-y-3">
+              {/* HUD Bar */}
+              <div className="hud-bar">
+                <div>
+                  <div className="hud-title">Mission</div>
+                  <div className="hud-mission" title={currentGoal || missionBrief}>
+                    {currentGoal || missionBrief || 'Focus Session'}
+                  </div>
+                </div>
+                <div className="hud-right">
+                  {streakCount > 0 && (
+                    <span className="streak-badge" aria-label={`Streak ${streakCount}`}>
+                      🔥 x{streakCount}
+                    </span>
+                  )}
+                </div>
+              </div>
 
-            {/* Open Digits - Running State (no frame) */}
-            <div className="relative digit-glow mx-auto text-center flex items-center justify-center">
-              <div className="relative z-10 font-mono tabular-nums text-[56px] md:text-[72px] font-medium text-white drop-shadow-[0_0_18px_rgba(168,85,247,0.35)]">
-                {msToClock(remainingTime)}
+              {/* Timer Face */}
+              <div className="timer-face" aria-live="polite">
+                <div className="timer-digits font-mono text-white">
+                  {formattedTime}
+                </div>
+              </div>
+
+              {/* Controls */}
+              <div className="controls">
+                <button
+                  type="button"
+                  className="btn btn-ghost text-white"
+                  onClick={handlePauseClick}
+                  aria-pressed={isPaused}
+                >
+                  {isPaused ? 'Resume' : 'Pause'}
+                </button>
+
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={handleStop}
+                  aria-label="Stop session"
+                >
+                  Stop
+                </button>
+
+                <button
+                  type="button"
+                  className="btn btn-warning"
+                  onClick={addDistraction}
+                >
+                  Distracted {distractionCount > 0 ? `• ${distractionCount}` : ''}
+                </button>
+              </div>
+
+              {/* Enhancers Row */}
+              <div className="flex justify-center gap-4 flex-wrap">
+                <button
+                  onClick={() => (boosterActive ? exitBooster() : startBooster())}
+                  aria-pressed={boosterActive}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all min-h-[44px] focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                    boosterActive 
+                      ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/40' 
+                      : 'bg-gray-700/50 text-gray-400 border border-gray-600/30 hover:bg-gray-600/50'
+                  }`}
+                >
+                  <Zap size={16} />
+                  Focus Booster
+                </button>
+                
+                <button
+                  onClick={toggle40Hz}
+                  aria-pressed={is40HzOn}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all min-h-[44px] focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                    is40HzOn 
+                      ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40' 
+                      : 'bg-gray-700/50 text-gray-400 border border-gray-600/30 hover:bg-gray-600/50'
+                  }`}
+                >
+                  <BrainCircuit size={16} />
+                  40 Hz
+                </button>
+              </div>
+
+              {/* Progress Rail */}
+              <div className="progress-wrap">
+                <div className="progress-meta">
+                  <span>Progress</span>
+                  <span>{progressPct.toFixed(0)}%</span>
+                </div>
+                <div 
+                  className="progress-rail" 
+                  role="progressbar"
+                  aria-valuemin={0} 
+                  aria-valuemax={100} 
+                  aria-valuenow={Math.round(progressPct)}
+                >
+                  <div className="progress-fill" style={{ width: `${progressPct}%` }} />
+                  <div className="rocket" style={{ left: `${progressPct}%` }} aria-hidden="true">
+                    🚀
+                  </div>
+                </div>
               </div>
             </div>
-
-            <div className="text-[0.7rem] font-mono uppercase tracking-[0.2em] text-purple-300/60 -mt-1 text-center">
-              REMAINING
-            </div>
-
-            {/* Controls Row */}
-            <div className="flex justify-center gap-3 flex-wrap">
-              <button
-                onClick={handlePauseClick}
-                className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors min-h-[44px] focus:outline-none focus:ring-2 focus:ring-purple-500"
-              >
-                <Pause size={16} />
-                {isPaused ? 'Resume' : 'Pause'}
-              </button>
-              
-              <button
-                onClick={handleStop}
-                className="flex items-center gap-2 bg-red-700 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors min-h-[44px] focus:outline-none focus:ring-2 focus:ring-purple-500"
-              >
-                <StopCircle size={16} />
-                Stop
-              </button>
-              
-              <DistractionButton className="min-h-[44px]" />
-            </div>
-
-            {/* Enhancers Row */}
-            <div className="flex justify-center gap-4 flex-wrap">
-              <button
-                onClick={() => (boosterActive ? exitBooster() : startBooster())}
-                aria-pressed={boosterActive}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all min-h-[44px] focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                  boosterActive 
-                    ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/40' 
-                    : 'bg-gray-700/50 text-gray-400 border border-gray-600/30 hover:bg-gray-600/50'
-                }`}
-              >
-                <Zap size={16} />
-                Focus Booster
-              </button>
-              
-              <button
-                onClick={toggle40Hz}
-                aria-pressed={is40HzOn}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all min-h-[44px] focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                  is40HzOn 
-                    ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40' 
-                    : 'bg-gray-700/50 text-gray-400 border border-gray-600/30 hover:bg-gray-600/50'
-                }`}
-              >
-                <BrainCircuit size={16} />
-                40 Hz
-              </button>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm text-gray-400">
-                <span>Progress</span>
-                <span>Distractions: {distractionCount}</span>
-              </div>
-              <TimerProgressBar />
-            </div>
-          </>
+          </div>
         )}
       </div>
     </div>
