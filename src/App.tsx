@@ -385,7 +385,7 @@ return (
           <div className="self-start space-y-6 min-w-0">
             {/* Center Column Content */}
             {/* Focus Input and Timer Section */}
-            <div ref={heroPanelRef} className={`panel-glass ${getHeroGlowClass()} rounded-2xl px-6 pb-3 pt-14 md:pt-16 relative overflow-visible`}>
+            <div ref={heroPanelRef} className={`panel-glass ${getHeroGlowClass()} rounded-2xl px-6 pb-3 pt-14 md:pt-16 relative overflow-hidden`}>
               {/* Title positioned above the hero panel, outside the box */}
               <div className="absolute -top-16 md:-top-20 left-1/2 -translate-x-1/2 pointer-events-none">
                 <h1 className="text-4xl font-bold tracking-tight" style={{ color: 'white', textShadow: '0 0 1px white', letterSpacing: '-0.05em', WebkitTextStroke: '1px white' }}>FLOWSHIP.</h1>
@@ -400,79 +400,18 @@ return (
                 </div>
               )}
               
-              <div className="flex flex-col md:flex-row items-start md:items-start gap-2 md:gap-3 mb-3">
-                {/* Goal Input */} 
-                <div className="flex-grow w-full md:w-auto">
-                  <DeepFocusInput 
-                    onStartSession={playStartSound}
-                  />
-                </div>
-                {/* Timer Controls with Focus Booster */}
-                <div className="flex items-center gap-3">
-                  <div className="flex-shrink-0"> 
-                    <FocusSessionTimer
-                      onSessionStart={playStartSound}
-                      onPause={playPauseSound}
-                      onResume={playStartSound}
-                      onTimerEnd={playDoneSound}
-                      isCompact={true}
-                    />
-                  </div>
-                  {/* Focus Booster Button */}
-                  <button
-                    onClick={() => useFocusBoosterStore.getState().startBooster()}
-                    className="
-                      group relative w-11 h-11 rounded-xl
-                      bg-gradient-to-r from-yellow-500/10 to-orange-500/10
-                      border border-yellow-500/30
-                      flex items-center justify-center 
-                      transition-all duration-300 ease-out
-                      hover:border-yellow-400/60 hover:shadow-lg hover:shadow-yellow-500/20
-                      hover:bg-gradient-to-r hover:from-yellow-500/20 hover:to-orange-500/20
-                      focus:outline-none focus:ring-2 focus:ring-yellow-400/50
-                    "
-                    title="Activate Focus Booster"
-                  >
-                    <span className="text-yellow-400 text-lg font-bold group-hover:scale-110 transition-transform">
-                      ⚡
-                    </span>
-                  </button>
-                  {/* 40 Hz Overlay Button */}
-                  <FortyHzButton />
-                </div>
+              {/* PRIMARY CONTROL HUD - Timer as main content */}
+              <div className="relative z-10">
+                <FocusSessionTimer
+                  asPanel={false}           // embedded: no second frame
+                  isCompact={true}          // match density to hero
+                  embeddedRadiusPx={16}     // hero rounded-2xl corners
+                  onSessionStart={playStartSound}
+                  onPause={playPauseSound}
+                  onResume={playStartSound}
+                  onTimerEnd={playDoneSound}
+                />
               </div>
-
-              {/* Session Progress Section */}
-              {isSessionActive && (
-                <div className="mt-6 p-4 bg-purple-50 dark:bg-deep-purple-900 rounded-lg space-y-3">
-                  <div className="flex items-center justify-between space-x-4">
-                    <div className="text-center">
-                      <span className="text-deep-purple-800 dark:text-purple-200 font-medium block">Current Goal</span>
-                      <span className="text-lg text-deep-purple-900 dark:text-purple-100">{currentGoal}</span>
-                    </div>
-                    <DistractionButton 
-                      className={CSS_CLASSES.WARP_CONTROL_BUTTON}
-                    />
-                  </div>
-
-                  <div className="flex justify-around items-center space-x-6">
-                    <div className="text-center">
-                      <span className="text-deep-purple-600 dark:text-purple-300 text-sm">Time Remaining</span>
-                      <div className="text-2xl font-bold text-deep-purple-800 dark:text-purple-200">
-                        {msToClock(remainingTime)}
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <span className="text-deep-purple-600 dark:text-purple-300 text-sm">Distractions</span>
-                      <div className="text-2xl font-bold text-deep-purple-800 dark:text-purple-200">
-                        {distractionCount}
-                      </div>
-                    </div>
-                  </div>
-
-                  <TimerProgressBar />
-                </div>
-              )}
             </div>
 
             {/* Mission Goal Section */}
