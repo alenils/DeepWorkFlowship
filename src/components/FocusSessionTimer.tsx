@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useTimerStore } from '../store/timerSlice';
-import { Zap, Pause, StopCircle, BrainCircuit } from 'lucide-react';
+import { Zap, Pause, StopCircle, BrainCircuit, ChevronUp, ChevronDown } from 'lucide-react';
 import { msToClock } from '../utils/time';
 import { DistractionButton } from './DistractionButton';
 import { TimerProgressBar } from './TimerProgressBar';
@@ -84,8 +84,22 @@ export const FocusSessionTimer = ({
     setIsEditing(false);
   };
 
+  const stepMinutes = (delta: number) => {
+    setDraftMinutes((prev) => {
+      const current = parseInt(prev || '0', 10);
+      const next = clamp((Number.isNaN(current) ? 0 : current) + delta, 1, 600);
+      // Immediately reflect stepped value in the store so LAUNCH enables and UI stays in sync
+      handleMinutesChange(String(next));
+      return String(next);
+    });
+  };
+
   const handleStart = () => {
     if (isSessionActive) return;
+    // If editing, commit the draft (clamped) before starting so store minutes are correct
+    if (isEditing) {
+      commitDraft();
+    }
     startSession();
     if (onSessionStart) onSessionStart();
   };
@@ -118,7 +132,7 @@ export const FocusSessionTimer = ({
         case 'focus':
           return `${baseClasses} bg-amber-500/20 text-amber-300 border border-amber-500/40`;
         case 'deep':
-          return `${baseClasses} bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-[0_0_18px_rgba(168,85,247,0.35)] ring-1 ring-purple-300/60 border border-transparent hover:from-purple-500 hover:to-indigo-500`;
+          return `${baseClasses} bg-violet-600/20 text-violet-300 border border-violet-500/45`;
       }
     }
     
@@ -160,19 +174,21 @@ export const FocusSessionTimer = ({
           <>
             {/* Mission Brief Input */}
             <div className="space-y-2 text-center">
-              <input
-                type="text"
-                value={missionBrief}
-                onChange={(e) => setMissionBrief(e.target.value)}
-                placeholder="TASK"
-                aria-label="Task"
-                className="w-full px-4 pt-4 pb-3 bg-gray-800/50 border border-gray-600/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 backdrop-blur-sm min-h-[44px] text-center hover:border-violet-400 focus:border-violet-400"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && (isInfinite || minutes)) {
-                    handleStart();
-                  }
-                }}
-              />
+              <div className="group relative rounded-xl p-[2px] transition-colors hover:ring-1 hover:ring-inset hover:ring-violet-400 focus-within:ring-2 focus-within:ring-inset focus-within:ring-violet-500">
+                <input
+                  type="text"
+                  value={missionBrief}
+                  onChange={(e) => setMissionBrief(e.target.value)}
+                  placeholder="TASK"
+                  aria-label="Task"
+                  className="w-full px-4 pt-4 pb-3 bg-gray-800/50 border border-gray-600/30 rounded-xl text-white placeholder-gray-400 outline-none backdrop-blur-sm min-h-[44px] text-center hover:border-violet-400 focus:border-violet-400 transition-colors"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && (isInfinite || minutes)) {
+                      handleStart();
+                    }
+                  }}
+                />
+              </div>
             </div>
 
             {/* === Compact 2-column: Difficulty (left) + Monitor (right) === */}
@@ -199,21 +215,45 @@ export const FocusSessionTimer = ({
               <div className="order-1 md:order-2 self-center">
                 <div className="relative digit-glow mx-auto md:mx-auto text-center flex items-center justify-center">
                   {!isSessionActive && isEditing ? (
-                    <input
-                      autoFocus
-                      type="number"
-                      inputMode="numeric"
-                      value={draftMinutes}
-                      onChange={(e) => setDraftMinutes(e.target.value.replace(/[^\d]/g, ''))}
-                      onBlur={commitDraft}
-                      onWheel={(e) => e.currentTarget.blur()}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') commitDraft();
-                        if (e.key === 'Escape') cancelEdit();
-                      }}
-                      className="relative z-10 w-28 bg-transparent text-center outline-none font-mono tabular-nums text-[56px] md:text-[72px] font-medium text-white drop-shadow-[0_0_18px_rgba(168,85,247,0.35)] no-spin-bg"
-                      aria-label="Edit timer minutes"
-                    />
+                    <>
+                      <input
+                        autoFocus
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={draftMinutes}
+                        onChange={(e) => setDraftMinutes(e.target.value.replace(/[^\d]/g, ''))}
+                        onBlur={commitDraft}
+                        onWheel={(e) => e.currentTarget.blur()}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') commitDraft();
+                          if (e.key === 'Escape') cancelEdit();
+                          if (e.key === 'ArrowUp') { e.preventDefault(); stepMinutes(1); }
+                          if (e.key === 'ArrowDown') { e.preventDefault(); stepMinutes(-1); }
+                        }}
+                        className="relative z-10 w-28 bg-transparent text-center outline-none font-mono tabular-nums text-[56px] md:text-[72px] font-medium text-white drop-shadow-[0_0_18px_rgba(168,85,247,0.35)] pr-6"
+                        aria-label="Edit timer minutes"
+                      />
+                      {/* Custom spinner controls with transparent background */}
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1 z-10 select-none pr-1">
+                        <button
+                          type="button"
+                          onMouseDown={(e) => { e.preventDefault(); stepMinutes(1); }}
+                          aria-label="Increase minutes"
+                          className="h-5 w-5 p-0 bg-transparent text-gray-300 hover:text-white focus:outline-none"
+                        >
+                          <ChevronUp size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          onMouseDown={(e) => { e.preventDefault(); stepMinutes(-1); }}
+                          aria-label="Decrease minutes"
+                          className="h-5 w-5 p-0 bg-transparent text-gray-300 hover:text-white focus:outline-none"
+                        >
+                          <ChevronDown size={16} />
+                        </button>
+                      </div>
+                    </>
                   ) : (
                     <div
                       role="button"
