@@ -375,4 +375,28 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     transition: transform 300ms ease-out;
   }
   .btn-shimmer:hover::before { transform: translateX(100%); }
+
+  /* Subtle purple radial glow behind timer digits (toned down & smaller) */
+  .digit-glow { position: relative; }
+  .digit-glow::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 150%;
+    height: 130%;
+    background: radial-gradient(58% 58% at 50% 50%, rgba(var(--primary-purple-rgb), 0.16) 0%, rgba(var(--primary-purple-rgb), 0.10) 38%, rgba(96,165,250,0.06) 58%, rgba(0,0,0,0) 70%);
+    filter: blur(10px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Keep number input arrows visible but remove their white background in Chromium */
+  .no-spin-bg { color-scheme: dark; }
+  .no-spin-bg::-webkit-inner-spin-button,
+  .no-spin-bg::-webkit-outer-spin-button {
+    background: transparent;
+    border: none;
+  }
 }

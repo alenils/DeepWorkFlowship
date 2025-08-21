@@ -166,7 +166,7 @@ export const FocusSessionTimer = ({
                 onChange={(e) => setMissionBrief(e.target.value)}
                 placeholder="TASK"
                 aria-label="Task"
-                className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm min-h-[44px] text-center"
+                className="w-full px-4 pt-4 pb-3 bg-gray-800/50 border border-gray-600/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 backdrop-blur-sm min-h-[44px] text-center hover:border-violet-400 focus:border-violet-400"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && (isInfinite || minutes)) {
                     handleStart();
@@ -197,7 +197,7 @@ export const FocusSessionTimer = ({
 
               {/* RIGHT: Open Digits (no frame), centered */}
               <div className="order-1 md:order-2 self-center">
-                <div className="relative mx-auto md:mx-auto text-center flex items-center justify-center">
+                <div className="relative digit-glow mx-auto md:mx-auto text-center flex items-center justify-center">
                   {!isSessionActive && isEditing ? (
                     <input
                       autoFocus
@@ -211,7 +211,7 @@ export const FocusSessionTimer = ({
                         if (e.key === 'Enter') commitDraft();
                         if (e.key === 'Escape') cancelEdit();
                       }}
-                      className="w-28 bg-transparent text-center outline-none font-mono tabular-nums text-[56px] md:text-[72px] font-medium text-white drop-shadow-[0_0_18px_rgba(168,85,247,0.35)]"
+                      className="relative z-10 w-28 bg-transparent text-center outline-none font-mono tabular-nums text-[56px] md:text-[72px] font-medium text-white drop-shadow-[0_0_18px_rgba(168,85,247,0.35)] no-spin-bg"
                       aria-label="Edit timer minutes"
                     />
                   ) : (
@@ -221,7 +221,7 @@ export const FocusSessionTimer = ({
                       aria-label="Set minutes"
                       onClick={() => !isSessionActive && setIsEditing(true)}
                       onKeyDown={(e) => !isSessionActive && (e.key === 'Enter' || e.key === ' ') && setIsEditing(true)}
-                      className={`font-mono tabular-nums text-[56px] md:text-[72px] font-medium text-white drop-shadow-[0_0_18px_rgba(168,85,247,0.35)] ${!isSessionActive ? 'cursor-pointer' : ''}`}
+                      className={`relative z-10 font-mono tabular-nums text-[56px] md:text-[72px] font-medium text-white drop-shadow-[0_0_18px_rgba(168,85,247,0.35)] ${!isSessionActive ? 'cursor-pointer' : ''}`}
                     >
                       {isSessionActive ? msToClock(remainingTime) : `${String(minutes).padStart(2, '0')}:00`}
                     </div>
@@ -252,8 +252,8 @@ export const FocusSessionTimer = ({
             </div>
 
             {/* Open Digits - Running State (no frame) */}
-            <div className="relative mx-auto text-center flex items-center justify-center">
-              <div className="font-mono tabular-nums text-[56px] md:text-[72px] font-medium text-white drop-shadow-[0_0_18px_rgba(168,85,247,0.35)]">
+            <div className="relative digit-glow mx-auto text-center flex items-center justify-center">
+              <div className="relative z-10 font-mono tabular-nums text-[56px] md:text-[72px] font-medium text-white drop-shadow-[0_0_18px_rgba(168,85,247,0.35)]">
                 {msToClock(remainingTime)}
               </div>
             </div>

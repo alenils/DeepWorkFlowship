@@ -393,8 +393,9 @@ return (
               {/* Streak badge */}
               {totalStreakSessions > 0 && (
                 <div 
-                  className="absolute top-0 right-0 bg-gradient-to-br from-violet-500 via-fuchsia-500 to-indigo-500 text-white text-[11px] font-semibold px-2.5 py-1 rounded-bl-lg rounded-tr-2xl shadow-[0_0_12px_rgba(139,92,246,0.55)] ring-1 ring-violet-300/60 backdrop-blur-sm" 
+                  className="absolute top-0 right-0 z-20 pointer-events-none bg-gradient-to-br from-violet-500 via-fuchsia-500 to-indigo-500 text-white text-[11px] font-semibold px-2.5 py-1 rounded-bl-lg rounded-tr-2xl shadow-[0_0_12px_rgba(139,92,246,0.55)] ring-1 ring-violet-300/60 backdrop-blur-sm" 
                   title="Keep it under 3 distractions to grow your focus streak"
+                  style={{ transform: 'translateY(-30%)' }}
                 >
                   🔥 x{totalStreakSessions}
                 </div>
