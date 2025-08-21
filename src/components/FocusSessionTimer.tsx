@@ -118,7 +118,7 @@ export const FocusSessionTimer = ({
         case 'focus':
           return `${baseClasses} bg-amber-500/20 text-amber-300 border border-amber-500/40`;
         case 'deep':
-          return `${baseClasses} bg-indigo-500/20 text-indigo-300 border border-indigo-500/40`;
+          return `${baseClasses} bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-[0_0_18px_rgba(168,85,247,0.35)] ring-1 ring-purple-300/60 border border-transparent hover:from-purple-500 hover:to-indigo-500`;
       }
     }
     
@@ -160,12 +160,12 @@ export const FocusSessionTimer = ({
           <>
             {/* Mission Brief Input */}
             <div className="space-y-2 text-center">
-              <label className="block text-sm font-medium text-gray-300 text-center">Mission Brief</label>
               <input
                 type="text"
                 value={missionBrief}
                 onChange={(e) => setMissionBrief(e.target.value)}
-                placeholder="What's the mission?"
+                placeholder="TASK"
+                aria-label="Task"
                 className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm min-h-[44px] text-center"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && (isInfinite || minutes)) {
@@ -175,65 +175,58 @@ export const FocusSessionTimer = ({
               />
             </div>
 
-            {/* Monitor Bezel with Inline Editable Digits */}
-            <div className="relative mx-auto rounded-2xl px-8 py-6 bg-gradient-to-b from-zinc-900/60 to-zinc-800/40 border border-indigo-500/30 shadow-inner text-center">
-              {!isSessionActive && isEditing ? (
-                <input
-                  autoFocus
-                  type="number"
-                  inputMode="numeric"
-                  value={draftMinutes}
-                  onChange={(e) => setDraftMinutes(e.target.value.replace(/[^\d]/g, ''))}
-                  onBlur={commitDraft}
-                  onWheel={(e) => e.currentTarget.blur()}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') commitDraft();
-                    if (e.key === 'Escape') cancelEdit();
-                  }}
-                  className="w-28 bg-transparent text-center outline-none font-mono tabular-nums text-[56px] md:text-[72px] font-medium text-white drop-shadow-[0_0_18px_rgba(168,85,247,0.35)]"
-                  aria-label="Edit timer minutes"
-                />
-              ) : (
-                <div
-                  role="button"
-                  tabIndex={0}
-                  aria-label="Set minutes"
-                  onClick={() => !isSessionActive && setIsEditing(true)}
-                  onKeyDown={(e) => !isSessionActive && (e.key === 'Enter' || e.key === ' ') && setIsEditing(true)}
-                  className={`font-mono tabular-nums text-[56px] md:text-[72px] font-medium text-white drop-shadow-[0_0_18px_rgba(168,85,247,0.35)] ${!isSessionActive ? 'cursor-pointer' : ''}`}
-                >
-                  {isSessionActive ? msToClock(remainingTime) : `${String(minutes).padStart(2,'0')}:00`}
+            {/* === Compact 2-column: Difficulty (left) + Monitor (right) === */}
+            <div className="grid grid-cols-1 md:grid-cols-[minmax(160px,200px)_1fr] items-center md:items-center gap-3 md:gap-4">
+              {/* LEFT: Difficulty */}
+              <div className="order-2 md:order-1">
+                {/* Vertical stack on desktop; wrap on mobile */}
+                <div role="tablist" aria-label="Difficulty" className="flex md:flex-col gap-2 md:gap-2 justify-center md:justify-start">
+                  {DIFFICULTY_LEVELS.map((level) => (
+                    <button
+                      key={level.id}
+                      role="tab"
+                      aria-selected={selectedDifficulty === level.id}
+                      onClick={() => setSelectedDifficulty(level.id)}
+                      className={getDifficultyClasses(level.id, selectedDifficulty === level.id)}
+                    >
+                      {level.label}
+                    </button>
+                  ))}
                 </div>
-              )}
-
-              {/* running caption only */}
-              {isSessionActive && (
-                <div className="text-[0.7rem] font-mono uppercase tracking-[0.2em] text-purple-300/60 mt-2">
-                  REMAINING
-                </div>
-              )}
-              
-              {/* scanlines */}
-              <div className="pointer-events-none absolute inset-0 rounded-2xl overflow-hidden">
-                <div className="h-full w-full bg-gradient-to-b from-transparent via-white/5 to-transparent opacity-20" />
               </div>
-            </div>
 
-            {/* Difficulty Chips */}
-            <div className="space-y-1 text-center">
-              <label className="block text-sm font-medium text-gray-300 text-center">Difficulty</label>
-              <div className="flex gap-2 flex-wrap justify-center">
-                {DIFFICULTY_LEVELS.map((level) => (
-                  <button
-                    key={level.id}
-                    role="tab"
-                    aria-selected={selectedDifficulty === level.id}
-                    onClick={() => setSelectedDifficulty(level.id)}
-                    className={getDifficultyClasses(level.id, selectedDifficulty === level.id)}
-                  >
-                    {level.label}
-                  </button>
-                ))}
+              {/* RIGHT: Open Digits (no frame), centered */}
+              <div className="order-1 md:order-2 self-center">
+                <div className="relative mx-auto md:mx-auto text-center flex items-center justify-center">
+                  {!isSessionActive && isEditing ? (
+                    <input
+                      autoFocus
+                      type="number"
+                      inputMode="numeric"
+                      value={draftMinutes}
+                      onChange={(e) => setDraftMinutes(e.target.value.replace(/[^\d]/g, ''))}
+                      onBlur={commitDraft}
+                      onWheel={(e) => e.currentTarget.blur()}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') commitDraft();
+                        if (e.key === 'Escape') cancelEdit();
+                      }}
+                      className="w-28 bg-transparent text-center outline-none font-mono tabular-nums text-[56px] md:text-[72px] font-medium text-white drop-shadow-[0_0_18px_rgba(168,85,247,0.35)]"
+                      aria-label="Edit timer minutes"
+                    />
+                  ) : (
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      aria-label="Set minutes"
+                      onClick={() => !isSessionActive && setIsEditing(true)}
+                      onKeyDown={(e) => !isSessionActive && (e.key === 'Enter' || e.key === ' ') && setIsEditing(true)}
+                      className={`font-mono tabular-nums text-[56px] md:text-[72px] font-medium text-white drop-shadow-[0_0_18px_rgba(168,85,247,0.35)] ${!isSessionActive ? 'cursor-pointer' : ''}`}
+                    >
+                      {isSessionActive ? msToClock(remainingTime) : `${String(minutes).padStart(2, '0')}:00`}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -258,20 +251,15 @@ export const FocusSessionTimer = ({
               <div className="text-xl font-medium text-white">{currentGoal || missionBrief}</div>
             </div>
 
-            {/* Monitor Bezel - Running State */}
-            <div className="relative mx-auto rounded-2xl px-8 py-6 bg-gradient-to-b from-zinc-900/60 to-zinc-800/40 border border-indigo-500/30 shadow-inner text-center">
+            {/* Open Digits - Running State (no frame) */}
+            <div className="relative mx-auto text-center flex items-center justify-center">
               <div className="font-mono tabular-nums text-[56px] md:text-[72px] font-medium text-white drop-shadow-[0_0_18px_rgba(168,85,247,0.35)]">
                 {msToClock(remainingTime)}
               </div>
-              
-              <div className="text-[0.7rem] font-mono uppercase tracking-[0.2em] text-purple-300/60 mt-2">
-                REMAINING
-              </div>
-              
-              {/* Scanlines */}
-              <div className="pointer-events-none absolute inset-0 rounded-2xl overflow-hidden">
-                <div className="h-full w-full bg-gradient-to-b from-transparent via-white/5 to-transparent opacity-20" />
-              </div>
+            </div>
+
+            <div className="text-[0.7rem] font-mono uppercase tracking-[0.2em] text-purple-300/60 -mt-1 text-center">
+              REMAINING
             </div>
 
             {/* Controls Row */}
