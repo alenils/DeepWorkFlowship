@@ -55,7 +55,7 @@ export const FocusSessionTimer = ({
   const [fortyHzActive, setFortyHzActive] = useState(false);
   const [streakCount, setStreakCount] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
-  const [draftMinutes, setDraftMinutes] = useState(minutes.toString());
+  const [draftMinutes, setDraftMinutes] = useState(String(minutes));
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   // Load streak count for standalone mode
@@ -68,11 +68,19 @@ export const FocusSessionTimer = ({
     }
   }, [asPanel]);
 
+  const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
+
   const commitDraft = () => {
     const val = parseInt(draftMinutes, 10);
-    if (!isNaN(val) && val > 0) {
-      handleMinutesChange(val.toString());
+    if (!Number.isNaN(val)) {
+      const clamped = clamp(val, 1, 600); // 1..600 min (10 hours)
+      handleMinutesChange(String(clamped));
     }
+    setIsEditing(false);
+  };
+
+  const cancelEdit = () => {
+    setDraftMinutes(String(minutes));
     setIsEditing(false);
   };
 
@@ -119,7 +127,7 @@ export const FocusSessionTimer = ({
 
   // Embedded mode: transparent wrapper, standalone mode: panel with frame
   const wrapperClasses = asPanel 
-    ? 'panel-glass rounded-3xl p-6 relative' 
+    ? 'panel-glass rounded-3xl p-4 md:p-5 relative' 
     : 'relative isolate w-full p-0 bg-transparent shadow-none border-0';
 
   return (
@@ -127,7 +135,7 @@ export const FocusSessionTimer = ({
       {/* Standalone mode header and streak badge (only when asPanel === true) */}
       {asPanel && (
         <>
-          <div className="text-center mb-6">
+          <div className="text-center mb-3">
             <h2 className="text-xl font-bold text-white">PRIMARY CONTROL INTERFACE</h2>
           </div>
           {streakCount > 0 && (
@@ -146,20 +154,20 @@ export const FocusSessionTimer = ({
         />
       )}
       
-      <div className="relative z-10 space-y-6">
+      <div className="relative z-10 space-y-3">
         {/* IDLE STATE */}
         {!isSessionActive && (
           <>
             {/* Mission Brief Input */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-300">Mission Brief</label>
+            <div className="space-y-2 text-center">
+              <label className="block text-sm font-medium text-gray-300 text-center">Mission Brief</label>
               <input
                 type="text"
                 value={missionBrief}
                 onChange={(e) => setMissionBrief(e.target.value)}
                 placeholder="What's the mission?"
-                className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm min-h-[44px]"
-                onKeyPress={(e) => {
+                className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm min-h-[44px] text-center"
+                onKeyDown={(e) => {
                   if (e.key === 'Enter' && (isInfinite || minutes)) {
                     handleStart();
                   }
@@ -168,51 +176,53 @@ export const FocusSessionTimer = ({
             </div>
 
             {/* Monitor Bezel with Inline Editable Digits */}
-            <div className="relative mx-auto rounded-2xl px-10 py-8 bg-gradient-to-b from-zinc-900/60 to-zinc-800/40 border border-indigo-500/30 shadow-inner text-center">
+            <div className="relative mx-auto rounded-2xl px-8 py-6 bg-gradient-to-b from-zinc-900/60 to-zinc-800/40 border border-indigo-500/30 shadow-inner text-center">
               {!isSessionActive && isEditing ? (
                 <input
                   autoFocus
                   type="number"
+                  inputMode="numeric"
                   value={draftMinutes}
-                  onChange={(e) => setDraftMinutes(e.target.value)}
+                  onChange={(e) => setDraftMinutes(e.target.value.replace(/[^\d]/g, ''))}
                   onBlur={commitDraft}
-                  onKeyDown={(e) => e.key === 'Enter' && commitDraft()}
+                  onWheel={(e) => e.currentTarget.blur()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') commitDraft();
+                    if (e.key === 'Escape') cancelEdit();
+                  }}
                   className="w-28 bg-transparent text-center outline-none font-mono tabular-nums text-[56px] md:text-[72px] font-medium text-white drop-shadow-[0_0_18px_rgba(168,85,247,0.35)]"
                   aria-label="Edit timer minutes"
                 />
               ) : (
                 <div
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Set minutes"
                   onClick={() => !isSessionActive && setIsEditing(true)}
+                  onKeyDown={(e) => !isSessionActive && (e.key === 'Enter' || e.key === ' ') && setIsEditing(true)}
                   className={`font-mono tabular-nums text-[56px] md:text-[72px] font-medium text-white drop-shadow-[0_0_18px_rgba(168,85,247,0.35)] ${!isSessionActive ? 'cursor-pointer' : ''}`}
                 >
-                  {isSessionActive ? msToClock(remainingTime) : `${minutes}:00`}
+                  {isSessionActive ? msToClock(remainingTime) : `${String(minutes).padStart(2,'0')}:00`}
+                </div>
+              )}
+
+              {/* running caption only */}
+              {isSessionActive && (
+                <div className="text-[0.7rem] font-mono uppercase tracking-[0.2em] text-purple-300/60 mt-2">
+                  REMAINING
                 </div>
               )}
               
-              <div className="text-[0.7rem] font-mono uppercase tracking-[0.2em] text-purple-300/60 mt-2">
-                {isSessionActive ? 'REMAINING' : 'DURATION CONTROL'}
-              </div>
-              
-              {/* Scanlines */}
+              {/* scanlines */}
               <div className="pointer-events-none absolute inset-0 rounded-2xl overflow-hidden">
                 <div className="h-full w-full bg-gradient-to-b from-transparent via-white/5 to-transparent opacity-20" />
               </div>
             </div>
 
-            {/* LAUNCH Button */}
-            <button
-              onClick={handleStart}
-              disabled={!isInfinite && !minutes}
-              className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold px-8 py-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] min-h-[44px] focus:outline-none focus:ring-2 focus:ring-purple-400 text-lg"
-              aria-label="Launch session"
-            >
-              LAUNCH
-            </button>
-
             {/* Difficulty Chips */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-300">Difficulty</label>
-              <div className="flex gap-2 flex-wrap">
+            <div className="space-y-1 text-center">
+              <label className="block text-sm font-medium text-gray-300 text-center">Difficulty</label>
+              <div className="flex gap-2 flex-wrap justify-center">
                 {DIFFICULTY_LEVELS.map((level) => (
                   <button
                     key={level.id}
@@ -226,6 +236,16 @@ export const FocusSessionTimer = ({
                 ))}
               </div>
             </div>
+
+            {/* LAUNCH Button */}
+            <button
+              onClick={handleStart}
+              disabled={!isInfinite && !minutes}
+              className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold px-8 py-3 rounded-lg transition-all duration-200 transform hover:scale-[1.02] min-h-[44px] focus:outline-none focus:ring-2 focus:ring-purple-400 text-lg"
+              aria-label="Launch session"
+            >
+              LAUNCH
+            </button>
           </>
         )}
 
@@ -239,7 +259,7 @@ export const FocusSessionTimer = ({
             </div>
 
             {/* Monitor Bezel - Running State */}
-            <div className="relative mx-auto rounded-2xl px-10 py-8 bg-gradient-to-b from-zinc-900/60 to-zinc-800/40 border border-indigo-500/30 shadow-inner text-center">
+            <div className="relative mx-auto rounded-2xl px-8 py-6 bg-gradient-to-b from-zinc-900/60 to-zinc-800/40 border border-indigo-500/30 shadow-inner text-center">
               <div className="font-mono tabular-nums text-[56px] md:text-[72px] font-medium text-white drop-shadow-[0_0_18px_rgba(168,85,247,0.35)]">
                 {msToClock(remainingTime)}
               </div>
