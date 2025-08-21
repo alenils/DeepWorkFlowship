@@ -4,6 +4,8 @@ import { Zap, Pause, StopCircle, BrainCircuit, ChevronUp, ChevronDown } from 'lu
 import { msToClock } from '../utils/time';
 import { DistractionButton } from './DistractionButton';
 import { TimerProgressBar } from './TimerProgressBar';
+import { useFocusBoosterStore } from '../store/focusBoosterSlice';
+import { useFortyHz } from '@/features/audio/useFortyHz';
 
 interface FocusSessionTimerProps {
   isCompact?: boolean;
@@ -51,12 +53,15 @@ export const FocusSessionTimer = ({
   
   const [missionBrief, setMissionBrief] = useState('');
   const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyId>('focus');
-  const [focusBoosterActive, setFocusBoosterActive] = useState(false);
-  const [fortyHzActive, setFortyHzActive] = useState(false);
   const [streakCount, setStreakCount] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const [draftMinutes, setDraftMinutes] = useState(String(minutes));
   const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // Enhancers wiring
+  const { status: boosterStatus, startBooster, exitBooster } = useFocusBoosterStore();
+  const boosterActive = boosterStatus === 'active' || boosterStatus === 'finishing';
+  const { isOn: is40HzOn, toggle: toggle40Hz, stop: stop40Hz } = useFortyHz();
 
   // Load streak count for standalone mode
   useEffect(() => {
@@ -67,6 +72,20 @@ export const FocusSessionTimer = ({
       }
     }
   }, [asPanel]);
+
+  // Ensure 40 Hz overlay is off when session is not active
+  useEffect(() => {
+    if (!isSessionActive && is40HzOn) {
+      stop40Hz();
+    }
+  }, [isSessionActive, is40HzOn, stop40Hz]);
+
+  // Ensure Focus Booster exits when session ends to avoid lingering overlay/state
+  useEffect(() => {
+    if (!isSessionActive && boosterActive) {
+      exitBooster();
+    }
+  }, [isSessionActive, boosterActive, exitBooster]);
 
   const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 
@@ -326,10 +345,10 @@ export const FocusSessionTimer = ({
             {/* Enhancers Row */}
             <div className="flex justify-center gap-4 flex-wrap">
               <button
-                onClick={() => setFocusBoosterActive(!focusBoosterActive)}
-                aria-pressed={focusBoosterActive}
+                onClick={() => (boosterActive ? exitBooster() : startBooster())}
+                aria-pressed={boosterActive}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all min-h-[44px] focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                  focusBoosterActive 
+                  boosterActive 
                     ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/40' 
                     : 'bg-gray-700/50 text-gray-400 border border-gray-600/30 hover:bg-gray-600/50'
                 }`}
@@ -339,10 +358,10 @@ export const FocusSessionTimer = ({
               </button>
               
               <button
-                onClick={() => setFortyHzActive(!fortyHzActive)}
-                aria-pressed={fortyHzActive}
+                onClick={toggle40Hz}
+                aria-pressed={is40HzOn}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all min-h-[44px] focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                  fortyHzActive 
+                  is40HzOn 
                     ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40' 
                     : 'bg-gray-700/50 text-gray-400 border border-gray-600/30 hover:bg-gray-600/50'
                 }`}
