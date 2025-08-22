@@ -98,7 +98,7 @@
   display: inline-flex; align-items: center; justify-content: center;
   gap: 8px;
   height: 44px; padding: 0 16px;
-  border-radius: 12px;
+  border-radius: 8px;
   font-weight: 600; font-size: 14px;
   border: 1px solid rgba(255,255,255,0.08);
   transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
@@ -108,7 +108,11 @@
 
 /* Variants */
 .btn-ghost { background: rgba(255,255,255,0.06); }
-.btn-danger { background: #ef4444; border-color: #ef4444; color: #fff; }
+.btn-danger {
+  background: rgba(228,88,85,.15);
+  border-color: rgba(228,88,85,.35);
+  color: #fecaca;
+}
 .btn-primary { background: linear-gradient(45deg,#7c3aed,#6d28d9); color:#fff; }
 
 /* Distracted counter button */
