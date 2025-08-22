@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useTimerStore } from '../store/timerSlice';
 import { DIFFICULTY } from '../constants';
-import { Zap, BrainCircuit, ChevronUp, ChevronDown, Play, Pause, Square, X, Loader2 } from 'lucide-react';
+import { Zap, AudioWaveform, ChevronUp, ChevronDown, Play, Pause, Square, X, Loader2 } from 'lucide-react';
 import { msToClock } from '../utils/time';
 import { useFocusBoosterStore } from '../store/focusBoosterSlice';
 import { useFortyHz } from '@/features/audio/useFortyHz';
@@ -531,7 +531,7 @@ export const FocusSessionTimer = ({
                   className={`icon-btn ${is40HzOn ? 'icon-btn--on icon-btn--on-40hz' : 'icon-btn--neutral'} ${is40HzLoading ? 'opacity-60 cursor-wait' : ''}`}
                   title="40 Hz"
                 >
-                  {is40HzLoading ? <Loader2 size={18} className="animate-spin" /> : <BrainCircuit size={18} />}
+                  {is40HzLoading ? <Loader2 size={18} className="animate-spin" /> : <AudioWaveform size={18} />}
                   <span className="sr-only">40 Hz</span>
                 </button>
               </div>
@@ -550,9 +550,7 @@ export const FocusSessionTimer = ({
                   aria-valuenow={Math.round(progressPct)}
                 >
                   <div className="progress-fill" style={{ width: `${progressPct}%` }} />
-                  <div className="rocket" style={{ left: `${progressPct}%` }} aria-hidden="true">
-                    🚀
-                  </div>
+                  <div className="rocket" style={{ left: `${progressPct}%` }} aria-hidden="true"></div>
                 </div>
               </div>
             </div>

@@ -141,17 +141,68 @@
 }
 .progress-fill {
   position: absolute; inset: 0 100% 0 0;
-  /* Shift hue toward yellow/red per design request while keeping subtle transparency */
-  background: linear-gradient(90deg, rgba(234,179,8,.5), rgba(248,113,113,.55));
+  /* Yellow → Purple energy gradient */
+  background: linear-gradient(90deg, rgba(253,224,71,.55), rgba(139,92,246,.55));
   border-radius: inherit; /* keep rounded ends without relying on overflow */
+  transition: width .35s linear;
 }
 .rocket {
-  position: absolute; top: -14px;
-  width: 22px; height: 22px;
-  filter: drop-shadow(0 2px 6px rgba(0,0,0,.5));
-  user-select: none; pointer-events: none;
-  transform: translateX(-50%);
+  position: absolute;
+  top: 50%;
+  width: var(--comet-size, 16px);
+  height: var(--comet-size, 16px);
+  transform: translate(-50%, -50%);
+  user-select: none;
+  pointer-events: none;
   z-index: 2;
+  transition: left .35s linear;
+  font-size: 0; /* hide emoji if present */
+  line-height: 0;
+}
+.rocket::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: radial-gradient(circle at 50% 50%, rgba(255,255,255,1) 0%, var(--comet-core, #fde68a) 48%, rgba(251,191,36,0.85) 65%, rgba(139,92,246,0.55) 100%);
+  box-shadow:
+    0 0 12px rgba(251,191,36,0.9),
+    0 0 28px rgba(139,92,246,0.55);
+  animation: cometPulse 1.6s ease-in-out infinite;
+}
+.rocket::after {
+  content: "";
+  position: absolute;
+  top: 50%; right: 50%;
+  transform: translateY(-50%);
+  width: var(--comet-tail-length, 56px);
+  height: var(--comet-tail-thickness, 8px);
+  background: linear-gradient(90deg,
+    rgba(139,92,246,0.0) 0%,
+    rgba(139,92,246,0.35) 25%,
+    rgba(245,158,11,0.65) 65%,
+    rgba(253,224,71,0.95) 100%);
+  border-radius: 999px;
+  filter: blur(6px);
+  opacity: 0.9;
+}
+.meteor {
+  position: absolute;
+  top: -10px;
+  width: var(--meteor-size, 14px);
+  height: var(--meteor-size, 14px);
+  transform: translateX(-50%);
+  user-select: none;
+  pointer-events: none;
+  z-index: 2;
+  transition: left .35s linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-fill,
+  .meteor,
+  .rocket { transition: none; }
+  .rocket::before { animation: none; }
 }
 
 /* Icon-only control buttons */
