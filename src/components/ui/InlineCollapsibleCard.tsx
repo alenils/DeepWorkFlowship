@@ -107,10 +107,22 @@ const InlineCollapsibleCard: React.FC<InlineCollapsibleCardProps> = ({
             aria-controls={contentId}
             aria-expanded={!collapsed}
             aria-label={collapsed ? 'Expand' : 'Collapse'}
-            className="px-2 py-1 rounded-md text-xs text-gray-800 dark:text-gray-200 bg-white/40 dark:bg-gray-700/60 hover:bg-white/60 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-500"
+            className={`inline-flex items-center justify-center h-7 w-7 text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-violet-500 bg-transparent transition-colors`}
             title={collapsed ? 'Expand' : 'Collapse'}
           >
-            {collapsed ? '▸' : '▾'}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+              className={`h-4 w-4 transform transition-transform ${collapsed ? '-rotate-90' : 'rotate-0'}`}
+            >
+              <path
+                fillRule="evenodd"
+                d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.25 8.27a.75.75 0 01-.02-1.06z"
+                clipRule="evenodd"
+              />
+            </svg>
           </button>
         </div>
       </div>
