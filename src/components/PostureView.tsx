@@ -189,7 +189,6 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
   const DEV = import.meta?.env?.DEV ?? false;
   const renderCountRef = useRef(0);
   renderCountRef.current += 1;
-  const wasDetectingRef = useRef(false);
 
   // Select only slow-changing UI fields individually (avoids equality typing issues)
   const isCalibrated = usePostureStore((s) => s.isCalibrated);
@@ -220,26 +219,6 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
       setCollapsed(false);
     }
   }, [isSessionActive, setCollapsed]);
-
-  // Pause posture detection when tab hidden, resume if it was active before when visible again
-  useEffect(() => {
-    const onVis = () => {
-      if (document.visibilityState === 'hidden') {
-        wasDetectingRef.current = usePostureStore.getState().isDetecting;
-        if (wasDetectingRef.current) {
-          if (DEV) console.debug('[PostureView] Pausing detection (tab hidden)');
-          stopPostureDetection();
-        }
-      } else {
-        if (wasDetectingRef.current) {
-          if (DEV) console.debug('[PostureView] Resuming detection (tab visible)');
-          startPostureDetection();
-        }
-      }
-    };
-    document.addEventListener('visibilitychange', onVis);
-    return () => document.removeEventListener('visibilitychange', onVis);
-  }, [startPostureDetection, stopPostureDetection, DEV]);
 
   // Add UI Debug Log for Status (DEV only)
   if (DEV) console.debug('PostureView render:', renderCountRef.current);
