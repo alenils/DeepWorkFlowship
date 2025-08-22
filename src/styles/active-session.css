@@ -47,7 +47,7 @@
 
 /* HUD bar */
 .hud-bar {
-  display: flex; align-items: center; justify-content: space-between;
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
   gap: 12px;
   margin-bottom: 12px;
   opacity: .95;
@@ -61,9 +61,11 @@
 .hud-mission {
   font-size: 14px;
   font-weight: 600;
+  text-align: center;
 }
 .hud-right {
   display: flex; align-items: center; gap: 10px;
+  justify-self: end;
 }
 .streak-badge {
   font-size: 11px;
@@ -89,9 +91,9 @@
 
 /* Controls row */
 .controls {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
   margin: 8px 0 12px;
 }
@@ -150,4 +152,48 @@
   user-select: none; pointer-events: none;
   transform: translateX(-50%);
   z-index: 2;
+}
+
+/* Icon-only control buttons */
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #e5e7eb;
+  transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.icon-btn:hover { transform: translateY(-1px); background: rgba(255,255,255,0.09); }
+.icon-btn:focus-visible { outline: 2px solid rgba(139,92,246,.5); outline-offset: 2px; }
+.icon-btn:active { transform: translateY(0); }
+
+/* Toggle ON variants */
+.icon-btn--on { color: #fff; border-color: rgba(255,255,255,0.25); }
+.icon-btn--on-focus {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b 55%, #f472b6);
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.45);
+}
+.icon-btn--on-40hz {
+  background: linear-gradient(135deg, #22d3ee, #3b82f6);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.45);
+}
+
+/* Arming state (pre-activation build-up) for Focus Booster */
+.icon-btn--arming-focus {
+  background: linear-gradient(135deg, rgba(251,191,36,0.65), rgba(245,158,11,0.55));
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.55), 0 0 42px rgba(245, 158, 11, 0.35);
+  border-color: rgba(245,158,11,0.45);
+  color: #fff;
+}
+
+/* Small badge for counts (e.g., distractions) */
+.icon-badge {
+  position: absolute; top: -4px; right: -4px;
+  min-width: 18px; height: 18px; padding: 0 4px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; line-height: 1;
+  color: #fff;
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.35);
+  border-radius: 999px;
 }

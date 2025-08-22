@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useTimerStore } from '../store/timerSlice';
 import { DIFFICULTY } from '../constants';
-import { Zap, BrainCircuit, ChevronUp, ChevronDown } from 'lucide-react';
+import { Zap, BrainCircuit, ChevronUp, ChevronDown, Play, Pause, Square, X, Loader2 } from 'lucide-react';
 import { msToClock } from '../utils/time';
 import { useFocusBoosterStore } from '../store/focusBoosterSlice';
 import { useFortyHz } from '@/features/audio/useFortyHz';
@@ -82,11 +82,14 @@ export const FocusSessionTimer = ({
   const [isEditing, setIsEditing] = useState(false);
   const [draftMinutes, setDraftMinutes] = useState(String(minutes));
   const wrapperRef = useRef<HTMLDivElement>(null);
+  // Focus Booster arming state (1s build-up before activation)
+  const [boosterArming, setBoosterArming] = useState(false);
+  const boosterTimerRef = useRef<number | null>(null);
 
   // Enhancers wiring
   const { status: boosterStatus, startBooster, exitBooster } = useFocusBoosterStore();
   const boosterActive = boosterStatus === 'active' || boosterStatus === 'finishing';
-  const { isOn: is40HzOn, toggle: toggle40Hz, stop: stop40Hz } = useFortyHz();
+  const { isOn: is40HzOn, isLoading: is40HzLoading, toggle: toggle40Hz, stop: stop40Hz } = useFortyHz();
   
   // Subscribe to current difficulty in the store for RUNNING state coloring
   const currentDifficultyStore = useTimerStore((s) => s.currentDifficulty);
@@ -114,7 +117,23 @@ export const FocusSessionTimer = ({
     if (!isSessionActive && boosterActive) {
       exitBooster();
     }
+    // Clear any pending arming timer when session ends
+    if (!isSessionActive && boosterTimerRef.current) {
+      clearTimeout(boosterTimerRef.current);
+      boosterTimerRef.current = null;
+      setBoosterArming(false);
+    }
   }, [isSessionActive, boosterActive, exitBooster]);
+
+  // Cleanup on unmount: clear pending arming timer
+  useEffect(() => {
+    return () => {
+      if (boosterTimerRef.current) {
+        clearTimeout(boosterTimerRef.current);
+        boosterTimerRef.current = null;
+      }
+    };
+  }, []);
 
   // Compute progress percentage for active sessions
   const progressPct = useMemo(() => {
@@ -405,13 +424,11 @@ export const FocusSessionTimer = ({
         {isSessionActive && (
           <div className={`hero-active ${isSessionActive && !isPaused ? 'is-running' : ''}`}>
             <div className="relative z-10 space-y-3">
-              {/* HUD Bar */}
+              {/* HUD Bar - Centered TASK text, no 'Mission' label */}
               <div className="hud-bar">
-                <div>
-                  <div className="hud-title">Mission</div>
-                  <div className="hud-mission" title={currentGoal || missionBrief}>
-                    {currentGoal || missionBrief || 'Focus Session'}
-                  </div>
+                <div />
+                <div className="hud-mission" title={currentGoal || missionBrief || 'TASK'}>
+                  {currentGoal || missionBrief || 'TASK'}
                 </div>
                 <div className="hud-right">
                   {streakCount > 0 && (
@@ -432,61 +449,90 @@ export const FocusSessionTimer = ({
                 </div>
               </div>
 
-              {/* Controls */}
+              {/* Controls - icon-only, neutral */}
               <div className="controls">
+                {/* Pause/Resume */}
                 <button
                   type="button"
-                  className="btn btn-ghost btn-slim text-white"
+                  className="icon-btn icon-btn--neutral"
                   onClick={handlePauseClick}
                   aria-pressed={isPaused}
+                  aria-label={isPaused ? 'Resume' : 'Pause'}
+                  title={isPaused ? 'Resume' : 'Pause'}
                 >
-                  {isPaused ? 'Resume' : 'Pause'}
+                  {isPaused ? <Play size={18} /> : <Pause size={18} />}
                 </button>
 
+                {/* Stop */}
                 <button
                   type="button"
-                  className="btn btn-danger"
+                  className="icon-btn icon-btn--neutral"
                   onClick={handleStop}
                   aria-label="Stop session"
+                  title="Stop"
                 >
-                  Stop
+                  <Square size={18} />
                 </button>
 
+                {/* Distracted (X) with badge */}
                 <button
                   type="button"
-                  className="btn btn-warning btn-slim"
+                  className="icon-btn icon-btn--neutral relative"
                   onClick={addDistraction}
+                  aria-label="Distracted"
+                  title="MISSION TEMPORARILY COMPROMISED - DISTRACTING ARTIFACT HIT SPACESHIP - GETTING BACK ON COURSE"
                 >
-                  Distracted {distractionCount > 0 ? `• ${distractionCount}` : ''}
+                  <X size={18} />
+                  {distractionCount > 0 && (
+                    <span className="icon-badge" aria-hidden="true">{distractionCount}</span>
+                  )}
                 </button>
               </div>
 
-              {/* Enhancers Row */}
+              {/* Enhancers Row - icon-only toggles */}
               <div className="flex justify-center gap-4 flex-wrap">
+                {/* Focus Booster */}
                 <button
-                  onClick={() => (boosterActive ? exitBooster() : startBooster())}
+                  onClick={() => {
+                    if (boosterActive) {
+                      // If already active, exit immediately and cancel any pending arming
+                      if (boosterTimerRef.current) {
+                        clearTimeout(boosterTimerRef.current);
+                        boosterTimerRef.current = null;
+                        setBoosterArming(false);
+                      }
+                      exitBooster();
+                      return;
+                    }
+                    if (boosterArming) return; // ignore repeated clicks during buildup
+                    setBoosterArming(true);
+                    boosterTimerRef.current = window.setTimeout(() => {
+                      startBooster();
+                      setBoosterArming(false);
+                      boosterTimerRef.current = null;
+                    }, 1000);
+                  }}
                   aria-pressed={boosterActive}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all min-h-[44px] focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                    boosterActive 
-                      ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/40' 
-                      : 'bg-gray-700/50 text-gray-400 border border-gray-600/30 hover:bg-gray-600/50'
-                  }`}
+                  aria-busy={boosterArming}
+                  disabled={boosterArming}
+                  className={`icon-btn ${boosterActive ? 'icon-btn--on icon-btn--on-focus' : boosterArming ? 'icon-btn--arming-focus cursor-wait' : 'icon-btn--neutral'}`}
+                  title="Focus Booster"
                 >
-                  <Zap size={16} />
-                  Focus Booster
+                  <Zap size={18} />
+                  <span className="sr-only">Focus Booster</span>
                 </button>
-                
+
+                {/* 40 Hz */}
                 <button
                   onClick={toggle40Hz}
                   aria-pressed={is40HzOn}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all min-h-[44px] focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                    is40HzOn 
-                      ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40' 
-                      : 'bg-gray-700/50 text-gray-400 border border-gray-600/30 hover:bg-gray-600/50'
-                  }`}
+                  aria-busy={is40HzLoading}
+                  disabled={is40HzLoading}
+                  className={`icon-btn ${is40HzOn ? 'icon-btn--on icon-btn--on-40hz' : 'icon-btn--neutral'} ${is40HzLoading ? 'opacity-60 cursor-wait' : ''}`}
+                  title="40 Hz"
                 >
-                  <BrainCircuit size={16} />
-                  40 Hz
+                  {is40HzLoading ? <Loader2 size={18} className="animate-spin" /> : <BrainCircuit size={18} />}
+                  <span className="sr-only">40 Hz</span>
                 </button>
               </div>
 
