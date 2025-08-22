@@ -1,14 +1,10 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { FocusSessionTimer } from './components/FocusSessionTimer'
-import { DeepFocusInput } from './components/DeepFocusInput'
 import { SessionSummaryPanel } from './components/SessionSummaryPanel'
 import { SessionHistory } from './components/SessionHistory'
-import { useFocusBoosterStore } from './store/focusBoosterSlice'
-import { DistractionButton } from './components/DistractionButton'
 import { DarkModeToggle } from './components/DarkModeToggle'
-import { TimerProgressBar } from './components/TimerProgressBar'
 import { useTimerHook, useTimerStore } from './store/timerSlice'
-import { msToClock, formatTotalDuration } from './utils/time'
+import { formatTotalDuration } from './utils/time'
 import { SystemLog } from './components/SystemLog'
 import { MissionBoard } from './components/MissionBoard'
 import { GoalPanel } from './components/GoalPanel'
@@ -24,13 +20,11 @@ import InlineCollapsibleCard from './components/ui/InlineCollapsibleCard'
 import { useInlineMinimize } from './hooks/useInlineMinimize'
 import { useInlineMinimizeSnapshot } from './hooks/useInlineMinimize'
 import { FocusBooster } from './components/focusBooster/FocusBooster'
-import { FortyHzButton } from '@/components/FortyHzButton'
 import { 
   SOUND_FILES, 
   WARP_MODE, 
   BAD_POSTURE_TIME_THRESHOLD_MS,
   ELEMENT_IDS,
-  CSS_CLASSES,
   SESSION_TYPE,
   // LIGHT_SPEED_EXPERIMENT: flag controls exposure of LIGHT_SPEED mode
   EXPERIMENT_LIGHT_SPEED
@@ -59,8 +53,6 @@ function App() {
   const { 
     isSessionActive, 
     isPaused,
-    currentGoal,
-    distractionCount,
     remainingTime,
     addDistraction
   } = useTimerStore();
