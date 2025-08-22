@@ -51,7 +51,7 @@ const mapStoreToSelected = (d: typeof DIFFICULTY[keyof typeof DIFFICULTY]): Diff
 };
 
 export const FocusSessionTimer = ({ 
-  isCompact = true,
+  isCompact: _isCompact = true,
   asPanel = false,
   embeddedRadiusPx = 16,
   onSessionStart,
@@ -87,6 +87,10 @@ export const FocusSessionTimer = ({
   const { status: boosterStatus, startBooster, exitBooster } = useFocusBoosterStore();
   const boosterActive = boosterStatus === 'active' || boosterStatus === 'finishing';
   const { isOn: is40HzOn, toggle: toggle40Hz, stop: stop40Hz } = useFortyHz();
+  
+  // Subscribe to current difficulty in the store for RUNNING state coloring
+  const currentDifficultyStore = useTimerStore((s) => s.currentDifficulty);
+  const runningDifficulty = useMemo(() => mapStoreToSelected(currentDifficultyStore), [currentDifficultyStore]);
 
   // Load streak count for standalone mode
   useEffect(() => {
@@ -220,13 +224,41 @@ export const FocusSessionTimer = ({
     return `${baseClasses} bg-gray-700/50 text-gray-400 border border-gray-600/30 hover:bg-gray-600/50 focus:outline-none focus:ring-2 focus:ring-purple-500`;
   };
 
+  // Map difficulty to digit color theme (text + glow)
+  const getDigitTheme = (difficulty: DifficultyId) => {
+    switch (difficulty) {
+      case 'maintenance':
+        return {
+          textClass: 'text-emerald-300',
+          dropShadowClass: 'drop-shadow-[0_0_18px_rgba(16,185,129,0.35)]',
+          shadowRgba: 'rgba(16,185,129,0.35)'
+        } as const;
+      case 'focus':
+        return {
+          textClass: 'text-amber-300',
+          dropShadowClass: 'drop-shadow-[0_0_18px_rgba(245,158,11,0.35)]',
+          shadowRgba: 'rgba(245,158,11,0.35)'
+        } as const;
+      case 'deep':
+      default:
+        return {
+          textClass: 'text-violet-300',
+          dropShadowClass: 'drop-shadow-[0_0_18px_rgba(139,92,246,0.35)]',
+          shadowRgba: 'rgba(139,92,246,0.35)'
+        } as const;
+    }
+  };
+
+  const idleDigitsTheme = useMemo(() => getDigitTheme(selectedDifficulty), [selectedDifficulty]);
+  const runningDigitsTheme = useMemo(() => getDigitTheme(runningDifficulty), [runningDifficulty]);
+
   // Embedded mode: transparent wrapper, standalone mode: panel with frame
   const wrapperClasses = asPanel 
     ? 'panel-glass rounded-3xl p-4 md:p-5 relative' 
     : 'relative isolate w-full p-0 bg-transparent shadow-none border-0';
 
   return (
-    <div className={wrapperClasses} ref={wrapperRef}>
+    <div className={wrapperClasses} ref={wrapperRef} data-compact={_isCompact ? 'true' : 'false'}>
       {/* Standalone mode header and streak badge (only when asPanel === true) */}
       {asPanel && (
         <>
@@ -318,7 +350,7 @@ export const FocusSessionTimer = ({
                           if (e.key === 'ArrowUp') { e.preventDefault(); stepMinutes(1); }
                           if (e.key === 'ArrowDown') { e.preventDefault(); stepMinutes(-1); }
                         }}
-                        className="relative z-10 w-28 bg-transparent text-center outline-none font-mono tabular-nums text-[56px] md:text-[72px] font-medium text-white drop-shadow-[0_0_18px_rgba(168,85,247,0.35)] pr-6"
+                        className={`relative z-10 w-28 bg-transparent text-center outline-none font-mono tabular-nums text-[56px] md:text-[72px] font-medium ${idleDigitsTheme.textClass} ${idleDigitsTheme.dropShadowClass} pr-6`}
                         aria-label="Edit timer minutes"
                       />
                       {/* Custom spinner controls with transparent background */}
@@ -348,7 +380,7 @@ export const FocusSessionTimer = ({
                       aria-label="Set minutes"
                       onClick={() => !isSessionActive && setIsEditing(true)}
                       onKeyDown={(e) => !isSessionActive && (e.key === 'Enter' || e.key === ' ') && setIsEditing(true)}
-                      className={`relative z-10 font-mono tabular-nums text-[56px] md:text-[72px] font-medium text-white drop-shadow-[0_0_18px_rgba(168,85,247,0.35)] ${!isSessionActive ? 'cursor-pointer' : ''}`}
+                      className={`relative z-10 font-mono tabular-nums text-[56px] md:text-[72px] font-medium ${idleDigitsTheme.textClass} ${idleDigitsTheme.dropShadowClass} ${!isSessionActive ? 'cursor-pointer' : ''}`}
                     >
                       {isSessionActive ? msToClock(remainingTime) : `${String(minutes).padStart(2, '0')}:00`}
                     </div>
@@ -392,7 +424,10 @@ export const FocusSessionTimer = ({
 
               {/* Timer Face */}
               <div className="timer-face" aria-live="polite">
-                <div className="timer-digits font-mono text-white">
+                <div
+                  className={`timer-digits font-mono ${runningDigitsTheme.textClass}`}
+                  style={{ textShadow: `0 0 24px ${runningDigitsTheme.shadowRgba}` }}
+                >
                   {formattedTime}
                 </div>
               </div>
