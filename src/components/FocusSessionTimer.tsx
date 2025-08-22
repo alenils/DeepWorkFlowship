@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useTimerStore } from '../store/timerSlice';
+import { DIFFICULTY } from '../constants';
 import { Zap, BrainCircuit, ChevronUp, ChevronDown } from 'lucide-react';
 import { msToClock } from '../utils/time';
 import { useFocusBoosterStore } from '../store/focusBoosterSlice';
@@ -23,6 +24,31 @@ const DIFFICULTY_LEVELS = [
 ] as const;
 
 type DifficultyId = typeof DIFFICULTY_LEVELS[number]['id'];
+
+// Map between HUD difficulty ids and store DIFFICULTY values
+const mapSelectedToStore = (id: DifficultyId) => {
+  switch (id) {
+    case 'maintenance':
+      return DIFFICULTY.EASY;
+    case 'focus':
+      return DIFFICULTY.MEDIUM;
+    case 'deep':
+      return DIFFICULTY.HARD;
+  }
+};
+
+const mapStoreToSelected = (d: typeof DIFFICULTY[keyof typeof DIFFICULTY]): DifficultyId => {
+  switch (d) {
+    case DIFFICULTY.EASY:
+      return 'maintenance';
+    case DIFFICULTY.MEDIUM:
+      return 'focus';
+    case DIFFICULTY.HARD:
+      return 'deep';
+    default:
+      return 'focus';
+  }
+};
 
 export const FocusSessionTimer = ({ 
   isCompact = true,
@@ -51,7 +77,7 @@ export const FocusSessionTimer = ({
   } = useTimerStore();
   
   const [missionBrief, setMissionBrief] = useState('');
-  const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyId>('focus');
+  const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyId>(mapStoreToSelected(useTimerStore.getState().currentDifficulty));
   const [streakCount, setStreakCount] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const [draftMinutes, setDraftMinutes] = useState(String(minutes));
@@ -257,7 +283,13 @@ export const FocusSessionTimer = ({
                       key={level.id}
                       role="tab"
                       aria-selected={selectedDifficulty === level.id}
-                      onClick={() => setSelectedDifficulty(level.id)}
+                      onClick={() => {
+                        setSelectedDifficulty(level.id);
+                        // Push selection to the store so endSession saves correct difficulty
+                        try {
+                          useTimerStore.getState().handleDifficultySet(mapSelectedToStore(level.id));
+                        } catch {}
+                      }}
                       className={getDifficultyClasses(level.id, selectedDifficulty === level.id)}
                     >
                       {level.label}

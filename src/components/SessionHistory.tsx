@@ -70,18 +70,25 @@ export const SessionHistory = ({
             const session = item;
             // Note: streak highlighting moved out; keep threshold for distraction color only
             
-            // Difficulty badge (🟢/🟡/🔴)
+            // Difficulty badge (🟢/🟡/🟣)
             const difficultyBadge = {
               [DIFFICULTY.EASY]: '🟢',
               [DIFFICULTY.MEDIUM]: '🟡',
-              [DIFFICULTY.HARD]: '🔴'
+              [DIFFICULTY.HARD]: '🟣'
             }[session.difficulty || DIFFICULTY.MEDIUM];
 
-            // Background color by difficulty
+            // Background color by difficulty (mirror timer chips with stronger contrast)
             const difficultyBg = {
-              [DIFFICULTY.EASY]: 'bg-emerald-100 dark:bg-emerald-900/30',
-              [DIFFICULTY.MEDIUM]: 'bg-amber-100 dark:bg-amber-900/30',
-              [DIFFICULTY.HARD]: 'bg-rose-100 dark:bg-rose-900/30',
+              [DIFFICULTY.EASY]: 'bg-emerald-500/20 border border-emerald-500/40',
+              [DIFFICULTY.MEDIUM]: 'bg-amber-500/20 border border-amber-500/40',
+              [DIFFICULTY.HARD]: 'bg-violet-600/20 border border-violet-500/45',
+            }[session.difficulty || DIFFICULTY.MEDIUM];
+
+            // Left rail indicator per difficulty for immediate visual distinction
+            const difficultyRail = {
+              [DIFFICULTY.EASY]: 'bg-emerald-400/80',
+              [DIFFICULTY.MEDIUM]: 'bg-amber-400/80',
+              [DIFFICULTY.HARD]: 'bg-violet-500/80',
             }[session.difficulty || DIFFICULTY.MEDIUM];
 
             // Retrieve stored star rating for this session (saved by SessionSummaryPanel)
@@ -96,8 +103,9 @@ export const SessionHistory = ({
             return (
               <div 
                 key={`session-${session.id}`} 
-                className={`rounded-lg p-3 text-sm flex items-center justify-between ${difficultyBg}`}
+                className={`relative overflow-hidden rounded-lg pl-3 md:pl-4 p-3 text-sm flex items-center justify-between ${difficultyBg}`}
               >
+                <span aria-hidden className={`absolute left-0 top-0 h-full w-1 ${difficultyRail}`} />
                 <div className="flex items-center space-x-2 flex-1 overflow-hidden">
                   {/* Goal and difficulty badge */}
                   <span title={
@@ -119,9 +127,8 @@ export const SessionHistory = ({
 
                 <div className="flex items-center space-x-3 flex-shrink-0">
                   {rating > 0 && (
-                    <span title="Rating" className="text-yellow-500 dark:text-yellow-400 text-xs">
+                    <span title="Rating" className="text-amber-300/70 text-sm md:text-base leading-none">
                       {"★".repeat(Math.max(0, Math.min(5, rating)))}
-                      {"☆".repeat(Math.max(0, 5 - Math.max(0, Math.min(5, rating))))}
                     </span>
                   )}
                   <span title="Duration" className="text-gray-600 dark:text-gray-400">
@@ -132,9 +139,12 @@ export const SessionHistory = ({
                   </span>
                   <span 
                     title={session.distractionLog ? `Distractions: ${session.distractionLog}` : "Distractions"} 
-                    className={`${session.distractions >= MAX_DISTRACTIONS_FOR_STREAK ? 'text-red-600 dark:text-red-400 font-bold' : 'text-green-600 dark:text-green-400'} flex items-center`}
+                    className={`flex items-center`}
                   >
-                    ❌ {session.distractions}
+                    <span className="text-violet-400 mr-1">✕</span>
+                    <span className={`${session.distractions >= MAX_DISTRACTIONS_FOR_STREAK ? 'text-red-600 dark:text-red-400 font-bold' : 'text-green-600 dark:text-green-400'}`}>
+                      {session.distractions}
+                    </span>
                     {session.distractionLog && (
                       <span className="ml-1 text-xs inline-block text-gray-500 dark:text-gray-400">
                         📝
