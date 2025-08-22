@@ -184,7 +184,7 @@ const CanvasOverlay: React.FC<CanvasOverlayProps> = ({
 
 export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPostureChange }) => {
   const { videoRef, handleCalibration, startPostureDetection, stopPostureDetection } = usePosture();
-  const { collapsed, toggle } = useInlineMinimize('posture-tracker', false);
+  const { collapsed, setCollapsed, toggle } = useInlineMinimize('posture-tracker', false);
 
   const DEV = import.meta?.env?.DEV ?? false;
   const renderCountRef = useRef(0);
@@ -214,6 +214,13 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
     }
   }, [postureStatus.isGood, isSessionActive, onPostureChange]);
 
+  // Keep panel expanded during active sessions (also counteracts global collapse-all)
+  useEffect(() => {
+    if (isSessionActive) {
+      setCollapsed(false);
+    }
+  }, [isSessionActive, setCollapsed]);
+
   // Pause posture detection when tab hidden, resume if it was active before when visible again
   useEffect(() => {
     const onVis = () => {
@@ -241,7 +248,7 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
     <InlineCollapsibleCard
       id="posture-tracker"
       title="Posture Tracker"
-      helpTitle="M: collapse"
+      helpTitle={isSessionActive ? 'Collapse disabled during session' : 'M: collapse'}
       onHelpClick={() => {}}
       variant="v2"
       headerRight={
@@ -272,7 +279,7 @@ export const PostureView: React.FC<PostureViewProps> = ({ isSessionActive, onPos
         </div>
       }
       collapsed={collapsed}
-      onToggleCollapse={toggle}
+      onToggleCollapse={useCallback(() => { if (!isSessionActive) toggle(); }, [isSessionActive, toggle])}
       className="panel--no-pad panel-no-rail overflow-hidden panel-hover"
       contentClassName="content-pad-lg"
     >

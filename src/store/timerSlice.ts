@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { useEffect, useRef } from 'react';
 import { useHistoryStore, generateId, SessionData, BreakData } from './historySlice';
 import { useWarpStore } from './warpSlice';
+import { usePostureStore } from './postureSlice';
 import { 
   DEFAULT_TIMER_MINUTES, 
   TIMER_UPDATE_INTERVAL_MS, 
@@ -397,6 +398,15 @@ export const useTimerStore = create<TimerState>()(
           console.warn('[TimerStore] Failed to dispatch goal:session-progress event', e);
         }
 
+        // Determine if posture tracking was used and valid at session end
+        let postureUsed = false;
+        try {
+          const p = usePostureStore.getState();
+          postureUsed = !!(p.isDetecting && p.rawLandmarks);
+        } catch (e) {
+          console.warn('[TimerStore] Could not read posture store state:', e);
+        }
+
         // Create session data for history with actual duration
         const sessionData: SessionData = {
           type: SESSION_TYPE.FOCUS,
@@ -405,7 +415,9 @@ export const useTimerStore = create<TimerState>()(
           duration: actualSessionDuration, // Use actual duration instead of planned duration
           goal: state.currentGoal,
           distractions: state.distractionCount,
-          posture: Math.round(Math.random() * 30 + 70), // Mock posture data for now
+          // Only include posture if we have a real value; else leave undefined
+          // Currently we don't calculate a percentage, so omit and rely on postureUsed for UI gating
+          postureUsed,
           difficulty: state.currentDifficulty,
           distractionLog: ''
         };

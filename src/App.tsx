@@ -486,6 +486,7 @@ return (
           <aside className="self-start space-y-6">
             <div className="mb-4">
               <PostureView 
+                isSessionActive={isSessionActive}
                 onPostureChange={setPostureStatus}
               />
             </div>

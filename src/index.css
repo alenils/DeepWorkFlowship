@@ -327,7 +327,23 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       transform: translateY(0) translateX(-50%); 
     }
   }
-  
+
+  /* Fade in and move up slightly, without horizontal translate (for centered modals) */
+  .animate-fade-in-up {
+    animation: fade-in-up 0.22s ease-out forwards;
+  }
+
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   /* Line paper background for notepad */
   .bg-size-100\%-1\.5rem {
     background-size: 100% 1.5rem;

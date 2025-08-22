@@ -14,6 +14,7 @@ export interface SessionData {
   duration: number;
   goal: string;
   posture?: number;
+  postureUsed?: boolean;
   distractions: number;
   comment?: string;
   difficulty?: typeof DIFFICULTY[keyof typeof DIFFICULTY];

@@ -114,9 +114,6 @@ export const FocusSessionTimer = ({
       if (e.code === 'Space') {
         e.preventDefault();
         isPaused ? resumeTimer() : pauseTimer();
-      } else if (e.key.toLowerCase() === 's') {
-        e.preventDefault();
-        endSession();
       } else if (e.key.toLowerCase() === 'd') {
         e.preventDefault();
         addDistraction();
@@ -372,7 +369,7 @@ export const FocusSessionTimer = ({
               <div className="controls">
                 <button
                   type="button"
-                  className="btn btn-ghost text-white"
+                  className="btn btn-ghost btn-slim text-white"
                   onClick={handlePauseClick}
                   aria-pressed={isPaused}
                 >
@@ -390,7 +387,7 @@ export const FocusSessionTimer = ({
 
                 <button
                   type="button"
-                  className="btn btn-warning"
+                  className="btn btn-warning btn-slim"
                   onClick={addDistraction}
                 >
                   Distracted {distractionCount > 0 ? `• ${distractionCount}` : ''}

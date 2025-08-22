@@ -68,8 +68,7 @@ export const SessionHistory = ({
           } else {
             // Render session item
             const session = item;
-            // Update streak logic to match constants
-            const isStreak = session.distractions < MAX_DISTRACTIONS_FOR_STREAK;
+            // Note: streak highlighting moved out; keep threshold for distraction color only
             
             // Difficulty badge (🟢/🟡/🔴)
             const difficultyBadge = {
@@ -77,15 +76,27 @@ export const SessionHistory = ({
               [DIFFICULTY.MEDIUM]: '🟡',
               [DIFFICULTY.HARD]: '🔴'
             }[session.difficulty || DIFFICULTY.MEDIUM];
+
+            // Background color by difficulty
+            const difficultyBg = {
+              [DIFFICULTY.EASY]: 'bg-emerald-100 dark:bg-emerald-900/30',
+              [DIFFICULTY.MEDIUM]: 'bg-amber-100 dark:bg-amber-900/30',
+              [DIFFICULTY.HARD]: 'bg-rose-100 dark:bg-rose-900/30',
+            }[session.difficulty || DIFFICULTY.MEDIUM];
+
+            // Retrieve stored star rating for this session (saved by SessionSummaryPanel)
+            let rating = 0;
+            try {
+              const v = localStorage.getItem(`flowship:rating:${session.timestamp}`);
+              rating = v ? parseInt(v, 10) : 0;
+            } catch {
+              rating = 0;
+            }
             
             return (
               <div 
                 key={`session-${session.id}`} 
-                className={`rounded-lg p-3 text-sm flex items-center justify-between ${
-                  isStreak 
-                    ? 'bg-green-100 dark:bg-green-900/30' 
-                    : 'bg-gray-200 dark:bg-gray-700/80'
-                }`}
+                className={`rounded-lg p-3 text-sm flex items-center justify-between ${difficultyBg}`}
               >
                 <div className="flex items-center space-x-2 flex-1 overflow-hidden">
                   {/* Goal and difficulty badge */}
@@ -107,6 +118,12 @@ export const SessionHistory = ({
                 </div>
 
                 <div className="flex items-center space-x-3 flex-shrink-0">
+                  {rating > 0 && (
+                    <span title="Rating" className="text-yellow-500 dark:text-yellow-400 text-xs">
+                      {"★".repeat(Math.max(0, Math.min(5, rating)))}
+                      {"☆".repeat(Math.max(0, 5 - Math.max(0, Math.min(5, rating))))}
+                    </span>
+                  )}
                   <span title="Duration" className="text-gray-600 dark:text-gray-400">
                     ⏱️ {msToClock(session.duration)}
                   </span>

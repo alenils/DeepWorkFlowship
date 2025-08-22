@@ -1,18 +1,11 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getRandomQuote } from '../utils/quoteUtils';
+import { SessionData } from '../store/historySlice';
 
 interface SessionSummaryProps {
   isVisible: boolean;
   onClose: () => void;
-  sessionData: {
-    timestamp: number;
-    duration: number;
-    goal: string;
-    posture?: number;
-    distractions: number;
-    comment?: string;
-    distractionLog?: string;
-  } | null;
+  sessionData: SessionData | null;
   streakCount?: number;
   onStreakEnded?: () => void;
 }
@@ -28,6 +21,7 @@ export const SessionSummaryPanel = ({
   const [comment, setComment] = useState('');
   const [distractionCount, setDistractionCount] = useState(0);
   const [streakEnded, setStreakEnded] = useState(false);
+  const [rating, setRating] = useState<number>(0);
 
   // Effect for setting the quote only when panel first becomes visible
   useEffect(() => {
@@ -85,6 +79,11 @@ export const SessionSummaryPanel = ({
     if (sessionData) {
       sessionData.comment = comment;
       sessionData.distractions = distractionCount;
+      
+      // Save rating to localStorage as fallback
+      if (rating > 0) {
+        localStorage.setItem(`flowship:rating:${sessionData.timestamp}`, rating.toString());
+      }
     }
     onClose();
   };
@@ -97,110 +96,128 @@ export const SessionSummaryPanel = ({
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
+  // Show posture row only if the session recorded posture usage or has a posture value
+  const showPosture = (
+    sessionData.postureUsed === true ||
+    typeof sessionData.posture === 'number'
+  );
+
+  const sessionId = sessionData.timestamp.toString();
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 transition-opacity duration-300 ease-in-out">
-      <div className="panel-v2 panel-no-rail panel-hover rounded-2xl content-pad-lg max-w-md w-full mx-4 transform transition-all duration-300 ease-in-out scale-95 animate-fade-in-scale">
-        <div className="flex justify-start items-center mb-4">
-          <h2 className="text-xl font-semibold flex items-center">
-            <span className="mr-2 text-yellow-500">💡</span> Session Summary
-          </h2>
+      <div className="summary-modal max-w-md w-full mx-4 transition-all duration-300 ease-in-out animate-fade-in-up" role="dialog" aria-modal="true" aria-label="Session Summary">
+        <div className="summary-header">
+          <span className="summary-icon">💡</span>
+          <h2 className="summary-title">Session Summary</h2>
         </div>
 
         {/* Streak Ended Message */}
         {streakEnded && (
-          <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 rounded-md font-bold text-sm">
+          <div className="streak-ended-message">
             Oops, your streak ended! But remember: channel your inner Goggins and start the next session stronger.
           </div>
         )}
 
         {/* Inspirational Quote */}
-        <p className="text-center text-gray-600 dark:text-gray-300 mb-6 italic text-sm">
+        <p className="summary-quote">
           "{quote}"
         </p>
 
-        <div className="space-y-4">
-          <div className="flex items-center">
-            <span className="mr-3 text-lg">📝</span>
-            <span className="text-gray-500 dark:text-gray-400">Focus Goal: </span>
-            <span className="ml-2 font-medium">
+        <div className="summary-grid">
+          <div className="summary-row">
+            <span className="summary-icon">📝</span>
+            <div><strong>Focus Goal:</strong></div>
+            <div className="summary-row-value">
               {sessionData.goal ? sessionData.goal : '[Goal not found]'}
-            </span>
-          </div>
-
-          <div className="flex items-center">
-            <span className="mr-3 text-lg">⏱️</span>
-            <span className="text-gray-500 dark:text-gray-400">Duration: </span>
-            <span className="ml-2 font-medium">{formatDuration(sessionData.duration)}</span>
-          </div>
-
-          <div className="flex items-center">
-            <span className="mr-3 text-lg">👤</span>
-            <span className="text-gray-500 dark:text-gray-400">Posture: </span>
-            <span className="ml-2 font-medium">
-              {sessionData.posture !== undefined ? `${sessionData.posture}%` : 'N/A'}
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <span className="mr-3 text-lg">❌</span>
-              <span className="text-gray-500 dark:text-gray-400">Distractions: </span>
-              <span className="ml-2 font-medium">{distractionCount}</span>
             </div>
-            
-            {/* Distraction Button */}
-            <button
-              onClick={handleAddDistraction}
-              className="px-3 py-1 rounded-md bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 
-                hover:bg-red-200 dark:hover:bg-red-800/40 font-medium transition flex items-center"
-            >
-              <span className="mr-2">❌</span>
-              <span>Add Distraction</span>
-            </button>
           </div>
 
-          {/* Comment Field */}
-          <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-4">
-            <div>
-              <label htmlFor="session-comment" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                How did it go?
-              </label>
-              <input
-                id="session-comment"
-                type="text"
-                value={comment}
-                onChange={handleCommentChange}
-                onKeyDown={(e) => { if (e.key === 'Enter') { handleSave(); e.preventDefault(); } }}
-                maxLength={40}
-                placeholder="Brief comment on this session..."
-                className="w-full p-2 border rounded-md focus:ring-deep-purple-500 focus:border-deep-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
+          <div className="summary-row">
+            <span className="summary-icon">⏱️</span>
+            <div><strong>Duration:</strong></div>
+            <div className="summary-row-value">{formatDuration(sessionData.duration)}</div>
+          </div>
+
+          {showPosture && (
+            <div className="summary-row">
+              <span className="summary-icon">👤</span>
+              <div><strong>Posture:</strong></div>
+              <div className="summary-row-value">
+                {typeof sessionData.posture === 'number' ? `${sessionData.posture}%` : 'Tracked'}
+              </div>
             </div>
-            
-            {/* Save Button */}
-            <div className="flex justify-end mt-2">
+          )}
+
+          <div className="summary-row">
+            <span className="summary-icon">❌</span>
+            <div><strong>Distractions:</strong></div>
+            <div className="flex items-center gap-2">
+              <span className="summary-row-value">{distractionCount}</span>
               <button
-                onClick={handleSave}
-                className="px-4 py-2 bg-deep-purple-600 text-white rounded-md text-sm hover:bg-deep-purple-700 transition-colors"
+                onClick={handleAddDistraction}
+                className="btn btn-add-distraction"
               >
-                Save &amp; Close
+                <span>❌</span>
+                <span>Add</span>
               </button>
             </div>
           </div>
+
+          <div className="summary-row" role="group" aria-label="Rate this session from 1 to 5 stars">
+            <span className="summary-icon">⭐</span>
+            <div><strong>Rate session:</strong></div>
+            <div className="rating">
+              {[5,4,3,2,1].map(n => (
+                <React.Fragment key={n}>
+                  <input
+                    id={`rate-${sessionId}-${n}`}
+                    name={`rate-${sessionId}`}
+                    type="radio"
+                    value={n}
+                    checked={rating === n}
+                    onChange={() => setRating(n)}
+                    aria-label={`${n} star${n>1?'s':''}`}
+                  />
+                  <label htmlFor={`rate-${sessionId}-${n}`}><span className="star">★</span></label>
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+
+        </div>
+
+        <div className="summary-sep"></div>
+
+        {/* Comment Field */}
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="session-comment" className="summary-label">
+              How did it go?
+            </label>
+            <input
+              id="session-comment"
+              type="text"
+              value={comment}
+              onChange={handleCommentChange}
+              onKeyDown={(e) => { if (e.key === 'Enter') { handleSave(); e.preventDefault(); } }}
+              maxLength={40}
+              placeholder="Brief comment on this session..."
+              className="summary-input"
+            />
+          </div>
+          
+          {/* Save Button */}
+          <div className="summary-actions">
+            <button
+              onClick={handleSave}
+              className="btn btn-primary"
+            >
+              Save & Close
+            </button>
+          </div>
         </div>
       </div>
-      {/* Add simple keyframe animation for fade-in effect */}
-      <style>
-        {`
-          @keyframes fade-in-scale {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
-          }
-          .animate-fade-in-scale {
-            animation: fade-in-scale 0.3s ease-out forwards;
-          }
-        `}
-      </style>
     </div>
   );
 }; 
