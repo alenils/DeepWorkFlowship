@@ -1,11 +1,20 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useGoalStore } from '@/store/goalSlice';
-import { useTimerStore } from '@/store/timerSlice';
+import { useMissionsStore, getMissionTotals } from '@/store/missionsSlice';
+import { DIFFICULTY } from '@/constants';
 
-const mmFmt = (mins: number) => `${Math.floor((mins || 0) / 60)}h ${String(Math.max(0, Math.floor(mins || 0)) % 60).padStart(2, '0')}m`;
+//
 
 export const GoalPanel: React.FC = () => {
   const { goal, startGoal, addProgress, resetGoal, hydrate, updateGoal } = useGoalStore();
+  // Missions store (projects)
+  const missions = useMissionsStore((s) => s.missions);
+  const activeMissionId = useMissionsStore((s) => s.activeMissionId);
+  const isSelectionLocked = useMissionsStore((s) => s.isSelectionLocked);
+  const lockedMissionId = useMissionsStore((s) => s.lockedMissionId);
+  const selectMission = useMissionsStore((s) => s.selectMission);
+  const updateMission = useMissionsStore((s) => s.updateMission);
+  const createMission = useMissionsStore((s) => s.createMission);
 
   const [what, setWhat] = useState('');
   const [why, setWhy] = useState('');
@@ -33,50 +42,57 @@ export const GoalPanel: React.FC = () => {
     return () => window.removeEventListener('goal:session-progress', onProgress as EventListener);
   }, [addProgress]);
 
-  // Live timer state for continuous progress rendering (select primitives to avoid unstable snapshots)
-  const isSessionActive = useTimerStore((s) => s.isSessionActive);
-  const isPaused = useTimerStore((s) => s.isPaused);
-  const isInfinite = useTimerStore((s) => s.isInfinite);
-  const sessionDurationMs = useTimerStore((s) => s.sessionDurationMs);
-  const remainingTime = useTimerStore((s) => s.remainingTime);
-  const sessionStartTime = useTimerStore((s) => s.sessionStartTime);
+  // Active mission + aggregated totals for display
+  const activeMission = useMemo(() => (
+    missions.find(m => m.id === activeMissionId && !m.archived) || null
+  ), [missions, activeMissionId]);
 
-  // Compute live in-session elapsed ms for display only (accumulation still happens on session end)
-  const liveElapsedMs = useMemo(() => {
-    if (!isSessionActive || isPaused) return 0;
-    if (isInfinite) return Math.max(0, Date.now() - (sessionStartTime || Date.now()));
-    const planned = Math.max(0, sessionDurationMs || 0);
-    const rem = Math.max(0, remainingTime || 0);
-    return Math.max(0, planned - rem);
-  }, [isSessionActive, isPaused, isInfinite, sessionDurationMs, remainingTime, sessionStartTime]);
+  const missionTotals = useMemo(() => (
+    activeMission ? getMissionTotals(activeMission) : null
+  ), [activeMission]);
 
-  const pct = useMemo(() => {
-    if (!goal) return 0;
-    const targetMs = Math.max(1, goal.targetMinutes) * 60000;
-    const accumulatedMs = Math.max(0, goal.accumulatedMinutes) * 60000;
-    const totalMsForDisplay = Math.min(targetMs, accumulatedMs + liveElapsedMs);
-    return Math.max(0, Math.min(100, (totalMsForDisplay / targetMs) * 100));
-  }, [goal, liveElapsedMs]);
-
-  // Live accumulated minutes for display (does not mutate store)
-  const displayAccumulatedMinutes = useMemo(() => {
-    if (!goal) return 0;
-    const liveMins = Math.floor(liveElapsedMs / 60000);
-    return Math.min(goal.targetMinutes, goal.accumulatedMinutes + liveMins);
-  }, [goal, liveElapsedMs]);
+  // Segmented bar widths (same logic as MissionBoard)
+  const barSegments = useMemo(() => {
+    if (!activeMission) return null;
+    const target = Math.max(1, activeMission.targetMinutes || 1);
+    const easy = activeMission.byDifficulty[DIFFICULTY.EASY] || 0;
+    const med = activeMission.byDifficulty[DIFFICULTY.MEDIUM] || 0;
+    const hard = activeMission.byDifficulty[DIFFICULTY.HARD] || 0;
+    const unk = activeMission.byDifficulty[DIFFICULTY.UNKNOWN] || 0;
+    let remaining = 100;
+    const pct = (v: number) => Math.min(remaining, Math.max(0, (v / target) * 100));
+    const sEasy = (() => { const p = pct(easy); remaining -= p; return p; })();
+    const sMed = (() => { const p = pct(med); remaining -= p; return p; })();
+    const sHard = (() => { const p = pct(hard); remaining -= p; return p; })();
+    const sUnk = (() => { const p = pct(unk); remaining -= p; return p; })();
+    return { sEasy, sMed, sHard, sUnk };
+  }, [activeMission]);
 
   const handleStart = () => {
     const t = Math.max(1, Math.floor(Number(target) || 0));
     if (!what.trim() || t <= 0) return;
-    startGoal({ what, why, how, targetMinutes: t });
-    // Emit Mission Board add event (decoupled)
+    const title = what.trim();
+    const whyTrim = why.trim();
+    const howTrim = how.trim();
+    // Ensure a corresponding Mission (Project) exists and is selected
     try {
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(
-          new CustomEvent('mission:add', { detail: { title: what.trim(), source: 'goal-panel' } })
-        );
+      const current = missions.find((m) => m.id === activeMissionId && !m.archived) || null;
+      if (current) {
+        updateMission(current.id, { title, why: whyTrim, how: howTrim, targetMinutes: t });
+        selectMission(current.id);
+      } else {
+        const existing = missions.find((m) => !m.archived && m.title.toLowerCase() === title.toLowerCase());
+        if (existing) {
+          updateMission(existing.id, { why: whyTrim, how: howTrim, targetMinutes: t });
+          selectMission(existing.id);
+        } else {
+          const id = createMission({ title, why: whyTrim, how: howTrim, targetMinutes: t });
+          selectMission(id);
+        }
       }
     } catch {}
+    // Start the goal after project setup so UI stays consistent
+    startGoal({ what: title, why: whyTrim, how: howTrim, targetMinutes: t });
   };
 
   const handleReset = () => {
@@ -121,8 +137,74 @@ export const GoalPanel: React.FC = () => {
 
   return (
     <div className="space-y-4">
+      {/* Project selector (Missions) */}
+      <div className="grid grid-cols-1 gap-2">
+        <div className="flex flex-col gap-2">
+          <label className="text-xs text-gray-600 dark:text-gray-300">PROJECT</label>
+          <div className="flex items-center gap-2">
+            <select
+              className="mission-input flex-1"
+              value={activeMissionId || ''}
+              onChange={(e) => selectMission(e.target.value || null)}
+              disabled={isSelectionLocked}
+            >
+              <option value="">None</option>
+              {missions.filter((m) => !m.archived).map((m) => (
+                <option key={m.id} value={m.id}>{m.title}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              disabled={isSelectionLocked}
+              title={isSelectionLocked ? 'Locked during active session' : 'Create new project'}
+              onClick={() => {
+                if (isSelectionLocked) return;
+                const title = (window.prompt('New project name?') || '').trim();
+                if (!title) return;
+                const minsStr = (window.prompt('Target minutes?', '120') || '').trim();
+                const targetMinutes = Math.max(1, Math.floor(Number(minsStr) || 120));
+                try {
+                  const id = createMission({ title, targetMinutes });
+                  selectMission(id);
+                } catch {}
+              }}
+              className={`px-2 py-2 rounded-md text-xs font-medium bg-white/40 dark:bg-gray-700/60 hover:bg-white/60 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-400 ${isSelectionLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
+            >
+              + New Project
+            </button>
+          </div>
+          {isSelectionLocked && (
+            <div className="text-[11px] text-violet-300">Locked during active session{lockedMissionId ? ` ("${missions.find(m=>m.id===lockedMissionId)?.title || 'Current'}")` : ''}</div>
+          )}
+          {missions.filter((m) => !m.archived).length === 0 && (
+            <div className="text-xs text-gray-500 dark:text-gray-400">No projects yet. Create one below.</div>
+          )}
+        </div>
+        {activeMission && barSegments && (
+          <div className="mt-1">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-gray-700 dark:text-gray-300">Project Progress</span>
+              <span className="text-xs text-slate-400">
+                {missionTotals?.total}/{activeMission.targetMinutes} min
+                {missionTotals && missionTotals.overflow > 0 && (
+                  <span className="ml-1 text-rose-400 font-medium">(+{missionTotals.overflow})</span>
+                )}
+              </span>
+            </div>
+            <div className="w-full h-2 rounded bg-black overflow-hidden flex" aria-label="Project progress">
+              <div className="h-full bg-emerald-500 flex-none" style={{ width: `${barSegments.sEasy}%` }} />
+              <div className="h-full bg-amber-500 flex-none" style={{ width: `${barSegments.sMed}%` }} />
+              <div className="h-full bg-indigo-500 flex-none" style={{ width: `${barSegments.sHard}%` }} />
+              <div className="h-full bg-gray-400/60 flex-none" style={{ width: `${barSegments.sUnk}%` }} />
+            </div>
+          </div>
+        )}
+      </div>
       {!goal && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="md:col-span-2">
+            <div className="text-[11px] uppercase tracking-wider text-gray-600 dark:text-gray-300 font-semibold">Mission Definition</div>
+          </div>
           <div className="flex flex-col gap-2">
             <label className="text-xs text-gray-600 dark:text-gray-300">WHAT</label>
             <input
@@ -150,6 +232,9 @@ export const GoalPanel: React.FC = () => {
               onChange={(e) => setHow(e.target.value)}
             />
           </div>
+          <div className="md:col-span-2 mt-1">
+            <div className="text-[11px] uppercase tracking-wider text-gray-600 dark:text-gray-300 font-semibold">Target</div>
+          </div>
           <div className="flex flex-col gap-2">
             <label className="text-xs text-gray-600 dark:text-gray-300">TIME DEDICATED (minutes)</label>
             <input
@@ -174,27 +259,13 @@ export const GoalPanel: React.FC = () => {
 
       {goal && !editing && (
         <div className="space-y-4">
-          {/* Progress on top, styled like Environment/Posture sliders (size only) */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-gray-700 dark:text-gray-300">Progress</span>
-              <span className="text-xs text-slate-400">{mmFmt(displayAccumulatedMinutes)} / {mmFmt(goal.targetMinutes)}</span>
-            </div>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              step={1}
-              value={Math.round(pct)}
-              readOnly
-              disabled
-              aria-label="Goal progress"
-              className="star-slider w-full h-2 rounded-lg appearance-none cursor-default disabled:opacity-100"
-            />
-          </div>
+          {/* Removed goal progress bar from GoalPanel; progress visualization is on Mission Board */}
 
-          {/* Slim read-only summary (text only, no input boxes) */}
+          {/* Slim read-only summary with clearer sectioning */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
+            <div className="md:col-span-2">
+              <div className="text-[11px] uppercase tracking-wider text-gray-600 dark:text-gray-300 font-semibold">Mission Details</div>
+            </div>
             <div>
               <div className="text-[11px] text-gray-600 dark:text-gray-300">WHAT</div>
               <div className="text-sm text-gray-900 dark:text-gray-100 truncate" title={goal.what}>{goal.what}</div>

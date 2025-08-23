@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { useHistoryStore, generateId, SessionData, BreakData } from './historySlice';
 import { useWarpStore } from './warpSlice';
 import { usePostureStore } from './postureSlice';
+import { useMissionsStore, getMissionTotals, willExceedWith } from './missionsSlice';
 import { 
   DEFAULT_TIMER_MINUTES, 
   TIMER_UPDATE_INTERVAL_MS, 
@@ -35,6 +36,9 @@ export const initialTimerState = {
   distractionCount: 0,
   sessionDurationMs: 0,
   isRunning: false,
+  // Mission lock state for current session only (not persisted)
+  lockedMissionId: null as string | null,
+  missionOverflowPreconfirmed: false,
 };
 
 // Import SFX functions if available (commented for now, would need to be imported)
@@ -58,6 +62,9 @@ export interface TimerState {
   
   // Internal timer state
   isRunning: boolean;
+  // Mission lock state (ephemeral)
+  lockedMissionId: string | null;
+  missionOverflowPreconfirmed: boolean;
   
   // Simple actions (state setters)
   setMinutes: (minutes: string) => void;
@@ -192,7 +199,9 @@ export const useTimerStore = create<TimerState>()(
         sessionEndTime: null,
         remainingTime: 0,
         distractionCount: 0,
-        sessionDurationMs: 0
+        sessionDurationMs: 0,
+        lockedMissionId: null,
+        missionOverflowPreconfirmed: false,
       }),
       
       // New tick function for accurate timing
@@ -269,6 +278,38 @@ export const useTimerStore = create<TimerState>()(
         if (!state.isInfinite && durationMinutes <= 0) {
           // Should show an alert but we'll leave that to the UI component
           return;
+        }
+        
+        // Mission overflow checks and locking
+        try {
+          const mStore = useMissionsStore.getState();
+          const activeMission = mStore.getActiveMission?.();
+          if (activeMission) {
+            const { total } = getMissionTotals(activeMission);
+            const overAlready = total >= activeMission.targetMinutes;
+            const willExceed = !state.isInfinite && willExceedWith(activeMission, durationMinutes);
+            let proceed = true;
+            let preconfirmed = false;
+            if (overAlready) {
+              const msg = `Mission "${activeMission.title}" is already over its target (${total}/${activeMission.targetMinutes} min). Continue anyway?`;
+              proceed = typeof window !== 'undefined' ? window.confirm(msg) : true;
+              preconfirmed = proceed; // treat as confirmed if user accepts
+            } else if (willExceed) {
+              const overBy = total + durationMinutes - activeMission.targetMinutes;
+              const msg = `Planned session (${durationMinutes} min) will exceed mission target by ${overBy} min. Continue anyway?`;
+              proceed = typeof window !== 'undefined' ? window.confirm(msg) : true;
+              preconfirmed = proceed;
+            }
+            if (!proceed) return;
+            // Lock mission selection for the session
+            try { mStore.lockSelection(activeMission.id); } catch {}
+            set({ lockedMissionId: activeMission.id, missionOverflowPreconfirmed: preconfirmed });
+          } else {
+            // No active mission, ensure any previous lock flag is cleared
+            set({ lockedMissionId: null, missionOverflowPreconfirmed: false });
+          }
+        } catch (e) {
+          console.warn('[TimerStore] Mission overflow/lock pre-check failed:', e);
         }
         
         // Calculate duration in milliseconds
@@ -384,7 +425,39 @@ export const useTimerStore = create<TimerState>()(
         // Calculate actual session duration based on elapsed time
         const actualSessionStartTime = state.sessionStartTime || Date.now() - state.sessionDurationMs;
         const actualSessionDuration = state.sessionEndTime ? state.sessionDurationMs - state.remainingTime : Date.now() - actualSessionStartTime;
-        
+
+        // Add mission progress with overflow confirmation if needed
+        try {
+          const mStore = useMissionsStore.getState();
+          // Determine which mission to credit: prefer the one locked at start
+          const missionId = state.lockedMissionId || mStore.lockedMissionId || mStore.activeMissionId || null;
+          const mission = missionId ? mStore.missions.find(m => m.id === missionId) : null;
+          if (mission) {
+            const minutesToAdd = Math.max(0, Math.round(actualSessionDuration / 60000));
+            if (minutesToAdd > 0) {
+              const { total } = getMissionTotals(mission);
+              const willExceed = willExceedWith(mission, minutesToAdd);
+              let allowOverflow = state.missionOverflowPreconfirmed; // if confirmed at start, don't prompt again
+              let addAmount = minutesToAdd;
+              if (willExceed && !allowOverflow) {
+                const overBy = total + minutesToAdd - mission.targetMinutes;
+                const msg = `This session's ${minutesToAdd} min will exceed mission target by ${overBy} min. Continue anyway?`;
+                allowOverflow = typeof window !== 'undefined' ? window.confirm(msg) : true;
+                if (!allowOverflow) {
+                  // Cap progress to remaining to target
+                  const remaining = Math.max(0, mission.targetMinutes - total);
+                  addAmount = Math.min(addAmount, remaining);
+                }
+              }
+              if (addAmount > 0) mStore.addProgress(mission.id, addAmount, state.currentDifficulty);
+            }
+          }
+          // Unlock selection after session ends
+          try { mStore.unlockSelection(); } catch {}
+        } catch (e) {
+          console.warn('[TimerStore] Failed to add mission progress / unlock selection:', e);
+        }
+
         // Emit custom event for Mission Goal accumulation
         try {
           if (typeof window !== 'undefined') {
@@ -459,6 +532,9 @@ export const useTimerStore = create<TimerState>()(
         } catch (e) {
           console.warn('[TimerStore] Failed to dispatch inline-collapse:restore event', e);
         }
+
+        // Clear mission lock flags on timer state
+        set({ lockedMissionId: null, missionOverflowPreconfirmed: false });
       },
       
       // Reset function for testing

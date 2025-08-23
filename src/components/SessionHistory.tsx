@@ -74,7 +74,8 @@ export const SessionHistory = ({
             const difficultyBadge = {
               [DIFFICULTY.EASY]: '🟢',
               [DIFFICULTY.MEDIUM]: '🟡',
-              [DIFFICULTY.HARD]: '🟣'
+              [DIFFICULTY.HARD]: '🟣',
+              [DIFFICULTY.UNKNOWN]: '⚪',
             }[session.difficulty || DIFFICULTY.MEDIUM];
 
             // Background color by difficulty (mirror timer chips with stronger contrast)
@@ -82,6 +83,7 @@ export const SessionHistory = ({
               [DIFFICULTY.EASY]: 'bg-emerald-500/20 border border-emerald-500/40',
               [DIFFICULTY.MEDIUM]: 'bg-amber-500/20 border border-amber-500/40',
               [DIFFICULTY.HARD]: 'bg-violet-600/20 border border-violet-500/45',
+              [DIFFICULTY.UNKNOWN]: 'bg-gray-500/20 border border-gray-500/40',
             }[session.difficulty || DIFFICULTY.MEDIUM];
 
             // Left rail indicator per difficulty for immediate visual distinction
@@ -89,6 +91,7 @@ export const SessionHistory = ({
               [DIFFICULTY.EASY]: 'bg-emerald-400/80',
               [DIFFICULTY.MEDIUM]: 'bg-amber-400/80',
               [DIFFICULTY.HARD]: 'bg-violet-500/80',
+              [DIFFICULTY.UNKNOWN]: 'bg-gray-400/80',
             }[session.difficulty || DIFFICULTY.MEDIUM];
 
             // Retrieve stored star rating for this session (saved by SessionSummaryPanel)
@@ -108,11 +111,7 @@ export const SessionHistory = ({
                 <span aria-hidden className={`absolute left-0 top-0 h-full w-1 ${difficultyRail}`} />
                 <div className="flex items-center space-x-2 flex-1 overflow-hidden">
                   {/* Goal and difficulty badge */}
-                  <span title={
-                    session.difficulty === DIFFICULTY.EASY ? DIFFICULTY_LABELS[DIFFICULTY.EASY] :
-                    session.difficulty === DIFFICULTY.MEDIUM ? DIFFICULTY_LABELS[DIFFICULTY.MEDIUM] :
-                    DIFFICULTY_LABELS[DIFFICULTY.HARD]
-                  } className="flex-shrink-0">
+                  <span title={DIFFICULTY_LABELS[session.difficulty || DIFFICULTY.MEDIUM]} className="flex-shrink-0">
                     {difficultyBadge}
                   </span>
                   <span title="Goal" className="truncate text-gray-800 dark:text-gray-200 font-medium flex-1 flex items-center">

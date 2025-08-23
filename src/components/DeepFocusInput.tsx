@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTimerStore } from '../store/timerSlice';
-import { STORAGE_KEYS } from '../constants';
+import { STORAGE_KEYS, DIFFICULTY } from '../constants';
+import type { Difficulty } from '@/store/missionsSlice';
 
 interface DeepFocusInputProps {
   className?: string;
@@ -45,7 +46,7 @@ export const DeepFocusInput = ({ className = '', onStartSession }: DeepFocusInpu
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [isFocused, setIsFocused] = useState(false);
   const [previousActiveState, setPreviousActiveState] = useState(isSessionActive);
-  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>(currentDifficulty);
+  const [difficulty, setDifficulty] = useState<Difficulty>(currentDifficulty);
 
   // Store difficulty in localStorage
   useEffect(() => {
@@ -54,10 +55,11 @@ export const DeepFocusInput = ({ className = '', onStartSession }: DeepFocusInpu
 
   // Load difficulty from localStorage on init
   useEffect(() => {
-    const savedDifficulty = localStorage.getItem('lastDifficulty') as 'easy' | 'medium' | 'hard' | null;
-    if (savedDifficulty) {
-      setDifficulty(savedDifficulty);
-      handleDifficultySet(savedDifficulty);
+    const savedDifficulty = localStorage.getItem(STORAGE_KEYS.LAST_DIFFICULTY) as Difficulty | null;
+    const normalized = savedDifficulty === DIFFICULTY.UNKNOWN ? DIFFICULTY.MEDIUM : savedDifficulty;
+    if (normalized) {
+      setDifficulty(normalized);
+      handleDifficultySet(normalized);
     }
   }, [handleDifficultySet]);
 
@@ -115,7 +117,7 @@ export const DeepFocusInput = ({ className = '', onStartSession }: DeepFocusInpu
     }
   };
 
-  const handleDifficultyChange = (newDifficulty: 'easy' | 'medium' | 'hard') => {
+  const handleDifficultyChange = (newDifficulty: Difficulty) => {
     setDifficulty(newDifficulty);
     handleDifficultySet(newDifficulty);
   };

@@ -19,13 +19,16 @@ export const SESSION_TYPE = {
 export const DIFFICULTY = {
   EASY: 'easy',
   MEDIUM: 'medium',
-  HARD: 'hard'
+  HARD: 'hard',
+  // For legacy/migrated or unspecified segments
+  UNKNOWN: 'unknown'
 } as const;
 
 export const DIFFICULTY_LABELS = {
   [DIFFICULTY.EASY]: 'Brain-Dead Task',
   [DIFFICULTY.MEDIUM]: 'High School Math',
-  [DIFFICULTY.HARD]: 'Deep Thinking'
+  [DIFFICULTY.HARD]: 'Deep Thinking',
+  [DIFFICULTY.UNKNOWN]: 'Unknown'
 } as const;
 
 // ===== POSTURE TRACKING =====
@@ -188,6 +191,8 @@ export const STORAGE_KEYS = {
   POSTURE_TRACKING_ACTIVE: 'postureTrackingActive',
   NOTEPAD: 'notepad',
   TODO: 'todo',
+  // New: Missions persistence (Zustand persist key)
+  MISSIONS: 'deepwork-missions-storage',
   POSTURE_SENSITIVITY: 'postureSensitivity'
 } as const;
 

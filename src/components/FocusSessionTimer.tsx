@@ -5,6 +5,7 @@ import { Zap, AudioWaveform, ChevronUp, ChevronDown, Play, Pause, Square, X, Loa
 import { msToClock } from '../utils/time';
 import { useFocusBoosterStore } from '../store/focusBoosterSlice';
 import { useFortyHz } from '@/features/audio/useFortyHz';
+//
 
 interface FocusSessionTimerProps {
   isCompact?: boolean;
@@ -75,6 +76,7 @@ export const FocusSessionTimer = ({
     endSession,
     addDistraction
   } = useTimerStore();
+  // Mission lock indicator removed from HUD per UX request
   
   const [missionBrief, setMissionBrief] = useState('');
   const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyId>(mapStoreToSelected(useTimerStore.getState().currentDifficulty));
