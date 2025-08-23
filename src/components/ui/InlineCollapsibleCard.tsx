@@ -64,6 +64,36 @@ const InlineCollapsibleCard: React.FC<InlineCollapsibleCardProps> = ({
     }
   }, [variant, className, contentClassName, id]);
 
+  // Allow clicking the entire header to toggle collapse, but ignore clicks
+  // coming from interactive elements (buttons, links, form controls, etc.).
+  const handleHeaderClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (
+      target.closest(
+        'button, a, input, textarea, select, label, [contenteditable="true"]'
+      )
+    ) {
+      return;
+    }
+    onToggleCollapse();
+  };
+
+  // Keyboard accessibility on header: toggle with Enter or Space when focus is on header
+  const handleHeaderKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (
+      target.closest(
+        'button, a, input, textarea, select, label, [contenteditable="true"]'
+      )
+    ) {
+      return;
+    }
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onToggleCollapse();
+    }
+  };
+
   return (
     <PanelContainer
       variant={variant}
@@ -73,7 +103,15 @@ const InlineCollapsibleCard: React.FC<InlineCollapsibleCardProps> = ({
       aria-expanded={!collapsed}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2">
+      <div
+        className="flex items-center justify-between px-3 py-2 cursor-pointer select-none"
+        onClick={handleHeaderClick}
+        onKeyDown={handleHeaderKeyDown}
+        tabIndex={0}
+        role="button"
+        aria-controls={contentId}
+        aria-expanded={!collapsed}
+      >
         <div className="min-w-0">
           <div className="text-[15px] font-semibold text-gray-900 dark:text-white truncate">{title}</div>
           {subtitle && (

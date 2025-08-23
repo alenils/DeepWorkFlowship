@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useGoalStore } from '@/store/goalSlice';
 import { useMissionsStore, getMissionTotals } from '@/store/missionsSlice';
 import { DIFFICULTY } from '@/constants';
@@ -21,6 +21,7 @@ export const GoalPanel: React.FC = () => {
   const [how, setHow] = useState('');
   const [target, setTarget] = useState<number>(120);
   const [editing, setEditing] = useState(false);
+  const whatInputRef = useRef<HTMLInputElement | null>(null);
 
   // Hydrate goal state from localStorage on mount
   useEffect(() => {
@@ -159,14 +160,29 @@ export const GoalPanel: React.FC = () => {
               title={isSelectionLocked ? 'Locked during active session' : 'Create new project'}
               onClick={() => {
                 if (isSelectionLocked) return;
-                const title = (window.prompt('New project name?') || '').trim();
-                if (!title) return;
-                const minsStr = (window.prompt('Target minutes?', '120') || '').trim();
-                const targetMinutes = Math.max(1, Math.floor(Number(minsStr) || 120));
+                // Switch to inline form flow. If a goal exists, reset it so the form becomes visible.
+                try { selectMission(null); } catch {}
+                if (goal) {
+                  // This clears goal and local fields via handleReset(), revealing the form
+                  handleReset();
+                } else {
+                  // No active goal, just clear fields for a fresh project
+                  setWhat('');
+                  setWhy('');
+                  setHow('');
+                  setTarget(120);
+                }
+                // Make sure the Goal panel is expanded if it was collapsed
                 try {
-                  const id = createMission({ title, targetMinutes });
-                  selectMission(id);
+                  const panel = document.querySelector<HTMLElement>('[data-panel-id="goal"]');
+                  panel?.dispatchEvent(new CustomEvent('inline-collapse:set', { detail: { collapsed: false }, bubbles: true }));
                 } catch {}
+                // Focus and bring the WHAT input into view after render
+                setTimeout(() => {
+                  const el = whatInputRef.current;
+                  el?.focus();
+                  el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 0);
               }}
               className={`px-2 py-2 rounded-md text-xs font-medium bg-white/40 dark:bg-gray-700/60 hover:bg-white/60 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-400 ${isSelectionLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
             >
@@ -211,6 +227,7 @@ export const GoalPanel: React.FC = () => {
               className="mission-input"
               placeholder="Define your mission"
               value={what}
+              ref={whatInputRef}
               onChange={(e) => setWhat(e.target.value)}
             />
           </div>

@@ -20,6 +20,7 @@ import InlineCollapsibleCard from './components/ui/InlineCollapsibleCard'
 import { useInlineMinimize } from './hooks/useInlineMinimize'
 import { useInlineMinimizeSnapshot } from './hooks/useInlineMinimize'
 import { FocusBooster } from './components/focusBooster/FocusBooster'
+import { Trash2 } from 'lucide-react'
 import { 
   SOUND_FILES, 
   WARP_MODE, 
@@ -366,15 +367,15 @@ return (
         
 
         {/* Grid Container */}
-        <div className="grid gap-6 grid-cols-1 md:grid-cols-[clamp(300px,26vw,320px)_minmax(0,1fr)_clamp(300px,26vw,320px)] lg:grid-cols-[320px_minmax(640px,1fr)_320px] items-start flex-grow mt-10 md:mt-16">
+        <div className="grid gap-7 grid-cols-1 md:grid-cols-[clamp(300px,26vw,320px)_minmax(0,1fr)_clamp(300px,26vw,320px)] lg:grid-cols-[320px_minmax(640px,1fr)_320px] items-start flex-grow mt-10 md:mt-16">
           {/* Left Column: The components inside here MUST have their own opaque backgrounds. */}
-          <aside className="self-start flex flex-col gap-6">
+          <aside className="self-start flex flex-col gap-7">
             <MissionBoard />
             <SystemLog />
           </aside>
           
           {/* Middle Column: The components inside here MUST have their own opaque backgrounds. */}
-          <div className="self-start space-y-6 min-w-0">
+          <div className="self-start space-y-7 min-w-0">
             {/* Center Column Content */}
             {/* Focus Input and Timer Section */}
             <div ref={heroPanelRef} className={`panel-glass ${getHeroGlowClass()} rounded-2xl px-6 py-5 md:py-6 relative`}>
@@ -435,7 +436,7 @@ return (
                     title="Clear all history and notes"
                     aria-label="Clear all history"
                   >
-                    🧹
+                    <Trash2 size={16} />
                   </button>
                 ) : null
               }
@@ -483,7 +484,7 @@ return (
           </div>
           
           {/* Right Column: The components inside here MUST have their own opaque backgrounds. */}
-          <aside className="self-start space-y-6">
+          <aside className="self-start space-y-7">
             <div className="mb-4">
               <PostureView 
                 isSessionActive={isSessionActive}

@@ -31,8 +31,9 @@
 
 /* ========== Lift-on-hover utility ========== */
 :root{
-  --hover-scale: 1.01;
-  --hover-translate-y: -2px;
+  /* More subtle lift */
+  --hover-scale: 1.004;
+  --hover-translate-y: -1px;
 }
 
 /* Ensure transforms animate smoothly on v2 panels */
@@ -41,10 +42,16 @@
   will-change: transform;
 }
 
+/* Consistent transform origin to prevent perceived "jump" */
+.panel-hover{
+  transform-origin: center top;
+}
+
 /* Opt-in micro-interaction */
 .panel-hover:hover{
   transform: translateY(var(--hover-translate-y)) scale(var(--hover-scale));
-  box-shadow: 0 12px 36px rgba(0,0,0,0.40);
+  /* Slightly softer shadow on hover */
+  box-shadow: 0 10px 28px rgba(0,0,0,0.34);
 }
 
 /* Motion safety */
