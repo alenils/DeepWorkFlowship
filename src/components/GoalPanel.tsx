@@ -159,9 +159,9 @@ export const GoalPanel: React.FC = () => {
       <div className="grid grid-cols-1 gap-2">
         <div className="flex flex-col gap-2">
           <label className="text-xs text-gray-600 dark:text-gray-300">PROJECT</label>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <select
-              className="mission-input w-44 md:w-56 lg:w-64"
+              className="mission-input w-44 md:w-56 lg:w-64 p-2 text-sm"
               value={activeMissionId || ''}
               onChange={(e) => {
                 setCreating(false);
@@ -206,7 +206,7 @@ export const GoalPanel: React.FC = () => {
                   el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }, 0);
               }}
-              className={`mission-input inline-flex items-center px-3.5 py-2.5 text-[0.85rem] font-medium ${isSelectionLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
+              className={`mission-input inline-flex items-center p-2 text-sm font-medium ${isSelectionLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
             >
               + New Project
             </button>
