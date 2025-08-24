@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { STORAGE_KEYS } from '../constants';
 import InlineCollapsibleCard from './ui/InlineCollapsibleCard';
 import { useInlineMinimize } from '../hooks/useInlineMinimize';
+import { useMissionsStore } from '../store/missionsSlice';
 
 export const SystemLog: React.FC = () => {
   const [note, setNote] = useState('');
@@ -11,11 +12,58 @@ export const SystemLog: React.FC = () => {
   const [overlayScrollTop, setOverlayScrollTop] = useState(0);
   const { collapsed, toggle } = useInlineMinimize('system-log', false);
 
-  // Load saved note from localStorage
+  // Missions for project selection
+  const missions = useMissionsStore((s) => s.missions);
+  const activeMissionId = useMissionsStore((s) => s.activeMissionId);
+
+  // Selected project for this System Log: 'general' or mission.id
+  const GENERAL = 'general';
+  const [selectedId, setSelectedId] = useState<string>(GENERAL);
+
+  // Compute storage key for current selection
+  const keyFor = (id: string) =>
+    id === GENERAL
+      ? STORAGE_KEYS.SYSTEM_LOG_GENERAL
+      : `${STORAGE_KEYS.SYSTEM_LOG_PREFIX}${id}`;
+
+  // Initial selection + migration from legacy NOTEPAD to GENERAL
   useEffect(() => {
-    const savedNote = localStorage.getItem(STORAGE_KEYS.NOTEPAD);
-    if (savedNote) setNote(savedNote);
+    try {
+      const savedSelected = localStorage.getItem(STORAGE_KEYS.SYSTEM_LOG_SELECTED);
+      const initial = savedSelected || activeMissionId || GENERAL;
+      setSelectedId(initial);
+
+      // Migration: if no general exists but legacy NOTEPAD does, move it
+      const hasGeneral = !!localStorage.getItem(STORAGE_KEYS.SYSTEM_LOG_GENERAL);
+      const legacy = localStorage.getItem(STORAGE_KEYS.NOTEPAD);
+      if (!hasGeneral && legacy && legacy.trim().length > 0) {
+        localStorage.setItem(STORAGE_KEYS.SYSTEM_LOG_GENERAL, legacy);
+        // Optional: clean up old key after migrating
+        try { localStorage.removeItem(STORAGE_KEYS.NOTEPAD); } catch {}
+      }
+    } catch (e) {
+      // noop
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Persist selectedId
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.SYSTEM_LOG_SELECTED, selectedId);
+    } catch {}
+  }, [selectedId]);
+
+  // Load saved note for current selection
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(keyFor(selectedId));
+      setNote(saved || '');
+    } catch {
+      setNote('');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
 
   // Handle note changes with auto-save
   const handleNoteChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -26,14 +74,14 @@ export const SystemLog: React.FC = () => {
       clearTimeout(saveTimeoutRef.current);
     }
     saveTimeoutRef.current = window.setTimeout(() => {
-      localStorage.setItem(STORAGE_KEYS.NOTEPAD, newNote);
+      localStorage.setItem(keyFor(selectedId), newNote);
       // console.log('SystemLog auto-saved');
     }, 1500);
   };
 
   // Save on blur
   const handleBlur = () => {
-    localStorage.setItem(STORAGE_KEYS.NOTEPAD, note);
+    localStorage.setItem(keyFor(selectedId), note);
   };
 
   // Keyboard shortcuts: Alt+Shift+T inserts timestamp at cursor
@@ -51,13 +99,26 @@ export const SystemLog: React.FC = () => {
       const end = ta.selectionEnd;
       const newValue = note.substring(0, start) + ts + note.substring(end);
       setNote(newValue);
-      localStorage.setItem(STORAGE_KEYS.NOTEPAD, newValue);
+      localStorage.setItem(keyFor(selectedId), newValue);
       setTimeout(() => {
         ta.selectionStart = start + ts.length;
         ta.selectionEnd = start + ts.length;
         ta.focus();
       }, 0);
     }
+  };
+
+  // Switch selected project, flushing current content to its key first
+  const handleSelectChange = (nextId: string) => {
+    try {
+      // flush any pending debounce on old key
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = null;
+      }
+      localStorage.setItem(keyFor(selectedId), note);
+    } catch {}
+    setSelectedId(nextId);
   };
 
   // Keep overlay scroll in sync with textarea
@@ -93,6 +154,22 @@ export const SystemLog: React.FC = () => {
       variant="v2"
       className="panel--no-pad panel-hover"
       contentClassName="content-pad-lg"
+      headerRight={
+        <div className="flex items-center gap-2">
+          <label htmlFor="system-log-project" className="sr-only">Project</label>
+          <select
+            id="system-log-project"
+            value={selectedId}
+            onChange={(e) => handleSelectChange(e.target.value)}
+            className="px-2 py-1 text-xs rounded-md bg-white/70 dark:bg-gray-700/60 border border-violet-300/40 dark:border-violet-300/30 focus:outline-none focus:ring-2 focus:ring-violet-400"
+          >
+            <option value={GENERAL}>General</option>
+            {missions.filter((m) => !m.archived).map((m) => (
+              <option key={m.id} value={m.id}>{m.title || 'Untitled'}</option>
+            ))}
+          </select>
+        </div>
+      }
     >
       <div className="relative">
         <div className="terminal">

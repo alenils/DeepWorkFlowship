@@ -190,6 +190,9 @@ export const STORAGE_KEYS = {
   TOTAL_STREAK_SESSIONS: 'totalStreakSessions',
   POSTURE_TRACKING_ACTIVE: 'postureTrackingActive',
   NOTEPAD: 'notepad',
+  SYSTEM_LOG_SELECTED: 'deepwork-system-log:selected',
+  SYSTEM_LOG_PREFIX: 'deepwork-system-log:mission:',
+  SYSTEM_LOG_GENERAL: 'deepwork-system-log:general',
   TODO: 'todo',
   // New: Missions persistence (Zustand persist key)
   MISSIONS: 'deepwork-missions-storage',

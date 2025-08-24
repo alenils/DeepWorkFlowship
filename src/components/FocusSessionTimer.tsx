@@ -355,7 +355,7 @@ export const FocusSessionTimer = ({
               <div className="order-1 md:order-2 self-center">
                 <div className="relative digit-glow mx-auto md:mx-auto text-center flex items-center justify-center">
                   {!isSessionActive && isEditing ? (
-                    <div className="monitor-frame">
+                    <>
                       <input
                         autoFocus
                         type="text"
@@ -393,19 +393,17 @@ export const FocusSessionTimer = ({
                           <ChevronDown size={16} />
                         </button>
                       </div>
-                    </div>
+                    </>
                   ) : (
-                    <div className="monitor-frame">
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        aria-label="Set minutes"
-                        onClick={() => !isSessionActive && setIsEditing(true)}
-                        onKeyDown={(e) => !isSessionActive && (e.key === 'Enter' || e.key === ' ') && setIsEditing(true)}
-                        className={`relative z-10 font-mono tabular-nums text-[56px] md:text-[72px] font-medium ${idleDigitsTheme.textClass} ${idleDigitsTheme.dropShadowClass} ${!isSessionActive ? 'cursor-pointer' : ''}`}
-                      >
-                        {isSessionActive ? msToClock(remainingTime) : `${String(minutes).padStart(2, '0')}:00`}
-                      </div>
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      aria-label="Set minutes"
+                      onClick={() => !isSessionActive && setIsEditing(true)}
+                      onKeyDown={(e) => !isSessionActive && (e.key === 'Enter' || e.key === ' ') && setIsEditing(true)}
+                      className={`relative z-10 font-mono tabular-nums text-[56px] md:text-[72px] font-medium ${idleDigitsTheme.textClass} ${idleDigitsTheme.dropShadowClass} ${!isSessionActive ? 'cursor-pointer' : ''}`}
+                    >
+                      {isSessionActive ? msToClock(remainingTime) : `${String(minutes).padStart(2, '0')}:00`}
                     </div>
                   )}
                 </div>
@@ -445,13 +443,11 @@ export const FocusSessionTimer = ({
 
               {/* Timer Face */}
               <div className="timer-face" aria-live="polite">
-                <div className="monitor-frame">
-                  <div
-                    className={`timer-digits font-mono ${runningDigitsTheme.textClass}`}
-                    style={{ textShadow: `0 0 24px ${runningDigitsTheme.shadowRgba}` }}
-                  >
-                    {formattedTime}
-                  </div>
+                <div
+                  className={`timer-digits font-mono ${runningDigitsTheme.textClass}`}
+                  style={{ textShadow: `0 0 24px ${runningDigitsTheme.shadowRgba}` }}
+                >
+                  {formattedTime}
                 </div>
               </div>
 
