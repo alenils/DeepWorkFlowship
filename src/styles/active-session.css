@@ -89,6 +89,28 @@
   text-shadow: 0 0 24px rgba(139,92,246,.35);
 }
 
+/* Monitor-style frame behind digits (subtle, matches System Log CRT lines) */
+.monitor-frame {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 24.3px; /* ≈35% wider from 18px */
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.25); /* gray border */
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.10); /* subtle gray inset */
+}
+.monitor-frame::before {
+  content: "";
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 2px, rgba(148, 163, 184, 0.05) 2px, rgba(148, 163, 184, 0.05) 4px /* gray scanlines */
+  );
+  pointer-events: none;
+}
+
 /* Controls row */
 .controls {
   display: flex;
