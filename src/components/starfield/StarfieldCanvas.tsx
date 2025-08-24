@@ -723,8 +723,9 @@ export const StarfieldCanvas: React.FC = memo(() => {
 
       // Per-layer rotation (ω) with optional wobble
       const omegaBase = [0.0048, 0.0072, 0.0096];
-      const layerOpacity = [0.45, 0.70, 1.0];
-      const layerThicknessScale = [0.9, 1.0, 1.15];
+      // Subtle-glow tuning: reduce additive brightness and slightly thin strokes
+      const layerOpacity = [0.28, 0.44, 0.68];
+      const layerThicknessScale = [0.85, 0.95, 1.08];
       const omegaMult = Math.min(1.5, Math.max(0.5, speedMultiplier));
       const omegaReduce = reduce ? 0.4 : 1.0; // reduce ω by 60%
       for (let i = 0; i < 3; i++) {
@@ -809,7 +810,8 @@ export const StarfieldCanvas: React.FC = memo(() => {
           const baseLight = rn < 0.25 ? (78 + 4 * (rn / 0.25)) : rn < 0.7 ? (72 + 6 * ((rn - 0.25) / 0.45)) : (68 + 4 * ((rn - 0.7) / 0.3));
           const lmod = Math.min(100, baseLight * breathFactor * vignette);
           const hsl = (h:number,s:number,l:number,a:number) => `hsla(${Math.round(h)}, ${Math.round(s)}%, ${Math.round(l)}%, ${a})`;
-          const coreAlpha = 0.2 + 0.8 * (centerFalloff * centerFalloff);
+          // Subtle-glow tuning: soften central alpha curve to avoid layered ring look
+          const coreAlpha = 0.12 + 0.68 * Math.pow(centerFalloff, 1.5);
           const layerAlpha = layerOpacity[layerIdx] * (0.85 + 0.15 * reveal) * coreAlpha;
           const stroke = hsl(hue, sat, lmod, layerAlpha);
           ctx.strokeStyle = stroke;
