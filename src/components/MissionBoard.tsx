@@ -17,6 +17,7 @@ export const MissionBoard: React.FC = () => {
     selectMission,
     archiveMission,
     safeDeleteMission,
+    deleteMission,
     hydrateFromLegacyGoal,
   } = useMissionsStore();
 
@@ -119,7 +120,9 @@ export const MissionBoard: React.FC = () => {
             onClick={() => {
               const ok = safeDeleteMission(m.id);
               if (!ok) {
-                window.alert('Cannot delete a mission with progress. Reset progress first.');
+                if (window.confirm('This mission has progress. Delete anyway? This cannot be undone.')) {
+                  deleteMission(m.id);
+                }
               }
             }}
             className="text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 focus:outline-none"

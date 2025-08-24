@@ -30,6 +30,7 @@ export interface MissionsState {
   unarchiveMission: (id: string) => void;
   resetProgress: (id: string) => void;
   safeDeleteMission: (id: string) => boolean; // returns success
+  deleteMission: (id: string) => void; // force delete regardless of progress
 
   // Selection
   selectMission: (id: string | null) => void;
@@ -145,6 +146,15 @@ export const useMissionsStore = create<MissionsState>()(
           activeMissionId: s.activeMissionId === id ? null : s.activeMissionId,
         });
         return true;
+      },
+
+      // Force delete regardless of progress
+      deleteMission: (id) => {
+        const s = get();
+        set({
+          missions: s.missions.filter((m) => m.id !== id),
+          activeMissionId: s.activeMissionId === id ? null : s.activeMissionId,
+        });
       },
 
       selectMission: (id) => {
