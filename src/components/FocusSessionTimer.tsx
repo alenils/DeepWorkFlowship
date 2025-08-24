@@ -229,7 +229,7 @@ export const FocusSessionTimer = ({
   };
 
   const getDifficultyClasses = (difficulty: DifficultyId, isSelected: boolean) => {
-    const baseClasses = "px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer min-h-[44px] flex items-center justify-center";
+    const baseClasses = "px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer min-h-[38px] flex items-center justify-center";
     
     if (isSelected) {
       switch (difficulty) {
@@ -315,7 +315,7 @@ export const FocusSessionTimer = ({
                   onChange={(e) => setMissionBrief(e.target.value)}
                   placeholder="TASK"
                   aria-label="Task"
-                  className="w-full px-4 pt-4 pb-3 bg-gray-800/50 border border-gray-600/30 rounded-xl text-white placeholder-gray-400 outline-none backdrop-blur-sm min-h-[44px] text-center hover:border-violet-400 focus:border-violet-400 transition-colors"
+                  className="w-full px-4 pt-3.5 pb-2.5 bg-gray-800/50 border border-gray-600/30 rounded-xl text-white placeholder-gray-400 outline-none backdrop-blur-sm min-h-[38px] text-center hover:border-violet-400 focus:border-violet-400 transition-colors"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && (isInfinite || minutes)) {
                       handleStart();
