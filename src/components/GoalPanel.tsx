@@ -21,6 +21,7 @@ export const GoalPanel: React.FC = () => {
   const [how, setHow] = useState('');
   const [target, setTarget] = useState<number>(120);
   const [editing, setEditing] = useState(false);
+  const [creating, setCreating] = useState(false);
   const whatInputRef = useRef<HTMLInputElement | null>(null);
 
   // Hydrate goal state from localStorage on mount
@@ -94,6 +95,7 @@ export const GoalPanel: React.FC = () => {
     } catch {}
     // Start the goal after project setup so UI stays consistent
     startGoal({ what: title, why: whyTrim, how: howTrim, targetMinutes: t });
+    setCreating(false);
   };
 
   const handleReset = () => {
@@ -105,12 +107,13 @@ export const GoalPanel: React.FC = () => {
   };
 
   const handleStartEdit = () => {
-    if (!goal) return;
-    // ensure local state mirrors current goal when entering edit mode
-    setWhat(goal.what || '');
-    setWhy(goal.why || '');
-    setHow(goal.how || '');
-    setTarget(goal.targetMinutes || 0);
+    const source = activeMission || (goal ? { title: goal.what, why: goal.why, how: goal.how, targetMinutes: goal.targetMinutes } as any : null);
+    if (!source) return;
+    // ensure local state mirrors current selection when entering edit mode
+    setWhat(source.title || '');
+    setWhy(source.why || '');
+    setHow(source.how || '');
+    setTarget(source.targetMinutes || 0);
     setEditing(true);
   };
 
@@ -121,8 +124,15 @@ export const GoalPanel: React.FC = () => {
 
   const handleSaveEdit = () => {
     const t = Math.max(1, Math.floor(Number(target) || 0));
-    if (!what.trim() || t <= 0 || !goal) return;
-    updateGoal({ what, why, how, targetMinutes: t });
+    if (!what.trim() || t <= 0) return;
+    // Update selected mission if available
+    if (activeMission) {
+      try { updateMission(activeMission.id, { title: what.trim(), why: why.trim(), how: how.trim(), targetMinutes: t }); } catch {}
+    }
+    // Keep goal in sync if exists
+    if (goal) {
+      try { updateGoal({ what: what.trim(), why: why.trim(), how: how.trim(), targetMinutes: t }); } catch {}
+    }
     setEditing(false);
   };
 
@@ -136,6 +146,13 @@ export const GoalPanel: React.FC = () => {
     }
   }, [goal]);
 
+  // If a mission is selected elsewhere while creating, exit creation mode
+  useEffect(() => {
+    if (creating && activeMissionId) {
+      setCreating(false);
+    }
+  }, [activeMissionId, creating]);
+
   return (
     <div className="space-y-4">
       {/* Project selector (Missions) */}
@@ -146,7 +163,11 @@ export const GoalPanel: React.FC = () => {
             <select
               className="mission-input w-44 md:w-56 lg:w-64"
               value={activeMissionId || ''}
-              onChange={(e) => selectMission(e.target.value || null)}
+              onChange={(e) => {
+                setCreating(false);
+                setEditing(false);
+                selectMission(e.target.value || null);
+              }}
               disabled={isSelectionLocked}
             >
               <option value="">None</option>
@@ -162,6 +183,7 @@ export const GoalPanel: React.FC = () => {
                 if (isSelectionLocked) return;
                 // Switch to inline form flow. If a goal exists, reset it so the form becomes visible.
                 try { selectMission(null); } catch {}
+                setCreating(true);
                 if (goal) {
                   // This clears goal and local fields via handleReset(), revealing the form
                   handleReset();
@@ -189,13 +211,13 @@ export const GoalPanel: React.FC = () => {
               + New Project
             </button>
             {/* Icon actions moved here */}
-            {goal && !editing && (
+            {!editing && !creating && (
               <button
                 type="button"
                 onClick={handleStartEdit}
                 title="Edit mission details (Mission Compromised)"
                 aria-label="Edit mission details"
-                className="mission-input inline-flex items-center justify-center px-3.5 py-2.5"
+                className="inline-flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none"
               >
                 {/* Bootstrap wrench icon */}
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -203,13 +225,13 @@ export const GoalPanel: React.FC = () => {
                 </svg>
               </button>
             )}
-            {goal && !editing && (
+            {!editing && !creating && (
               <button
                 type="button"
                 onClick={handleReset}
                 title="Reset goal"
                 aria-label="Reset goal"
-                className="mission-input inline-flex items-center justify-center px-3.5 py-2.5"
+                className="inline-flex items-center justify-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none"
               >
                 {/* Bootstrap arrow-counterclockwise icon */}
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -228,7 +250,7 @@ export const GoalPanel: React.FC = () => {
         </div>
         {activeMission && barSegments && (
           <div className="mt-1">
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-4">
               <span className="text-xs text-gray-700 dark:text-gray-300">Project Progress</span>
               <span className="text-xs text-slate-400">
                 {missionTotals?.total}/{activeMission.targetMinutes} min
@@ -246,7 +268,7 @@ export const GoalPanel: React.FC = () => {
           </div>
         )}
       </div>
-      {!goal && (
+      {creating && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
             <div className="text-[11px] uppercase tracking-wider text-gray-600 dark:text-gray-300 font-semibold">Mission Definition</div>
@@ -254,7 +276,7 @@ export const GoalPanel: React.FC = () => {
           <div className="flex flex-col gap-2">
             <label className="text-xs text-gray-600 dark:text-gray-300">WHAT</label>
             <input
-              className="mission-input"
+              className="mission-input font-mono text-[12px] leading-5 text-emerald-300/95 placeholder-emerald-500/50"
               placeholder="Define your mission"
               value={what}
               ref={whatInputRef}
@@ -264,7 +286,7 @@ export const GoalPanel: React.FC = () => {
           <div className="flex flex-col gap-2">
             <label className="text-xs text-gray-600 dark:text-gray-300">WHY</label>
             <input
-              className="mission-input"
+              className="mission-input font-mono text-[12px] leading-5 text-emerald-300/95 placeholder-emerald-500/50"
               placeholder="Why this matters"
               value={why}
               onChange={(e) => setWhy(e.target.value)}
@@ -273,7 +295,7 @@ export const GoalPanel: React.FC = () => {
           <div className="flex flex-col gap-2">
             <label className="text-xs text-gray-600 dark:text-gray-300">HOW</label>
             <input
-              className="mission-input"
+              className="mission-input font-mono text-[12px] leading-5 text-emerald-300/95 placeholder-emerald-500/50"
               placeholder="Your approach"
               value={how}
               onChange={(e) => setHow(e.target.value)}
@@ -285,7 +307,7 @@ export const GoalPanel: React.FC = () => {
           <div className="flex flex-col gap-2">
             <label className="text-xs text-gray-600 dark:text-gray-300">TIME DEDICATED (minutes)</label>
             <input
-              className="mission-input"
+              className="mission-input font-mono text-[12px] leading-5 text-emerald-300/95 placeholder-emerald-500/50"
               type="number"
               min={1}
               value={target}
@@ -304,30 +326,30 @@ export const GoalPanel: React.FC = () => {
         </div>
       )}
 
-      {goal && !editing && (
+      {!editing && !creating && (activeMission || goal) && (
         <div className="space-y-4">
           {/* Removed goal progress bar from GoalPanel; progress visualization is on Mission Board */}
 
-          {/* Slim read-only summary with clearer sectioning */}
+          {/* Slim read-only summary with normal typography */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
             <div className="md:col-span-2">
-              <div className="text-[11px] uppercase tracking-wider text-gray-600 dark:text-gray-300 font-semibold">Mission Details</div>
+              <div className="text-xs uppercase tracking-wider text-gray-700 dark:text-gray-300 font-semibold">Mission Details</div>
             </div>
             <div>
               <div className="text-xs text-gray-600 dark:text-gray-300">WHAT</div>
-              <div className="text-sm leading-5 text-gray-900 dark:text-gray-100 truncate" title={goal.what}>{goal.what}</div>
+              <div className="font-mono text-[12px] leading-5 text-emerald-300/95 truncate" title={(activeMission?.title || goal?.what) || ''}>{activeMission?.title || goal?.what}</div>
             </div>
             <div>
               <div className="text-xs text-gray-600 dark:text-gray-300">WHY</div>
-              <div className="text-sm leading-5 text-gray-900 dark:text-gray-100 truncate" title={goal.why}>{goal.why}</div>
+              <div className="font-mono text-[12px] leading-5 text-emerald-300/95 truncate" title={(activeMission?.why || goal?.why) || ''}>{activeMission?.why || goal?.why}</div>
             </div>
             <div>
               <div className="text-xs text-gray-600 dark:text-gray-300">HOW</div>
-              <div className="text-sm leading-5 text-gray-900 dark:text-gray-100 truncate" title={goal.how}>{goal.how}</div>
+              <div className="font-mono text-[12px] leading-5 text-emerald-300/95 truncate" title={(activeMission?.how || goal?.how) || ''}>{activeMission?.how || goal?.how}</div>
             </div>
             <div>
               <div className="text-xs text-gray-600 dark:text-gray-300">TIME DEDICATED</div>
-              <div className="text-sm leading-5 text-gray-900 dark:text-gray-100">{goal.targetMinutes} min</div>
+              <div className="font-mono text-[12px] leading-5 text-emerald-300/95">{(activeMission?.targetMinutes || goal?.targetMinutes) ?? 0} min</div>
             </div>
           </div>
         </div>
@@ -340,7 +362,7 @@ export const GoalPanel: React.FC = () => {
             <div className="flex flex-col gap-2">
               <label className="text-xs text-gray-600 dark:text-gray-300">WHAT</label>
               <input
-                className="mission-input"
+                className="mission-input font-mono text-[12px] leading-5 text-emerald-300/95 placeholder-emerald-500/50"
                 placeholder="Define your mission"
                 value={what}
                 onChange={(e) => setWhat(e.target.value)}
@@ -349,7 +371,7 @@ export const GoalPanel: React.FC = () => {
             <div className="flex flex-col gap-2">
               <label className="text-xs text-gray-600 dark:text-gray-300">WHY</label>
               <input
-                className="mission-input"
+                className="mission-input font-mono text-[12px] leading-5 text-emerald-300/95 placeholder-emerald-500/50"
                 placeholder="Why this matters"
                 value={why}
                 onChange={(e) => setWhy(e.target.value)}
@@ -358,7 +380,7 @@ export const GoalPanel: React.FC = () => {
             <div className="flex flex-col gap-2">
               <label className="text-xs text-gray-600 dark:text-gray-300">HOW</label>
               <input
-                className="mission-input"
+                className="mission-input font-mono text-[12px] leading-5 text-emerald-300/95 placeholder-emerald-500/50"
                 placeholder="Your approach"
                 value={how}
                 onChange={(e) => setHow(e.target.value)}
@@ -367,7 +389,7 @@ export const GoalPanel: React.FC = () => {
             <div className="flex flex-col gap-2">
               <label className="text-xs text-gray-600 dark:text-gray-300">TIME DEDICATED (minutes)</label>
               <input
-                className="mission-input"
+                className="mission-input font-mono text-[12px] leading-5 text-emerald-300/95 placeholder-emerald-500/50"
                 type="number"
                 min={1}
                 value={target}

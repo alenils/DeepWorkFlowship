@@ -77,10 +77,8 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
 
   /* Unified mission input styling (used by Mission Board and Goal Panel) */
   .mission-input {
-    font-size: 0.85rem; /* Avoid @apply with arbitrary values */
     @apply px-3.5 py-2.5 rounded-md border 
       bg-white/70 dark:bg-gray-700/60 
-      text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400
       focus:outline-none focus:ring-2 focus:ring-violet-400 dark:focus:ring-violet-300
       disabled:opacity-60 disabled:cursor-not-allowed;
     border-color: rgba(139,135,255,0.30);
