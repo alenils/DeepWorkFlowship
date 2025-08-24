@@ -4,6 +4,8 @@ import { useInlineMinimize } from '../hooks/useInlineMinimize';
 import { useMissionsStore, Mission, getMissionTotals } from '../store/missionsSlice';
 import { DIFFICULTY } from '../constants';
 import { Lock, AlertTriangle, Trash2, CheckCircle2 } from 'lucide-react';
+import { useTimerStore } from '../store/timerSlice';
+import { useShallow } from 'zustand/react/shallow';
 
 export const MissionBoard: React.FC = () => {
   const { collapsed, toggle } = useInlineMinimize('mission-board', false);
@@ -33,6 +35,18 @@ export const MissionBoard: React.FC = () => {
     selectMission(m.id);
   };
 
+  const timer = useTimerStore(
+    useShallow((s) => ({
+      isSessionActive: s.isSessionActive,
+      isInfinite: s.isInfinite,
+      sessionDurationMs: s.sessionDurationMs,
+      remainingTime: s.remainingTime,
+      sessionStartTime: s.sessionStartTime,
+      currentDifficulty: s.currentDifficulty,
+      lockedMissionId: s.lockedMissionId,
+    }))
+  );
+
   const renderSegmentedBar = (m: Mission) => {
     const target = Math.max(1, m.targetMinutes || 1);
     const easy = m.byDifficulty[DIFFICULTY.EASY] || 0;
@@ -46,12 +60,40 @@ export const MissionBoard: React.FC = () => {
     const sHard = (() => { const p = pct(hard); remaining -= p; return p; })();
     const sUnk = (() => { const p = pct(unk); remaining -= p; return p; })();
 
+    // Live overlay calculation for the currently locked mission during active session
+    let overlayLeft = 0;
+    let overlayWidth = 0;
+    let overlayClass = '';
+    const filledPct = sEasy + sMed + sHard + sUnk;
+    if (timer.isSessionActive && timer.lockedMissionId === m.id) {
+      const elapsedMs = timer.isInfinite
+        ? Math.max(0, Date.now() - timer.sessionStartTime)
+        : Math.max(0, timer.sessionDurationMs - timer.remainingTime);
+      const liveMinutes = Math.max(0, elapsedMs / 60000);
+      const completedMinutes = easy + med + hard + unk;
+      const pendingMinutes = Math.max(0, Math.min(liveMinutes, Math.max(0, m.targetMinutes - completedMinutes)));
+      const pendingPct = (pendingMinutes / target) * 100;
+      overlayLeft = filledPct;
+      overlayWidth = Math.max(0, Math.min(100 - filledPct, pendingPct));
+      overlayClass =
+        timer.currentDifficulty === DIFFICULTY.EASY ? 'bg-emerald-500/70' :
+        timer.currentDifficulty === DIFFICULTY.MEDIUM ? 'bg-amber-500/70' :
+        timer.currentDifficulty === DIFFICULTY.HARD ? 'bg-indigo-500/70' : 'bg-gray-400/60';
+    }
+
     return (
-      <div className="w-full h-2 rounded bg-black overflow-hidden flex">
+      <div className="relative w-full h-2 rounded bg-black overflow-hidden flex">
         <div className="h-full bg-emerald-500 flex-none" style={{ width: `${sEasy}%` }} />
         <div className="h-full bg-amber-500 flex-none" style={{ width: `${sMed}%` }} />
         <div className="h-full bg-indigo-500 flex-none" style={{ width: `${sHard}%` }} />
         <div className="h-full bg-gray-400/60 flex-none" style={{ width: `${sUnk}%` }} />
+        {overlayWidth > 0 && (
+          <div
+            className={`absolute top-0 bottom-0 ${overlayClass}`}
+            style={{ left: `${overlayLeft}%`, width: `${overlayWidth}%` }}
+            aria-hidden
+          />
+        )}
       </div>
     );
   };
