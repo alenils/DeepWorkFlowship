@@ -5,7 +5,6 @@ import { useMissionsStore, Mission, getMissionTotals } from '../store/missionsSl
 import { DIFFICULTY } from '../constants';
 import { Lock, AlertTriangle, Trash2, CheckCircle2 } from 'lucide-react';
 import { useTimerStore } from '../store/timerSlice';
-import { useShallow } from 'zustand/react/shallow';
 
 export const MissionBoard: React.FC = () => {
   const { collapsed, toggle } = useInlineMinimize('mission-board', false);
@@ -35,17 +34,14 @@ export const MissionBoard: React.FC = () => {
     selectMission(m.id);
   };
 
-  const timer = useTimerStore(
-    useShallow((s) => ({
-      isSessionActive: s.isSessionActive,
-      isInfinite: s.isInfinite,
-      sessionDurationMs: s.sessionDurationMs,
-      remainingTime: s.remainingTime,
-      sessionStartTime: s.sessionStartTime,
-      currentDifficulty: s.currentDifficulty,
-      lockedMissionId: s.lockedMissionId,
-    }))
-  );
+  // Select individual timer fields to keep snapshots stable
+  const isSessionActive = useTimerStore((s) => s.isSessionActive);
+  const isInfinite = useTimerStore((s) => s.isInfinite);
+  const sessionDurationMs = useTimerStore((s) => s.sessionDurationMs);
+  const remainingTime = useTimerStore((s) => s.remainingTime);
+  const sessionStartTime = useTimerStore((s) => s.sessionStartTime);
+  const currentDifficulty = useTimerStore((s) => s.currentDifficulty);
+  const timerLockedMissionId = useTimerStore((s) => s.lockedMissionId);
 
   const renderSegmentedBar = (m: Mission) => {
     const target = Math.max(1, m.targetMinutes || 1);
@@ -65,10 +61,10 @@ export const MissionBoard: React.FC = () => {
     let overlayWidth = 0;
     let overlayClass = '';
     const filledPct = sEasy + sMed + sHard + sUnk;
-    if (timer.isSessionActive && timer.lockedMissionId === m.id) {
-      const elapsedMs = timer.isInfinite
-        ? Math.max(0, Date.now() - timer.sessionStartTime)
-        : Math.max(0, timer.sessionDurationMs - timer.remainingTime);
+    if (isSessionActive && timerLockedMissionId === m.id) {
+      const elapsedMs = isInfinite
+        ? Math.max(0, Date.now() - sessionStartTime)
+        : Math.max(0, sessionDurationMs - remainingTime);
       const liveMinutes = Math.max(0, elapsedMs / 60000);
       const completedMinutes = easy + med + hard + unk;
       const pendingMinutes = Math.max(0, Math.min(liveMinutes, Math.max(0, m.targetMinutes - completedMinutes)));
@@ -76,9 +72,9 @@ export const MissionBoard: React.FC = () => {
       overlayLeft = filledPct;
       overlayWidth = Math.max(0, Math.min(100 - filledPct, pendingPct));
       overlayClass =
-        timer.currentDifficulty === DIFFICULTY.EASY ? 'bg-emerald-500/70' :
-        timer.currentDifficulty === DIFFICULTY.MEDIUM ? 'bg-amber-500/70' :
-        timer.currentDifficulty === DIFFICULTY.HARD ? 'bg-indigo-500/70' : 'bg-gray-400/60';
+        currentDifficulty === DIFFICULTY.EASY ? 'bg-emerald-500/70' :
+        currentDifficulty === DIFFICULTY.MEDIUM ? 'bg-amber-500/70' :
+        currentDifficulty === DIFFICULTY.HARD ? 'bg-indigo-500/70' : 'bg-gray-400/60';
     }
 
     return (
