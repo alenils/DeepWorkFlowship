@@ -94,6 +94,49 @@ export const MissionBoard: React.FC = () => {
     );
   };
 
+  // Special row: No Specific Project
+  const NoProjectRow: React.FC = () => {
+    const isActive = !activeMissionId;
+    const lockedDifferent = isSelectionLocked && !isActive;
+    return (
+      <div
+        className={`mission-row flex items-center gap-3 rounded-r border-l-2 pl-3 pr-2 py-2 text-[13px] transition-colors bg-[linear-gradient(90deg,rgba(139,135,255,0.02),rgba(139,135,255,0.05))] hover:bg-[rgba(139,135,255,0.08)] border-l-[rgba(139,135,255,0.25)] ${isActive ? 'border-l-violet-400' : 'hover:border-l-violet-400'} ${lockedDifferent ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+        aria-current={isActive ? 'true' : 'false'}
+        role="button"
+        aria-pressed={isActive}
+        title={lockedDifferent ? 'Selection locked during active session' : (isActive ? 'Active: Unassigned Time!' : 'Switch to Unassigned Time!')}
+        onClick={() => {
+          if (lockedDifferent) return;
+          try { selectMission(null); } catch {}
+        }}
+      >
+        {/* Select radio for No Specific Project */}
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); if (!lockedDifferent) selectMission(null); }}
+          disabled={lockedDifferent}
+          aria-pressed={isActive}
+          title={lockedDifferent ? 'Selection locked during active session' : (isActive ? 'Active: Unassigned Time!' : 'Select: Unassigned Time!')}
+          className={`shrink-0 h-5 w-5 rounded-full border ${isActive ? 'border-violet-400 bg-violet-500/30' : 'border-gray-400/40 bg-transparent'} flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-violet-400`}
+        >
+          {isActive ? <CheckCircle2 size={14} className="text-violet-300" /> : <span className="block h-2 w-2 rounded-full bg-gray-400/60" />}
+        </button>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className={`truncate ${isActive ? 'text-gray-900 dark:text-gray-100' : 'text-gray-800 dark:text-gray-200'}`}>Unassigned Time!</span>
+            {isSelectionLocked && lockedMissionId === null && (
+              <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded bg-violet-600/15 text-violet-300 border border-violet-500/30" title="Locked during active session">
+                <Lock size={12} />
+                Locked
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const MissionRow = ({ m }: { m: Mission }) => {
     const { total, overflow } = getMissionTotals(m);
     const isActive = m.id === activeMissionId;
@@ -190,6 +233,8 @@ export const MissionBoard: React.FC = () => {
 
       {/* List */}
       <div className="space-y-1.5 max-h-[60vh] overflow-y-auto pr-1">
+        {/* Special top entry for No Specific Project */}
+        <NoProjectRow />
         {missions.filter(m => !m.archived).length === 0 ? (
           <div className="text-xs text-gray-500 dark:text-gray-400 py-2">No missions yet.</div>
         ) : (

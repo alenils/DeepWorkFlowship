@@ -205,7 +205,7 @@ export const GoalPanel: React.FC = () => {
               }}
               disabled={isSelectionLocked}
             >
-              <option value="">None</option>
+              <option value="">No Specific Project</option>
               {missions.filter((m) => !m.archived).map((m) => (
                 <option key={m.id} value={m.id}>{m.title}</option>
               ))}
@@ -368,7 +368,7 @@ export const GoalPanel: React.FC = () => {
         </div>
       )}
 
-      {!editing && !creating && (activeMission || goal) && (
+      {!editing && !creating && activeMission && (
         <div className="space-y-4">
           {/* Removed goal progress bar from GoalPanel; progress visualization is on Mission Board */}
 
@@ -379,19 +379,19 @@ export const GoalPanel: React.FC = () => {
             </div>
             <div>
               <div className="text-xs text-gray-600 dark:text-gray-300">WHAT</div>
-              <div className="font-mono text-[12px] leading-5 text-emerald-300/95 truncate" title={(activeMission?.title || goal?.what) || ''}>{activeMission?.title || goal?.what}</div>
+              <div className="font-mono text-[12px] leading-5 text-emerald-300/95 truncate" title={activeMission?.title || ''}>{activeMission?.title}</div>
             </div>
             <div>
               <div className="text-xs text-gray-600 dark:text-gray-300">WHY</div>
-              <div className="font-mono text-[12px] leading-5 text-emerald-300/95 truncate" title={(activeMission?.why || goal?.why) || ''}>{activeMission?.why || goal?.why}</div>
+              <div className="font-mono text-[12px] leading-5 text-emerald-300/95 truncate" title={activeMission?.why || ''}>{activeMission?.why}</div>
             </div>
             <div>
               <div className="text-xs text-gray-600 dark:text-gray-300">HOW</div>
-              <div className="font-mono text-[12px] leading-5 text-emerald-300/95 truncate" title={(activeMission?.how || goal?.how) || ''}>{activeMission?.how || goal?.how}</div>
+              <div className="font-mono text-[12px] leading-5 text-emerald-300/95 truncate" title={activeMission?.how || ''}>{activeMission?.how}</div>
             </div>
             <div>
               <div className="text-xs text-gray-600 dark:text-gray-300">TIME DEDICATED</div>
-              <div className="font-mono text-[12px] leading-5 text-emerald-300/95">{(activeMission?.targetMinutes || goal?.targetMinutes) ?? 0} min</div>
+              <div className="font-mono text-[12px] leading-5 text-emerald-300/95">{activeMission?.targetMinutes ?? 0} min</div>
             </div>
           </div>
         </div>
