@@ -259,6 +259,14 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     /* subtle, diffuse neon base (no hard rings) */
     --gh-border-alpha: 0.14;
     --gh-inset-alpha: 0.08;
+    /* core color variables (override per tier to shift palette) */
+    --gh-primary-rgb: 147, 51, 234;   /* default: purple */
+    --gh-secondary-rgb: 59, 130, 246; /* default: blue */
+    --gh-wave-rgb: var(--gh-primary-rgb);
+    --gh-wave2-rgb: var(--gh-secondary-rgb);
+    /* outline sizing */
+    --gh-border-width: 1px;           /* base border thickness */
+    --gh-edge-ring-width: 2px;        /* outer outline ring thickness */
     --gh-purple-a1: 0.095; /* slightly de-saturate purple */
     --gh-blue-a2: 0.080;  /* balance with a bit more blue */
     --gh-blur1: 20px;
@@ -282,14 +290,14 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     --gh-phase-offset: 0s;            /* phase delay for ring vs wave */
     position: relative;
     isolation: isolate;               /* contain pseudo-element z-index */
-    border: 1px solid rgba(147, 51, 234, var(--gh-border-alpha));
+    border: var(--gh-border-width) solid rgba(var(--gh-primary-rgb), var(--gh-border-alpha));
     box-shadow:
-      0 0 0 1px rgba(147, 51, 234, var(--gh-inset-alpha)) inset,
-      inset 0 0 8px rgba(147, 51, 234, var(--gh-inner-glow)),
-      0 0 0 2px rgba(147, 51, 234, var(--gh-edge-ring-alpha)),
+      0 0 0 1px rgba(var(--gh-primary-rgb), var(--gh-inset-alpha)) inset,
+      inset 0 0 8px rgba(var(--gh-primary-rgb), var(--gh-inner-glow)),
+      0 0 0 var(--gh-edge-ring-width) rgba(var(--gh-primary-rgb), var(--gh-edge-ring-alpha)),
       0 10px 24px rgba(0, 0, 0, 0.38),
-      0 0 var(--gh-blur1) rgba(147, 51, 234, var(--gh-purple-a1)),
-      0 0 var(--gh-blur2) rgba(59, 130, 246, var(--gh-blue-a2));
+      0 0 var(--gh-blur1) rgba(var(--gh-primary-rgb), var(--gh-purple-a1)),
+      0 0 var(--gh-blur2) rgba(var(--gh-secondary-rgb), var(--gh-blue-a2));
     animation: neon-pulse 8s ease-in-out infinite;
     transition: box-shadow 320ms ease, border-color 320ms ease, filter 320ms ease;
   }
@@ -305,17 +313,17 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     background:
       radial-gradient(
         closest-side at 50% 50%,
-        rgba(var(--primary-purple-rgb), 0) 0%,
-        rgba(var(--primary-purple-rgb), calc(var(--gh-wave-alpha) * 0.12)) 55%,
-        rgba(var(--primary-purple-rgb), calc(var(--gh-wave-alpha) * 0.42)) 72%,
-        rgba(59,130,246, calc(var(--gh-wave-alpha) * 0.38)) 84%,
-        rgba(59,130,246, calc(var(--gh-wave-alpha) * 0.16)) 92%,
+        rgba(var(--gh-wave-rgb), 0) 0%,
+        rgba(var(--gh-wave-rgb), calc(var(--gh-wave-alpha) * 0.12)) 55%,
+        rgba(var(--gh-wave-rgb), calc(var(--gh-wave-alpha) * 0.42)) 72%,
+        rgba(var(--gh-wave2-rgb), calc(var(--gh-wave-alpha) * 0.38)) 84%,
+        rgba(var(--gh-wave2-rgb), calc(var(--gh-wave-alpha) * 0.16)) 92%,
         rgba(0,0,0,0) 100%
       ),
       radial-gradient(
         farthest-side at 50% 50%,
-        rgba(59,130,246, var(--gh-wave2-alpha)) 70%,
-        rgba(59,130,246, calc(var(--gh-wave2-alpha) * 0.40)) 90%,
+        rgba(var(--gh-wave2-rgb), var(--gh-wave2-alpha)) 70%,
+        rgba(var(--gh-wave2-rgb), calc(var(--gh-wave2-alpha) * 0.40)) 90%,
         rgba(0,0,0,0) 100%
       );
     filter: saturate(1.18) brightness(1.12) hue-rotate(var(--gh-hue-rotate)) blur(var(--gh-wave-blur));
@@ -332,7 +340,7 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     border-radius: inherit;
     pointer-events: none;
     z-index: 0;
-    box-shadow: 0 0 0 0 rgba(var(--primary-purple-rgb), var(--gh-ring-alpha));
+    box-shadow: 0 0 0 0 rgba(var(--gh-primary-rgb), var(--gh-ring-alpha));
     filter: blur(1.8px); /* soften the visible pulse line */
     animation: glow-ring var(--gh-ring-duration) ease-in-out infinite;
     animation-delay: var(--gh-phase-offset);
@@ -345,9 +353,9 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   }
 
   @keyframes glow-ring {
-    0%   { box-shadow: 0 0 0 0 rgba(var(--primary-purple-rgb), var(--gh-ring-alpha)); }
-    65%  { box-shadow: 0 0 0 var(--gh-ring-spread) rgba(var(--primary-purple-rgb), 0); }
-    100% { box-shadow: 0 0 0 0 rgba(var(--primary-purple-rgb), 0); }
+    0%   { box-shadow: 0 0 0 0 rgba(var(--gh-primary-rgb), var(--gh-ring-alpha)); }
+    65%  { box-shadow: 0 0 0 var(--gh-ring-spread) rgba(var(--gh-primary-rgb), 0); }
+    100% { box-shadow: 0 0 0 0 rgba(var(--gh-primary-rgb), 0); }
   }
 
   /* Streak intensity variants - Neon purple to blue gradient */
@@ -357,13 +365,19 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     --gh-inset-alpha: 0.06;
     --gh-purple-a1: 0.080;
     --gh-blue-a2: 0.070;
+    /* color theme: blue */
+    --gh-primary-rgb: 59, 130, 246;   /* blue */
+    --gh-secondary-rgb: 16, 185, 129; /* green */
+    --gh-wave-rgb: var(--gh-primary-rgb);
+    --gh-wave2-rgb: var(--gh-secondary-rgb);
     --gh-blur1: 22px;
     --gh-blur2: 46px;
     --gh-wave-alpha: 0.30;  /* stronger overall wave */
     --gh-wave-blur: 15px;   /* softer edge */
     --gh-ring-alpha: 0.14;  /* gentler ring */
     --gh-ring-spread: 24px; /* wider/feathered */
-    --gh-edge-ring-alpha: 0.16;
+    --gh-edge-ring-alpha: 0.22;
+    --gh-edge-ring-width: 2.5px;
     --gh-inner-glow: 0.08;
     --gh-wave2-alpha: 0;
     --gh-hue-rotate: 0deg;
@@ -381,13 +395,19 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     --gh-inset-alpha: 0.065;
     --gh-purple-a1: 0.085;
     --gh-blue-a2: 0.075;
+    /* color theme: greenish */
+    --gh-primary-rgb: 16, 185, 129;   /* emerald */
+    --gh-secondary-rgb: 234, 179, 8;  /* amber */
+    --gh-wave-rgb: var(--gh-primary-rgb);
+    --gh-wave2-rgb: var(--gh-secondary-rgb);
     --gh-blur1: 24px;
     --gh-blur2: 50px;
     --gh-wave-alpha: 0.35;
     --gh-wave-blur: 16px;
     --gh-ring-alpha: 0.17;
     --gh-ring-spread: 27px;
-    --gh-edge-ring-alpha: 0.18;
+    --gh-edge-ring-alpha: 0.26;
+    --gh-edge-ring-width: 3px;
     --gh-inner-glow: 0.10;
     --gh-wave2-alpha: 0;
     --gh-hue-rotate: 0deg;
@@ -405,13 +425,19 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     --gh-inset-alpha: 0.07;
     --gh-purple-a1: 0.090;
     --gh-blue-a2: 0.080;
+    /* color theme: yellowish */
+    --gh-primary-rgb: 234, 179, 8;    /* amber/yellow */
+    --gh-secondary-rgb: 147, 51, 234; /* purple accent */
+    --gh-wave-rgb: var(--gh-primary-rgb);
+    --gh-wave2-rgb: var(--gh-secondary-rgb);
     --gh-blur1: 26px;
     --gh-blur2: 54px;
     --gh-wave-alpha: 0.40;
     --gh-wave-blur: 18px;
     --gh-ring-alpha: 0.20;
     --gh-ring-spread: 30px;
-    --gh-edge-ring-alpha: 0.20;
+    --gh-edge-ring-alpha: 0.30;
+    --gh-edge-ring-width: 4px;
     --gh-inner-glow: 0.12;
     --gh-wave2-alpha: 0.05;  /* start secondary wave */
     --gh-hue-rotate: 6deg;
@@ -429,13 +455,21 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     --gh-inset-alpha: 0.075;
     --gh-purple-a1: 0.095;
     --gh-blue-a2: 0.085;
+    /* color theme: purpleish (original) */
+    --gh-primary-rgb: 147, 51, 234;   /* purple */
+    --gh-secondary-rgb: 59, 130, 246; /* blue */
+    --gh-wave-rgb: var(--gh-primary-rgb);
+    --gh-wave2-rgb: var(--gh-secondary-rgb);
     --gh-blur1: 28px;
     --gh-blur2: 58px;
     --gh-wave-alpha: 0.44;
     --gh-wave-blur: 19px;
     --gh-ring-alpha: 0.22;
     --gh-ring-spread: 33px;
-    --gh-edge-ring-alpha: 0.22;
+    /* Outline: make about 2x as noticeable for streak ~8 */
+    --gh-edge-ring-alpha: 0.36;
+    --gh-edge-ring-width: 5px;   /* was ~2px base */
+    --gh-border-width: 2px;      /* thicker border at this tier */
     --gh-inner-glow: 0.14;
     --gh-wave2-alpha: 0.08;
     --gh-hue-rotate: 10deg;
@@ -454,13 +488,20 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     --gh-inset-alpha: 0.08;
     --gh-purple-a1: 0.100;
     --gh-blue-a2: 0.090;
+    /* color theme: teal/blue to cycle forward */
+    --gh-primary-rgb: 6, 182, 212;    /* cyan/teal */
+    --gh-secondary-rgb: 59, 130, 246; /* blue */
+    --gh-wave-rgb: var(--gh-primary-rgb);
+    --gh-wave2-rgb: var(--gh-secondary-rgb);
     --gh-blur1: 30px;
     --gh-blur2: 66px;
     --gh-wave-alpha: 0.51;
     --gh-wave-blur: 21px;
     --gh-ring-alpha: 0.24;
     --gh-ring-spread: 40px;
-    --gh-edge-ring-alpha: 0.24;
+    --gh-edge-ring-alpha: 0.42;
+    --gh-edge-ring-width: 6px;
+    --gh-border-width: 2px;
     --gh-inner-glow: 0.16;
     --gh-wave2-alpha: 0.12;
     --gh-hue-rotate: 14deg;
@@ -471,6 +512,98 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     --gh-phase-offset: 0.30s;
     --gh-pulse-duration: 5.8s;
     --gh-ring-duration: 2.7s;
+  }
+
+  /* Difficulty variants - map glow to currentDifficulty */
+  /* EASY: calm emerald → blue pairing, thinner outline */
+  .glow-hero--easy {
+    --gh-border-alpha: 0.11;
+    --gh-inset-alpha: 0.06;
+    --gh-purple-a1: 0.078;
+    --gh-blue-a2: 0.070;
+    --gh-primary-rgb: 16, 185, 129;   /* emerald */
+    --gh-secondary-rgb: 16, 185, 129; /* emerald (match primary for single-hue) */
+    --gh-wave-rgb: var(--gh-primary-rgb);
+    --gh-wave2-rgb: var(--gh-secondary-rgb);
+    --gh-blur1: 22px;
+    --gh-blur2: 46px;
+    --gh-wave-alpha: 0.28;
+    --gh-wave-blur: 15px;
+    --gh-ring-alpha: 0.14;
+    --gh-ring-spread: 24px;
+    --gh-edge-ring-alpha: 0.20;
+    --gh-edge-ring-width: 2px;
+    --gh-inner-glow: 0.08;
+    --gh-wave2-alpha: 0;
+    --gh-hue-rotate: 0deg;
+    --gh-wave-o-min: 0.34;
+    --gh-wave-o-max: 0.58;
+    --gh-scale-min: 0.996;
+    --gh-scale-max: 1.008;
+    --gh-phase-offset: 0s;
+    --gh-pulse-duration: 8.2s;
+    --gh-ring-duration: 3.4s;
+  }
+
+  /* MEDIUM: amber core with subtle purple accent, moderate outline */
+  .glow-hero--medium {
+    --gh-border-alpha: 0.118;
+    --gh-inset-alpha: 0.068;
+    --gh-purple-a1: 0.088;
+    --gh-blue-a2: 0.078;
+    --gh-primary-rgb: 234, 179, 8;    /* amber */
+    --gh-secondary-rgb: 147, 51, 234; /* purple */
+    --gh-wave-rgb: var(--gh-primary-rgb);
+    --gh-wave2-rgb: var(--gh-secondary-rgb);
+    --gh-blur1: 25px;
+    --gh-blur2: 52px;
+    --gh-wave-alpha: 0.37;
+    --gh-wave-blur: 17px;
+    --gh-ring-alpha: 0.18;
+    --gh-ring-spread: 28px;
+    --gh-edge-ring-alpha: 0.28;
+    --gh-edge-ring-width: 3px;
+    --gh-inner-glow: 0.11;
+    --gh-wave2-alpha: 0.04;
+    --gh-hue-rotate: 5deg;
+    --gh-wave-o-min: 0.36;
+    --gh-wave-o-max: 0.63;
+    --gh-scale-min: 0.995;
+    --gh-scale-max: 1.011;
+    --gh-phase-offset: 0.1s;
+    --gh-pulse-duration: 7.4s;
+    --gh-ring-duration: 3.1s;
+  }
+
+  /* HARD: rich purple core with blue accent, stronger outline and intensity */
+  .glow-hero--hard {
+    --gh-border-alpha: 0.125;
+    --gh-inset-alpha: 0.075;
+    --gh-purple-a1: 0.095;
+    --gh-blue-a2: 0.085;
+    --gh-primary-rgb: 147, 51, 234;   /* purple */
+    --gh-secondary-rgb: 59, 130, 246; /* blue */
+    --gh-wave-rgb: var(--gh-primary-rgb);
+    --gh-wave2-rgb: var(--gh-secondary-rgb);
+    --gh-blur1: 28px;
+    --gh-blur2: 58px;
+    --gh-wave-alpha: 0.44;
+    --gh-wave-blur: 19px;
+    --gh-ring-alpha: 0.22;
+    --gh-ring-spread: 33px;
+    --gh-edge-ring-alpha: 0.34;
+    --gh-edge-ring-width: 3px; /* normalize to match medium thickness */
+    --gh-border-width: 1px; /* keep constant to avoid layout/box size change */
+    --gh-inner-glow: 0.14;
+    --gh-wave2-alpha: 0.06;
+    --gh-hue-rotate: 8deg;
+    --gh-wave-o-min: 0.40;
+    --gh-wave-o-max: 0.68;
+    --gh-scale-min: 0.995; /* align with medium */
+    --gh-scale-max: 1.011; /* align with medium */
+    --gh-phase-offset: 0.18s;
+    --gh-pulse-duration: 6.4s;
+    --gh-ring-duration: 2.9s;
   }
 
   /* Accessibility: honor reduced motion */

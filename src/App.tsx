@@ -27,6 +27,7 @@ import {
   BAD_POSTURE_TIME_THRESHOLD_MS,
   ELEMENT_IDS,
   SESSION_TYPE,
+  DIFFICULTY,
   // LIGHT_SPEED_EXPERIMENT: flag controls exposure of LIGHT_SPEED mode
   EXPERIMENT_LIGHT_SPEED
 } from './constants'
@@ -55,7 +56,8 @@ function App() {
     isSessionActive, 
     isPaused,
     remainingTime,
-    addDistraction
+    addDistraction,
+    currentDifficulty
   } = useTimerStore();
   
   // DEV flag and last title signature for throttling title updates
@@ -306,14 +308,18 @@ function App() {
     }, 0);
   }, [history]);
   
-  // Get hero glow intensity class based on total streak sessions
+  // Get hero glow class based on current difficulty (easy/medium/hard)
   const getHeroGlowClass = () => {
-    if (totalStreakSessions >= 10) return 'glow-hero glow-hero--s5';
-    if (totalStreakSessions >= 7) return 'glow-hero glow-hero--s4';
-    if (totalStreakSessions >= 5) return 'glow-hero glow-hero--s3';
-    if (totalStreakSessions >= 3) return 'glow-hero glow-hero--s2';
-    if (totalStreakSessions >= 1) return 'glow-hero glow-hero--s1';
-    return 'glow-hero';
+    switch (currentDifficulty) {
+      case DIFFICULTY.EASY:
+        return 'glow-hero glow-hero--easy';
+      case DIFFICULTY.MEDIUM:
+        return 'glow-hero glow-hero--medium';
+      case DIFFICULTY.HARD:
+        return 'glow-hero glow-hero--hard';
+      default:
+        return 'glow-hero';
+    }
   };
 
   // Debug: log hero panel computed styles on mount and resize
@@ -348,7 +354,7 @@ function App() {
       window.removeEventListener('resize', onResize);
       if (resizeTimer) window.clearTimeout(resizeTimer);
     };
-  }, [totalStreakSessions]);
+  }, [totalStreakSessions, currentDifficulty]);
 
 return (
 // 1. New outermost container. Sets the true background color and stacking context. Applies shake effect.
