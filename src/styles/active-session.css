@@ -72,8 +72,15 @@
   font-weight: 700;
   padding: 4px 8px;
   border-radius: 999px;
-  background: rgba(139,92,246,0.16);
-  border: 1px solid rgba(139,92,246,0.35);
+  /* Neon purple → blue gradient */
+  background: linear-gradient(135deg, rgba(139,92,246,0.35), rgba(59,130,246,0.35));
+  border: 1px solid rgba(139,92,246,0.45);
+  color: #fff;
+  /* Subtle glow */
+  box-shadow: 0 0 12px rgba(139,92,246,0.35), 0 0 20px rgba(59,130,246,0.25);
+  /* Allow shimmer pseudo-element from .btn-shimmer */
+  position: relative;
+  overflow: hidden;
   /* Align icon and text nicely within HUD */
   display: inline-flex;
   align-items: center;
@@ -82,6 +89,23 @@
   vertical-align: middle;
   /* Slight optical nudge to align with center baseline of HUD bar */
   transform: translateY(1px);
+}
+
+/* Tone variants to match difficulty selection */
+.streak-badge[data-tone="emerald"] {
+  background: linear-gradient(135deg, rgba(16,185,129,0.30), rgba(5,150,105,0.25));
+  border-color: rgba(16,185,129,0.45);
+  box-shadow: 0 0 12px rgba(16,185,129,0.35), 0 0 20px rgba(5,150,105,0.25);
+}
+.streak-badge[data-tone="amber"] {
+  background: linear-gradient(135deg, rgba(245,158,11,0.30), rgba(217,119,6,0.25));
+  border-color: rgba(245,158,11,0.45);
+  box-shadow: 0 0 12px rgba(245,158,11,0.35), 0 0 20px rgba(217,119,6,0.25);
+}
+.streak-badge[data-tone="violet"] {
+  background: linear-gradient(135deg, rgba(139,92,246,0.35), rgba(99,102,241,0.28));
+  border-color: rgba(139,92,246,0.50);
+  box-shadow: 0 0 12px rgba(139,92,246,0.35), 0 0 20px rgba(99,102,241,0.25);
 }
 
 /* Big timer */
@@ -255,8 +279,9 @@
   box-shadow: 0 0 20px rgba(245, 158, 11, 0.45);
 }
 .icon-btn--on-40hz {
-  background: linear-gradient(135deg, #22d3ee, #3b82f6);
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.45);
+  /* Emerald tone to match System Log font color */
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.45);
 }
 
 /* Arming state (pre-activation build-up) for Focus Booster */

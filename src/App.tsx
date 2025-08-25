@@ -322,6 +322,19 @@ function App() {
     }
   };
 
+  // Map currentDifficulty to streak badge tone
+  const toneForHero = useMemo(() => {
+    switch (currentDifficulty) {
+      case DIFFICULTY.EASY:
+        return 'emerald';
+      case DIFFICULTY.MEDIUM:
+        return 'amber';
+      case DIFFICULTY.HARD:
+      default:
+        return 'violet';
+    }
+  }, [currentDifficulty]);
+
   // Debug: log hero panel computed styles on mount and resize
   useEffect(() => {
     const logHeroPanelStyles = () => {
@@ -391,13 +404,13 @@ return (
               </div>
               {/* Streak badge */}
               {totalStreakSessions > 0 && (
-                <div
-                  className="absolute z-20 pointer-events-none bg-gradient-to-br from-violet-500 via-fuchsia-500 to-indigo-500 text-white text-[11px] font-semibold px-2.5 py-1 rounded-bl-lg rounded-tr-2xl shadow-[0_0_12px_rgba(139,92,246,0.55)] ring-1 ring-violet-300/60 backdrop-blur-sm leading-none inline-flex items-center gap-1"
+                <span
+                  className="absolute top-0 right-0 z-20 pointer-events-none streak-badge btn-shimmer"
                   title="Keep it under 3 distractions to grow your focus streak"
-                  style={{ top: 0, right: 0 }}
+                  data-tone={toneForHero as 'emerald' | 'amber' | 'violet'}
                 >
                   🔥 x{totalStreakSessions}
-                </div>
+                </span>
               )}
               
               {/* PRIMARY CONTROL HUD - Timer as main content */}

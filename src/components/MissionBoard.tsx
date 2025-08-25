@@ -164,10 +164,11 @@ export const MissionBoard: React.FC = () => {
     const { total, overflow } = getMissionTotals(m);
     const isActive = m.id === activeMissionId;
     const lockedDifferent = isSelectionLocked && !isActive;
+    const isDropLockedTarget = isSelectionLocked && lockedMissionId === m.id;
 
     return (
       <div
-        className={`mission-row flex items-center gap-3 rounded-r border-l-2 pl-3 pr-2 py-2 text-[13px] transition-colors bg-[linear-gradient(90deg,rgba(139,135,255,0.02),rgba(139,135,255,0.05))] hover:bg-[rgba(139,135,255,0.08)] border-l-[rgba(139,135,255,0.25)] ${isActive ? 'border-l-violet-400' : 'hover:border-l-violet-400'} ${lockedDifferent ? 'opacity-60 cursor-not-allowed' : 'cursor-grab'}`}
+        className={`mission-row flex items-center gap-3 rounded-r border-l-2 pl-3 pr-2 py-2 text-[13px] transition-colors bg-[linear-gradient(90deg,rgba(139,135,255,0.02),rgba(139,135,255,0.05))] hover:bg-[rgba(139,135,255,0.08)] border-l-[rgba(139,135,255,0.25)] ${isActive ? 'border-l-violet-400' : 'hover:border-l-violet-400'} ${lockedDifferent ? 'opacity-60' : ''} ${isDropLockedTarget ? 'cursor-not-allowed' : 'cursor-grab'}`}
         aria-current={isActive ? 'true' : 'false'}
         draggable
         onDragStart={(e) => { 
@@ -176,8 +177,16 @@ export const MissionBoard: React.FC = () => {
           e.dataTransfer.effectAllowed = 'move';
           try { e.dataTransfer.setData('text/plain', m.id); } catch {}
         }}
-        onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-        onDrop={(e) => handleDropOnRow(m.id, e)}
+        onDragOver={(e) => { 
+          if (isDropLockedTarget) { 
+            // Disallow dropping onto locked mission
+            e.dataTransfer.dropEffect = 'none';
+            return; 
+          }
+          e.preventDefault(); 
+          e.dataTransfer.dropEffect = 'move'; 
+        }}
+        onDrop={(e) => { if (!isDropLockedTarget) handleDropOnRow(m.id, e); }}
         onDragEnd={() => { draggingIdRef.current = null; }}
       >
         {/* Select radio */}

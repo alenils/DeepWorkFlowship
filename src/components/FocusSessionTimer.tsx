@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useTimerStore } from '../store/timerSlice';
 import { DIFFICULTY } from '../constants';
-import { Zap, AudioWaveform, ChevronUp, ChevronDown, Play, Pause, Square, X, Loader2 } from 'lucide-react';
+import { Zap, AudioWaveform, ChevronUp, ChevronDown, Play, Pause, Square, X, Loader2, Maximize2, Minimize2 } from 'lucide-react';
 import { msToClock } from '../utils/time';
 import { useFocusBoosterStore } from '../store/focusBoosterSlice';
 import { useFortyHz } from '@/features/audio/useFortyHz';
@@ -87,6 +87,16 @@ export const FocusSessionTimer = ({
   // Focus Booster arming state (1s build-up before activation)
   const [boosterArming, setBoosterArming] = useState(false);
   const boosterTimerRef = useRef<number | null>(null);
+
+  // Fullscreen state tracking
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  useEffect(() => {
+    const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onFsChange);
+    // initialize
+    onFsChange();
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, []);
 
   // Enhancers wiring
   const { status: boosterStatus, startBooster, exitBooster } = useFocusBoosterStore();
@@ -228,6 +238,16 @@ export const FocusSessionTimer = ({
     if (onTimerEnd) onTimerEnd();
   };
 
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch {}
+  };
+
   const getDifficultyClasses = (difficulty: DifficultyId, isSelected: boolean) => {
     const baseClasses = "px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer min-h-[38px] flex items-center justify-center";
     
@@ -273,6 +293,18 @@ export const FocusSessionTimer = ({
   const idleDigitsTheme = useMemo(() => getDigitTheme(selectedDifficulty), [selectedDifficulty]);
   const runningDigitsTheme = useMemo(() => getDigitTheme(runningDifficulty), [runningDifficulty]);
 
+  // Map difficulty to tone string for streak badge data attribute
+  const getTone = (difficulty: DifficultyId): 'emerald' | 'amber' | 'violet' => {
+    switch (difficulty) {
+      case 'maintenance': return 'emerald';
+      case 'focus': return 'amber';
+      case 'deep':
+      default: return 'violet';
+    }
+  };
+  const toneForIdle = useMemo(() => getTone(selectedDifficulty), [selectedDifficulty]);
+  const toneForRunning = useMemo(() => getTone(runningDifficulty), [runningDifficulty]);
+
   // Embedded mode: transparent wrapper, standalone mode: panel with frame
   const wrapperClasses = asPanel 
     ? 'panel-glass rounded-3xl p-4 md:p-5 relative' 
@@ -287,9 +319,9 @@ export const FocusSessionTimer = ({
             <h2 className="text-xl font-bold text-white">PRIMARY CONTROL INTERFACE</h2>
           </div>
           {streakCount > 0 && (
-            <div className="absolute top-4 right-4 bg-gradient-to-br from-violet-500 via-fuchsia-500 to-indigo-500 text-white text-xs font-semibold px-2 py-1 rounded-lg">
+            <span className="absolute top-4 right-4 streak-badge btn-shimmer" data-tone={toneForIdle}>
               🔥 x{streakCount}
-            </div>
+            </span>
           )}
         </>
       )}
@@ -434,7 +466,7 @@ export const FocusSessionTimer = ({
                 </div>
                 <div className="hud-right">
                   {streakCount > 0 && (
-                    <span className="streak-badge" aria-label={`Streak ${streakCount}`}>
+                    <span className="streak-badge btn-shimmer" data-tone={toneForRunning} aria-label={`Streak ${streakCount}`}>
                       🔥 x{streakCount}
                     </span>
                   )}
@@ -474,6 +506,18 @@ export const FocusSessionTimer = ({
                   title="Stop"
                 >
                   <Square size={18} />
+                </button>
+
+                {/* Fullscreen */}
+                <button
+                  type="button"
+                  className={`icon-btn ${isFullscreen ? 'icon-btn--on' : 'icon-btn--neutral'}`}
+                  onClick={toggleFullscreen}
+                  aria-pressed={isFullscreen}
+                  aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+                  title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+                >
+                  {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
                 </button>
 
                 {/* Distracted (X) with badge */}

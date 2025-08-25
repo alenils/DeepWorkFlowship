@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export function useFortyHz(url = "/sounds/focus-40hz.mp3.mp3") {
+export function useFortyHz(url = "/sounds/focus-40hz.mp3") {
   const ctxRef = useRef<AudioContext | null>(null);
   // Master/root gain into destination
   const gainRef = useRef<GainNode | null>(null);
@@ -49,8 +49,8 @@ export function useFortyHz(url = "/sounds/focus-40hz.mp3.mp3") {
 
   const preload = useCallback(async () => {
     if (bufferRef.current) return; // already decoded
+    setIsLoading(true);
     try {
-      setIsLoading(true);
       await ensureContext();
       const ctx = ctxRef.current!;
       if (!loadingRef.current) {
@@ -65,6 +65,11 @@ export function useFortyHz(url = "/sounds/focus-40hz.mp3.mp3") {
         })();
       }
       bufferRef.current = await loadingRef.current;
+    } catch (err) {
+      // Clear cached promise to allow retry on next attempt
+      loadingRef.current = null;
+      bufferRef.current = null;
+      throw err;
     } finally {
       setIsLoading(false);
     }

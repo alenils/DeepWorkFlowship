@@ -84,7 +84,7 @@ export const SystemLog: React.FC = () => {
     localStorage.setItem(keyFor(selectedId), note);
   };
 
-  // Keyboard shortcuts: Alt+Shift+T inserts timestamp at cursor
+  // Keyboard shortcuts: Alt+Shift+T inserts time, Alt+Shift+D inserts date at cursor
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.altKey && e.shiftKey && e.key === 'T') {
       e.preventDefault();
@@ -103,6 +103,27 @@ export const SystemLog: React.FC = () => {
       setTimeout(() => {
         ta.selectionStart = start + ts.length;
         ta.selectionEnd = start + ts.length;
+        ta.focus();
+      }, 0);
+    }
+    if (e.altKey && e.shiftKey && e.key === 'D') {
+      e.preventDefault();
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      const ds = `${yyyy}-${mm}-${dd}`;
+
+      const ta = textareaRef.current;
+      if (!ta) return;
+      const start = ta.selectionStart;
+      const end = ta.selectionEnd;
+      const newValue = note.substring(0, start) + ds + note.substring(end);
+      setNote(newValue);
+      localStorage.setItem(keyFor(selectedId), newValue);
+      setTimeout(() => {
+        ta.selectionStart = start + ds.length;
+        ta.selectionEnd = start + ds.length;
         ta.focus();
       }, 0);
     }
@@ -128,7 +149,7 @@ export const SystemLog: React.FC = () => {
     }
   };
 
-  // Escape HTML and wrap timestamps in a gray span
+  // Escape HTML and wrap timestamps/dates in spans for highlighting
   const highlightedHtml = useMemo(() => {
     const escapeHtml = (str: string) =>
       str
@@ -140,14 +161,17 @@ export const SystemLog: React.FC = () => {
     const escaped = escapeHtml(note);
     // Match times like 00:00 .. 23:59
     const timeRegex = /\b(?:[01]?\d|2[0-3]):[0-5]\d\b/g;
-    return escaped.replace(timeRegex, (m) => `<span class=\"text-gray-400\">${m}</span>`);
+    // Match dates like YYYY-MM-DD
+    const dateRegex = /\b\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])\b/g;
+    const withTimes = escaped.replace(timeRegex, (m) => `<span class=\"text-gray-400\">${m}</span>`);
+    return withTimes.replace(dateRegex, (m) => `<span class=\"text-emerald-400\">${m}</span>`);
   }, [note]);
 
   return (
     <InlineCollapsibleCard
       id="system-log"
       title="System Log"
-      helpTitle="Hint: Alt + Shift + T inserts timestamp"
+      helpTitle="Hints: Alt+Shift+T → time, Alt+Shift+D → date"
       onHelpClick={() => {}}
       collapsed={collapsed}
       onToggleCollapse={toggle}
@@ -200,7 +224,10 @@ export const SystemLog: React.FC = () => {
           <div className="flex items-center px-3 py-1.5 border-t border-emerald-500/20 bg-black/40">
             <span className="font-mono text-emerald-400 mr-2">&gt;</span>
             <span className="inline-block w-[8px] h-[14px] bg-emerald-400 motion-safe:animate-pulse" aria-hidden />
-            <span className="ml-auto text-[10px] text-emerald-300/60 font-mono">Alt+Shift+T → timestamp</span>
+            <div className="ml-auto text-right leading-tight font-mono text-emerald-300/60 text-[10px]">
+              <div>Alt+Shift+T → time</div>
+              <div>Alt+Shift+D → date</div>
+            </div>
           </div>
         </div>
       </div>
