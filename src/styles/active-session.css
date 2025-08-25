@@ -74,6 +74,14 @@
   border-radius: 999px;
   background: rgba(139,92,246,0.16);
   border: 1px solid rgba(139,92,246,0.35);
+  /* Align icon and text nicely within HUD */
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1;
+  vertical-align: middle;
+  /* Slight optical nudge to align with center baseline of HUD bar */
+  transform: translateY(1px);
 }
 
 /* Big timer */

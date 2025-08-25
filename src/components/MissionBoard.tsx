@@ -1,9 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import InlineCollapsibleCard from './ui/InlineCollapsibleCard';
 import { useInlineMinimize } from '../hooks/useInlineMinimize';
 import { useMissionsStore, Mission, getMissionTotals } from '../store/missionsSlice';
 import { DIFFICULTY } from '../constants';
-import { Lock, AlertTriangle, Trash2, CheckCircle2 } from 'lucide-react';
+import { Lock, AlertTriangle, Trash2, CheckCircle2, ArrowUp, ArrowDown } from 'lucide-react';
 import { useTimerStore } from '../store/timerSlice';
 
 export const MissionBoard: React.FC = () => {
@@ -20,6 +20,8 @@ export const MissionBoard: React.FC = () => {
     safeDeleteMission,
     deleteMission,
     hydrateFromLegacyGoal,
+    swapOrder,
+    reorderVisible,
   } = useMissionsStore();
 
   // Hydrate from legacy goal if present (once)
@@ -137,15 +139,46 @@ export const MissionBoard: React.FC = () => {
     );
   };
 
-  const MissionRow = ({ m }: { m: Mission }) => {
+  const visible = missions.filter(m => !m.archived);
+
+  // DnD state
+  const draggingIdRef = useRef<string | null>(null);
+
+  const handleDropOnRow = (targetId: string, e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const draggedId = draggingIdRef.current;
+    draggingIdRef.current = null;
+    if (!draggedId || draggedId === targetId) return;
+    const order = visible.map(v => v.id).filter(id => id !== draggedId);
+
+    // Decide insert index by mouse position relative to row midpoint
+    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+    const before = e.clientY < rect.top + rect.height / 2;
+    const targetIndex = order.indexOf(targetId);
+    const insertAt = before ? targetIndex : targetIndex + 1;
+    order.splice(insertAt, 0, draggedId);
+    try { reorderVisible(order); } catch {}
+  };
+
+  const MissionRow = ({ m, aboveId, belowId }: { m: Mission; aboveId: string | null; belowId: string | null }) => {
     const { total, overflow } = getMissionTotals(m);
     const isActive = m.id === activeMissionId;
     const lockedDifferent = isSelectionLocked && !isActive;
 
     return (
       <div
-        className={`mission-row flex items-center gap-3 rounded-r border-l-2 pl-3 pr-2 py-2 text-[13px] transition-colors bg-[linear-gradient(90deg,rgba(139,135,255,0.02),rgba(139,135,255,0.05))] hover:bg-[rgba(139,135,255,0.08)] border-l-[rgba(139,135,255,0.25)] ${isActive ? 'border-l-violet-400' : 'hover:border-l-violet-400'} ${lockedDifferent ? 'opacity-60 cursor-not-allowed' : ''}`}
+        className={`mission-row flex items-center gap-3 rounded-r border-l-2 pl-3 pr-2 py-2 text-[13px] transition-colors bg-[linear-gradient(90deg,rgba(139,135,255,0.02),rgba(139,135,255,0.05))] hover:bg-[rgba(139,135,255,0.08)] border-l-[rgba(139,135,255,0.25)] ${isActive ? 'border-l-violet-400' : 'hover:border-l-violet-400'} ${lockedDifferent ? 'opacity-60 cursor-not-allowed' : 'cursor-grab'}`}
         aria-current={isActive ? 'true' : 'false'}
+        draggable
+        onDragStart={(e) => { 
+          // Permit dragging regardless of selection lock
+          draggingIdRef.current = m.id; 
+          e.dataTransfer.effectAllowed = 'move';
+          try { e.dataTransfer.setData('text/plain', m.id); } catch {}
+        }}
+        onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+        onDrop={(e) => handleDropOnRow(m.id, e)}
+        onDragEnd={() => { draggingIdRef.current = null; }}
       >
         {/* Select radio */}
         <button
@@ -185,6 +218,26 @@ export const MissionBoard: React.FC = () => {
 
         {/* Row actions */}
         <div className="flex items-center gap-1.5">
+          {/* Reorder Up */}
+          <button
+            onClick={() => { if (aboveId) swapOrder(m.id, aboveId); }}
+            disabled={!aboveId}
+            className={`text-gray-400 hover:text-gray-200 dark:text-gray-500 dark:hover:text-gray-200 focus:outline-none ${!aboveId ? 'opacity-40 cursor-not-allowed' : ''}`}
+            title="Move up"
+            aria-label="Move up"
+          >
+            <ArrowUp size={16} />
+          </button>
+          {/* Reorder Down */}
+          <button
+            onClick={() => { if (belowId) swapOrder(m.id, belowId); }}
+            disabled={!belowId}
+            className={`text-gray-400 hover:text-gray-200 dark:text-gray-500 dark:hover:text-gray-200 focus:outline-none ${!belowId ? 'opacity-40 cursor-not-allowed' : ''}`}
+            title="Move down"
+            aria-label="Move down"
+          >
+            <ArrowDown size={16} />
+          </button>
           <button
             onClick={() => {
               if (window.confirm('Mark this mission as finished? It will be archived.')) {
@@ -232,13 +285,32 @@ export const MissionBoard: React.FC = () => {
       {/* Lock banner removed per UX request */}
 
       {/* List */}
-      <div className="space-y-1.5 max-h-[60vh] overflow-y-auto pr-1">
+      <div 
+        className="space-y-1.5 max-h-[60vh] overflow-y-auto pr-1"
+        onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+        onDrop={(e) => {
+          e.preventDefault();
+          const draggedId = draggingIdRef.current || ((): string | null => { try { return e.dataTransfer.getData('text/plain') || null; } catch { return null; } })();
+          draggingIdRef.current = null;
+          if (!draggedId) return;
+          const order = visible.map(v => v.id).filter(id => id !== draggedId);
+          order.push(draggedId);
+          try { reorderVisible(order); } catch {}
+        }}
+      >
         {/* Special top entry for No Specific Project */}
         <NoProjectRow />
-        {missions.filter(m => !m.archived).length === 0 ? (
+        {visible.length === 0 ? (
           <div className="text-xs text-gray-500 dark:text-gray-400 py-2">No missions yet.</div>
         ) : (
-          missions.filter(m => !m.archived).map(m => <MissionRow key={m.id} m={m} />)
+          visible.map((m, i) => (
+            <MissionRow
+              key={m.id}
+              m={m}
+              aboveId={i > 0 ? visible[i - 1].id : null}
+              belowId={i < visible.length - 1 ? visible[i + 1].id : null}
+            />
+          ))
         )}
       </div>
     </InlineCollapsibleCard>

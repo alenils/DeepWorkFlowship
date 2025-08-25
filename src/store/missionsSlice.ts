@@ -32,6 +32,10 @@ export interface MissionsState {
   safeDeleteMission: (id: string) => boolean; // returns success
   deleteMission: (id: string) => void; // force delete regardless of progress
 
+  // Ordering
+  swapOrder: (idA: string, idB: string) => void;
+  reorderVisible: (ids: string[]) => void; // reorder only non-archived missions per provided id order
+
   // Selection
   selectMission: (id: string | null) => void;
   lockSelection: (id?: string | null) => void;
@@ -154,6 +158,46 @@ export const useMissionsStore = create<MissionsState>()(
         set({
           missions: s.missions.filter((m) => m.id !== id),
           activeMissionId: s.activeMissionId === id ? null : s.activeMissionId,
+        });
+      },
+
+      // Swap/reposition two missions by id (true swap to avoid index shift issues)
+      swapOrder: (idA, idB) => {
+        set((s) => {
+          const aIdx = s.missions.findIndex((m) => m.id === idA);
+          const bIdx = s.missions.findIndex((m) => m.id === idB);
+          if (aIdx < 0 || bIdx < 0 || aIdx === bIdx) return {} as Partial<MissionsState>;
+          const next = s.missions.slice();
+          const tmp = next[aIdx];
+          next[aIdx] = next[bIdx];
+          next[bIdx] = tmp;
+          return { missions: next } as Partial<MissionsState>;
+        });
+      },
+
+      // Reorder only non-archived missions according to provided ids
+      reorderVisible: (ids) => {
+        set((s) => {
+          // Validate all ids correspond to non-archived items present in state
+          const visible = s.missions.filter((m) => !m.archived).map((m) => m.id);
+          if (ids.length !== visible.length) return {} as Partial<MissionsState>;
+          for (const id of ids) if (!visible.includes(id)) return {} as Partial<MissionsState>;
+
+          // Build lookup for quick access
+          const byId = new Map(s.missions.map((m) => [m.id, m] as const));
+
+          const next: Mission[] = [];
+          let visibleCursor = 0;
+          for (const m of s.missions) {
+            if (m.archived) {
+              next.push(m); // keep archived in place
+            } else {
+              const replaceId = ids[visibleCursor++];
+              const repl = byId.get(replaceId);
+              if (repl) next.push(repl);
+            }
+          }
+          return { missions: next } as Partial<MissionsState>;
         });
       },
 
