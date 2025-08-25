@@ -154,27 +154,24 @@ export const SystemLog: React.FC = () => {
       variant="v2"
       className="panel--no-pad panel-hover"
       contentClassName="content-pad-lg"
-      headerRight={
-        <div className="flex items-center gap-2">
-          <label htmlFor="system-log-project" className="sr-only">Project</label>
-          <select
-            id="system-log-project"
-            value={selectedId}
-            onChange={(e) => handleSelectChange(e.target.value)}
-            className="px-2 py-1 text-xs rounded-md bg-white/70 dark:bg-gray-700/60 border border-violet-300/40 dark:border-violet-300/30 focus:outline-none focus:ring-2 focus:ring-violet-400"
-          >
-            <option value={GENERAL}>General</option>
-            {missions.filter((m) => !m.archived).map((m) => (
-              <option key={m.id} value={m.id}>{m.title || 'Untitled'}</option>
-            ))}
-          </select>
-        </div>
-      }
     >
       <div className="relative">
         <div className="terminal">
-          <header className="px-3 py-1.5 font-mono text-[11px] text-emerald-400 border-b border-emerald-500/20 bg-black/40">
-            System Log
+          <header className="px-3 py-1.5 border-b border-emerald-500/20 bg-black/40">
+            <div className="flex items-center gap-2">
+              <label htmlFor="system-log-project-inner" className="sr-only">Project</label>
+              <select
+                id="system-log-project-inner"
+                value={selectedId}
+                onChange={(e) => handleSelectChange(e.target.value)}
+                className="syslog-select px-2 py-1 text-[11px] font-mono"
+              >
+                <option value={GENERAL}>General</option>
+                {missions.filter((m) => !m.archived).map((m) => (
+                  <option key={m.id} value={m.id}>{m.title || 'Untitled'}</option>
+                ))}
+              </select>
+            </div>
           </header>
           <div className="relative">
             {/* Highlighting overlay */}
