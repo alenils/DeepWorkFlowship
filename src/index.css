@@ -257,20 +257,94 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     /* same radius as our cards */
     border-radius: 16px; /* rounded-2xl equivalent */
     /* subtle, diffuse neon base (no hard rings) */
-    --gh-border-alpha: 0.10;
-    --gh-inset-alpha: 0.05;
+    --gh-border-alpha: 0.14;
+    --gh-inset-alpha: 0.08;
     --gh-purple-a1: 0.08;
     --gh-blue-a2: 0.06;
     --gh-blur1: 20px;
     --gh-blur2: 42px;
+    /* pulse variables (overridden by intensity variants) */
+    --gh-pulse-duration: 8.5s;        /* long, mesmerizing */
+    --gh-ring-duration: 3.6s;         /* secondary subtle ring wave */
+    --gh-wave-alpha: 0.14;            /* outer radial glow opacity */
+    --gh-wave-blur: 12px;             /* softness of wave */
+    --gh-ring-alpha: 0.18;            /* ring halo opacity (edge-hugging) */
+    --gh-ring-spread: 16px;           /* how far ring expands (closer to line) */
+    /* new incremental controls */
+    --gh-edge-ring-alpha: 0.16;       /* crisp 2px edge accent */
+    --gh-inner-glow: 0.06;            /* inset softening at the edge */
+    --gh-hue-rotate: 0deg;            /* subtle hue shift at higher tiers */
+    --gh-wave2-alpha: 0;              /* secondary larger wave for s3+ */
+    --gh-wave-o-min: 0.34;            /* wave opacity min (used in keyframes) */
+    --gh-wave-o-max: 0.62;            /* wave opacity max */
+    --gh-scale-min: 0.995;            /* wave scale min */
+    --gh-scale-max: 1.010;            /* wave scale max */
+    --gh-phase-offset: 0s;            /* phase delay for ring vs wave */
+    position: relative;
+    isolation: isolate;               /* contain pseudo-element z-index */
     border: 1px solid rgba(147, 51, 234, var(--gh-border-alpha));
     box-shadow:
       0 0 0 1px rgba(147, 51, 234, var(--gh-inset-alpha)) inset,
+      inset 0 0 8px rgba(147, 51, 234, var(--gh-inner-glow)),
+      0 0 0 2px rgba(147, 51, 234, var(--gh-edge-ring-alpha)),
       0 10px 24px rgba(0, 0, 0, 0.38),
       0 0 var(--gh-blur1) rgba(147, 51, 234, var(--gh-purple-a1)),
       0 0 var(--gh-blur2) rgba(59, 130, 246, var(--gh-blue-a2));
     animation: neon-pulse 8s ease-in-out infinite;
     transition: box-shadow 320ms ease, border-color 320ms ease, filter 320ms ease;
+  }
+
+  /* Radiating violet pulse (soft, contained within panel area) */
+  .glow-hero::after {
+    content: "";
+    position: absolute;
+    inset: -4px; /* bring the wave closer to the edge */
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 0; /* below content (content should set z-index: 1/10) */
+    background:
+      radial-gradient(
+        60% 60% at 50% 50%,
+        rgba(var(--primary-purple-rgb), var(--gh-wave-alpha)) 0%,
+        rgba(var(--primary-purple-rgb), calc(var(--gh-wave-alpha) * 0.75)) 22%,
+        rgba(59,130,246, calc(var(--gh-wave-alpha) * 0.55)) 44%,
+        rgba(0,0,0,0) 70%
+      ),
+      radial-gradient(
+        90% 90% at 50% 50%,
+        rgba(59,130,246, var(--gh-wave2-alpha)) 0%,
+        rgba(59,130,246, calc(var(--gh-wave2-alpha) * 0.6)) 20%,
+        rgba(0,0,0,0) 85%
+      );
+    filter: hue-rotate(var(--gh-hue-rotate)) blur(var(--gh-wave-blur));
+    transform: scale(var(--gh-scale-min));
+    animation: glow-wave var(--gh-pulse-duration) ease-in-out infinite;
+    animation-delay: calc(var(--gh-phase-offset) * 0.6);
+  }
+
+  /* Expanding soft halo ring for a gentle wavefront */
+  .glow-hero::before {
+    content: "";
+    position: absolute;
+    inset: -1px; /* edge-hugging ring */
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 0;
+    box-shadow: 0 0 0 0 rgba(var(--primary-purple-rgb), var(--gh-ring-alpha));
+    animation: glow-ring var(--gh-ring-duration) ease-in-out infinite;
+    animation-delay: var(--gh-phase-offset);
+  }
+
+  @keyframes glow-wave {
+    0%   { opacity: var(--gh-wave-o-min); transform: scale(var(--gh-scale-min)); }
+    50%  { opacity: var(--gh-wave-o-max); transform: scale(var(--gh-scale-max)); }
+    100% { opacity: var(--gh-wave-o-min); transform: scale(var(--gh-scale-min)); }
+  }
+
+  @keyframes glow-ring {
+    0%   { box-shadow: 0 0 0 0 rgba(var(--primary-purple-rgb), var(--gh-ring-alpha)); }
+    70%  { box-shadow: 0 0 0 var(--gh-ring-spread) rgba(var(--primary-purple-rgb), 0); }
+    100% { box-shadow: 0 0 0 0 rgba(var(--primary-purple-rgb), 0); }
   }
 
   /* Streak intensity variants - Neon purple to blue gradient */
@@ -282,6 +356,21 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     --gh-blue-a2: 0.065;
     --gh-blur1: 22px;
     --gh-blur2: 46px;
+    --gh-wave-alpha: 0.22;
+    --gh-wave-blur: 12px;
+    --gh-ring-alpha: 0.22;
+    --gh-ring-spread: 18px;
+    --gh-edge-ring-alpha: 0.20;
+    --gh-inner-glow: 0.08;
+    --gh-wave2-alpha: 0;
+    --gh-hue-rotate: 0deg;
+    --gh-wave-o-min: 0.36;
+    --gh-wave-o-max: 0.60;
+    --gh-scale-min: 0.996;
+    --gh-scale-max: 1.008;
+    --gh-phase-offset: 0s;
+    --gh-pulse-duration: 8.2s;
+    --gh-ring-duration: 3.4s;
   }
 
   .glow-hero--s2 {
@@ -291,6 +380,21 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     --gh-blue-a2: 0.07;
     --gh-blur1: 24px;
     --gh-blur2: 50px;
+    --gh-wave-alpha: 0.26;
+    --gh-wave-blur: 13px;
+    --gh-ring-alpha: 0.26;
+    --gh-ring-spread: 20px;
+    --gh-edge-ring-alpha: 0.22;
+    --gh-inner-glow: 0.10;
+    --gh-wave2-alpha: 0;
+    --gh-hue-rotate: 0deg;
+    --gh-wave-o-min: 0.36;
+    --gh-wave-o-max: 0.62;
+    --gh-scale-min: 0.995;
+    --gh-scale-max: 1.010;
+    --gh-phase-offset: 0.08s;
+    --gh-pulse-duration: 7.8s;
+    --gh-ring-duration: 3.25s;
   }
 
   .glow-hero--s3 {
@@ -300,6 +404,21 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     --gh-blue-a2: 0.075;
     --gh-blur1: 26px;
     --gh-blur2: 54px;
+    --gh-wave-alpha: 0.30;
+    --gh-wave-blur: 14px;
+    --gh-ring-alpha: 0.30;
+    --gh-ring-spread: 22px;
+    --gh-edge-ring-alpha: 0.25;
+    --gh-inner-glow: 0.12;
+    --gh-wave2-alpha: 0.05;  /* start secondary wave */
+    --gh-hue-rotate: 6deg;
+    --gh-wave-o-min: 0.38;
+    --gh-wave-o-max: 0.66;
+    --gh-scale-min: 0.994;
+    --gh-scale-max: 1.012;
+    --gh-phase-offset: 0.14s;
+    --gh-pulse-duration: 7.0s;
+    --gh-ring-duration: 3.0s;
   }
 
   .glow-hero--s4 {
@@ -309,6 +428,21 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     --gh-blue-a2: 0.08;
     --gh-blur1: 28px;
     --gh-blur2: 58px;
+    --gh-wave-alpha: 0.33;
+    --gh-wave-blur: 15px;
+    --gh-ring-alpha: 0.33;
+    --gh-ring-spread: 24px;
+    --gh-edge-ring-alpha: 0.28;
+    --gh-inner-glow: 0.14;
+    --gh-wave2-alpha: 0.08;
+    --gh-hue-rotate: 10deg;
+    --gh-wave-o-min: 0.40;
+    --gh-wave-o-max: 0.68;
+    --gh-scale-min: 0.993;
+    --gh-scale-max: 1.014;
+    --gh-phase-offset: 0.22s;
+    --gh-pulse-duration: 6.4s;
+    --gh-ring-duration: 2.9s;
   }
 
   .glow-hero--s5 {
@@ -318,7 +452,31 @@ body{ font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     --gh-purple-a1: 0.105;
     --gh-blue-a2: 0.085;
     --gh-blur1: 30px;
-    --gh-blur2: 62px;
+    --gh-blur2: 66px;
+    --gh-wave-alpha: 0.38;
+    --gh-wave-blur: 16px;
+    --gh-ring-alpha: 0.36;
+    --gh-ring-spread: 28px;
+    --gh-edge-ring-alpha: 0.32;
+    --gh-inner-glow: 0.16;
+    --gh-wave2-alpha: 0.12;
+    --gh-hue-rotate: 14deg;
+    --gh-wave-o-min: 0.42;
+    --gh-wave-o-max: 0.72;
+    --gh-scale-min: 0.992;
+    --gh-scale-max: 1.017;
+    --gh-phase-offset: 0.30s;
+    --gh-pulse-duration: 5.8s;
+    --gh-ring-duration: 2.7s;
+  }
+
+  /* Accessibility: honor reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .glow-hero,
+    .glow-hero::before,
+    .glow-hero::after {
+      animation: none !important;
+    }
   }
 
   @keyframes gradient-shift {
